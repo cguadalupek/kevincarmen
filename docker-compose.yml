@@ -1,0 +1,90 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: kevincarmen-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-kevincarmen}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cambiar_en_el_entorno}
+      POSTGRES_DB: ${POSTGRES_DB:-kevincarmen}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-kevincarmen}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: kevincarmen-redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: kevincarmen-api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-kevincarmen}:${POSTGRES_PASSWORD:-cambiar_en_el_entorno}@postgres:5432/${POSTGRES_DB:-kevincarmen}
+      REDIS_URL: redis://redis:6379
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      PORT: 4001
+      UPLOAD_DIR: /uploads
+    volumes:
+      - uploads_data:/uploads
+    ports:
+      - '4001:4001'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost/api/v1}
+        NEXT_PUBLIC_REVALIDATE_SECRET: ${REVALIDATE_SECRET:-kevincarmen-dev-secret}
+    container_name: kevincarmen-web
+    restart: unless-stopped
+    environment:
+      REVALIDATE_SECRET: ${REVALIDATE_SECRET:-kevincarmen-dev-secret}
+    volumes:
+      - uploads_data:/app/apps/web/public/uploads/posts
+    ports:
+      - '3000:3000'
+    depends_on:
+      - api
+
+  nginx:
+    image: nginx:alpine
+    container_name: kevincarmen-nginx
+    restart: unless-stopped
+    ports:
+      - '80:80'
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - web
+      - api
+
+volumes:
+  postgres_data:
+  redis_data:
+  uploads_data:

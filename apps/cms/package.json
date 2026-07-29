@@ -1,0 +1,9 @@
+{
+  "name": "@kevincarmen/cms",
+  "version": "0.1.0",
+  "private": true,
+  "description": "CMS administrativo — se integrará como ruta /admin en apps/web",
+  "scripts": {
+    "dev": "echo 'CMS panel: próximamente en /admin'"
+  }
+}
