@@ -36,7 +36,11 @@ export function Header() {
           ))}
         </nav>
 
-
+        <div className="hidden lg:block">
+          <Button variant="accent" size="sm" asChild>
+            <Link href="/contact">Contacto</Link>
+          </Button>
+        </div>
 
         <button
           type="button"
