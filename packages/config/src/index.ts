@@ -17,14 +17,10 @@ export const siteConfig = {
   },
   nav: [
     { label: 'Inicio', href: '/' },
+    { label: 'Proyectos', href: '/proyectos' },
     { label: 'Blog', href: '/blog' },
-    { label: 'Proyectos', href: '/projects' },
-    { label: 'Lab', href: '/lab' },
-    { label: 'Recursos', href: '/resources' },
-    { label: 'Cursos', href: '/courses' },
-    { label: 'Sobre mí', href: '/about' },
-    { label: 'Now', href: '/now' },
-    { label: 'Contacto', href: '/contact' },
+    { label: 'Sobre mí', href: '/sobre-mi' },
+    { label: 'Contacto', href: '/contacto', cta: true },
   ],
   roles: [
     'Profesor de Computación',

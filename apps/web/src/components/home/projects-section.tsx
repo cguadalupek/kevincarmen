@@ -98,7 +98,7 @@ export function ProjectsSection() {
         </StaggerContainer>
 
         <FadeIn className="mt-8 text-center sm:hidden">
-          <Link href="/projects" className="text-sm text-accent">
+            <Link href="/proyectos" className="text-sm text-accent">
             Ver todos los proyectos →
           </Link>
         </FadeIn>

@@ -15,6 +15,17 @@ const nextConfig = {
       ? [{ source: '/api/:path*', destination: `${apiProxyTarget}/api/:path*` }]
       : [];
   },
+  async redirects() {
+    return [
+      { source: '/projects', destination: '/proyectos', permanent: true },
+      { source: '/lab', destination: '/proyectos#homelab', permanent: true },
+      { source: '/resources', destination: '/recursos', permanent: true },
+      { source: '/courses', destination: '/cursos', permanent: true },
+      { source: '/about', destination: '/sobre-mi', permanent: true },
+      { source: '/contact', destination: '/contacto', permanent: true },
+      { source: '/now', destination: '/sobre-mi#ahora', permanent: true },
+    ];
+  },
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'img.youtube.com' },

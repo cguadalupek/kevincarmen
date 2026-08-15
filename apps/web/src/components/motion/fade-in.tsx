@@ -9,6 +9,7 @@ interface FadeInProps {
   delay?: number;
   direction?: 'up' | 'down' | 'left' | 'right' | 'none';
   duration?: number;
+  id?: string;
 }
 
 const directionOffset = {
@@ -25,6 +26,7 @@ export function FadeIn({
   delay = 0,
   direction = 'up',
   duration = 0.5,
+  id,
 }: FadeInProps) {
   return (
     <motion.div
@@ -33,6 +35,7 @@ export function FadeIn({
       viewport={{ once: true, margin: '-50px' }}
       transition={{ duration, delay, ease: [0.21, 0.47, 0.32, 0.98] }}
       className={className}
+      id={id}
     >
       {children}
     </motion.div>

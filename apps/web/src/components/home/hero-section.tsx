@@ -43,7 +43,7 @@ export function HeroSection() {
 
             <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
               <Button variant="accent" size="lg" asChild>
-                <Link href="/projects">
+                <Link href="/proyectos">
                   Explorar proyectos
                   <ArrowRight className="h-4 w-4" />
                 </Link>

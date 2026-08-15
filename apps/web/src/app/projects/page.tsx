@@ -23,6 +23,18 @@ const statusColors = {
   'in-progress': 'bg-accent/10 text-accent',
 };
 
+const labServices = [
+  ['Proxmox', 'Virtualización de VMs y contenedores LXC.'],
+  ['Docker', 'Servicios reproducibles con contenedores y Compose.'],
+  ['OpenMediaVault', 'Almacenamiento en red para el laboratorio.'],
+  ['Immich', 'Gestión privada de fotografías.'],
+  ['Jellyfin', 'Servidor multimedia self-hosted.'],
+  ['Navidrome', 'Streaming de música personal.'],
+  ['Nextcloud', 'Nube privada para archivos y colaboración.'],
+  ['Minecraft', 'Servidor de juego para la comunidad.'],
+  ['Grafana', 'Métricas y observabilidad del homelab.'],
+];
+
 export default function ProjectsPage() {
   return (
     <div className="py-16">
@@ -88,6 +100,28 @@ export default function ProjectsPage() {
             </StaggerItem>
           ))}
         </StaggerContainer>
+
+        <FadeIn className="mt-20" id="homelab">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-bold">Homelab</h2>
+              <p className="mt-2 text-muted-foreground">
+                Servicios e infraestructura que forman parte del laboratorio personal.
+              </p>
+            </div>
+            <span className="rounded-full bg-accent/10 px-3 py-1 text-xs font-medium text-accent">
+              Lab integrado
+            </span>
+          </div>
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {labServices.map(([name, description]) => (
+              <article key={name} className="rounded-lg border border-border bg-card/40 p-4">
+                <h3 className="font-semibold">{name}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+              </article>
+            ))}
+          </div>
+        </FadeIn>
       </div>
     </div>
   );

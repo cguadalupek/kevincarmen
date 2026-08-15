@@ -25,7 +25,7 @@ export function ContactSection() {
               </p>
               <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
                 <Button variant="accent" size="lg" asChild>
-                  <Link href="/contact">Enviar mensaje</Link>
+                  <Link href="/contacto">Enviar mensaje</Link>
                 </Button>
                 <Button variant="outline" size="lg" asChild>
                   <a href={`mailto:${siteConfig.email}`}>

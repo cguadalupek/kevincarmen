@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { siteConfig, techStack } from '@kevincarmen/config';
 import { Logo } from '@/components/brand/logo';
 import { FadeIn } from '@/components/motion/fade-in';
+import Link from 'next/link';
 
 export const metadata: Metadata = {
   title: 'Sobre mí',
@@ -46,6 +47,20 @@ export default function AboutPage() {
                 </li>
               ))}
             </ul>
+          </div>
+        </FadeIn>
+
+        <FadeIn delay={0.2} className="mt-12" id="ahora">
+          <div className="glass-card p-6">
+            <h2 className="text-xl font-semibold">Lo que estoy haciendo ahora</h2>
+            <ul className="mt-4 space-y-3 text-sm text-muted-foreground">
+              <li>Desarrollando KevinCarmen.xyz con CMS, blog, portfolio y homelab.</li>
+              <li>Creando contenido sobre homelab, Docker y administración de servidores.</li>
+              <li>Preparando material para un curso de Next.js Full Stack.</li>
+            </ul>
+            <Link href="/contacto" className="mt-5 inline-block text-sm text-accent hover:underline">
+              Hablemos sobre un proyecto
+            </Link>
           </div>
         </FadeIn>
       </div>

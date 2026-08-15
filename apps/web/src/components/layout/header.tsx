@@ -7,7 +7,6 @@ import { Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { siteConfig } from '@kevincarmen/config';
 import { Logo } from '@/components/brand/logo';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 export function Header() {
@@ -27,22 +26,18 @@ export function Header() {
               key={item.href}
               href={item.href}
               className={cn(
-                'rounded-md px-3 py-2 text-sm font-medium transition-colors hover:text-accent',
-                pathname === item.href ? 'text-accent' : 'text-muted-foreground',
+                'rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                item.href === '/contacto'
+                  ? 'bg-accent text-accent-foreground shadow-sm hover:bg-accent/90'
+                  : pathname === item.href
+                    ? 'text-accent hover:text-accent'
+                    : 'text-muted-foreground hover:text-accent',
               )}
             >
               {item.label}
             </Link>
           ))}
         </nav>
-
-        {/* Espaciador invisible: conserva el ancho del antiguo botón "Contacto"
-            para que el menú de navegación mantenga su posición */}
-        <div className="invisible hidden lg:block" aria-hidden="true">
-          <Button variant="accent" size="sm">
-            Contacto
-          </Button>
-        </div>
 
         <button
           type="button"
@@ -70,10 +65,12 @@ export function Header() {
                   href={item.href}
                   onClick={() => setMobileOpen(false)}
                   className={cn(
-                    'rounded-md px-3 py-2.5 text-sm font-medium transition-colors',
-                    pathname === item.href
-                      ? 'bg-muted text-accent'
-                      : 'text-muted-foreground hover:bg-muted/50',
+                     'rounded-md px-3 py-2.5 text-sm font-medium transition-colors',
+                     item.href === '/contacto'
+                       ? 'bg-accent text-accent-foreground hover:bg-accent/90'
+                       : pathname === item.href
+                         ? 'bg-muted text-accent'
+                         : 'text-muted-foreground hover:bg-muted/50',
                   )}
                 >
                   {item.label}
