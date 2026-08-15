@@ -8,6 +8,14 @@ const nextConfig = {
     },
   },
   transpilePackages: ['@kevincarmen/config', '@kevincarmen/types', '@kevincarmen/utils'],
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'http://localhost:4001/api/:path*',
+      },
+    ];
+  },
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'img.youtube.com' },
