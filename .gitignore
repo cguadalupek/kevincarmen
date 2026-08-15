@@ -3,9 +3,11 @@ node_modules
 dist
 .turbo
 .env
-.env.local
-.env.*.local
+.env.*
+!.env.example
+!**/.env.example
 *.log
+*.tsbuildinfo
 apps/web/public/uploads/posts/*
 !apps/web/public/uploads/posts/.gitkeep
 .DS_Store

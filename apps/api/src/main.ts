@@ -8,13 +8,10 @@ async function bootstrap() {
 
   app.use(helmet());
 
-  // Lista de orígenes permitidos separados por comas, p. ej.:
-  // CORS_ORIGIN=http://localhost:3000,http://192.168.1.10:3000
-  const allowedOrigins: (string | RegExp)[] = (
-    process.env.CORS_ORIGIN ?? 'http://localhost:3000,http://192.168.1.10:3000'
-  )
+  const allowedOrigins: (string | RegExp)[] = (process.env.ALLOWED_ORIGINS ?? '')
     .split(',')
-    .map((origin) => origin.trim());
+    .map((origin) => origin.trim())
+    .filter(Boolean);
 
   // En desarrollo, permitir además cualquier origen de red local
   // (localhost, 127.0.0.1, 192.168.x.x, 10.x.x.x, 172.16-31.x.x)
@@ -39,7 +36,7 @@ async function bootstrap() {
 
   const port = process.env.PORT ?? 4001;
   await app.listen(port);
-  console.log(`API running on http://localhost:${port}/api/v1`);
+  console.log(`API listening on port ${port}`);
   console.log(`CORS allowed origins: ${allowedOrigins.join(', ')}`);
 }
 

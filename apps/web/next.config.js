@@ -1,4 +1,6 @@
 /** @type {import('next').NextConfig} */
+const apiProxyTarget = process.env.API_PROXY_TARGET;
+
 const nextConfig = {
   ...(process.env.DOCKER_BUILD === 'true' ? { output: 'standalone' } : {}),
   experimental: {
@@ -9,12 +11,9 @@ const nextConfig = {
   },
   transpilePackages: ['@kevincarmen/config', '@kevincarmen/types', '@kevincarmen/utils'],
   async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: 'http://localhost:4001/api/:path*',
-      },
-    ];
+    return apiProxyTarget
+      ? [{ source: '/api/:path*', destination: `${apiProxyTarget}/api/:path*` }]
+      : [];
   },
   images: {
     remotePatterns: [

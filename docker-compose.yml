@@ -41,7 +41,8 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-kevincarmen}:${POSTGRES_PASSWORD:-cambiar_en_el_entorno}@postgres:5432/${POSTGRES_DB:-kevincarmen}
       REDIS_URL: redis://redis:6379
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
-      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-}
+      PUBLIC_SITE_HOSTS: ${PUBLIC_SITE_HOSTS:-}
       PORT: 4001
       UPLOAD_DIR: /uploads
     volumes:
@@ -59,12 +60,13 @@ services:
       context: .
       dockerfile: apps/web/Dockerfile
       args:
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost/api/v1}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api/v1}
         NEXT_PUBLIC_REVALIDATE_SECRET: ${REVALIDATE_SECRET:-kevincarmen-dev-secret}
     container_name: kevincarmen-web
     restart: unless-stopped
     environment:
       REVALIDATE_SECRET: ${REVALIDATE_SECRET:-kevincarmen-dev-secret}
+      API_INTERNAL_URL: ${API_INTERNAL_URL:-http://api:4001/api/v1}
     volumes:
       - uploads_data:/app/apps/web/public/uploads/posts
     ports:

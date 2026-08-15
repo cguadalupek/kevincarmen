@@ -15,7 +15,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/web/node_modules ./apps/web/node_modules
 COPY . .
-ARG NEXT_PUBLIC_API_URL=http://localhost/api/v1
+ARG NEXT_PUBLIC_API_URL=/api/v1
 ARG NEXT_PUBLIC_REVALIDATE_SECRET=kevincarmen-dev-secret
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_REVALIDATE_SECRET=$NEXT_PUBLIC_REVALIDATE_SECRET
