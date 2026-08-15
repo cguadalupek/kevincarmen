@@ -7,6 +7,7 @@ import Link from 'next/link';
 export const metadata: Metadata = {
   title: 'Sobre mí',
   description: 'Conoce más sobre Kevin Carmen: desarrollador, profesor y creador de contenido.',
+  alternates: { canonical: '/sobre-mi' },
 };
 
 export default function AboutPage() {

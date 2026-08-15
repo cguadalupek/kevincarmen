@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, Clock } from 'lucide-react';
 import { formatDate } from '@kevincarmen/utils';
+import { siteConfig } from '@kevincarmen/config';
 import { getPostBySlug, getPublishedPosts } from '@/lib/api/posts';
 import { MarkdownContent } from '@/components/blog/markdown-content';
 
@@ -34,7 +35,10 @@ export async function generateMetadata({ params }: BlogPostPageProps): Promise<M
       type: 'article',
       publishedTime: post.publishedAt ?? undefined,
       authors: [post.author.name],
+      url: `${siteConfig.url}/blog/${post.slug}`,
+      images: post.coverImage ? [{ url: post.coverImage }] : undefined,
     },
+    alternates: { canonical: `/blog/${post.slug}` },
   };
 }
 
@@ -45,6 +49,30 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
   return (
     <article className="py-16">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            '@context': 'https://schema.org',
+            '@type': 'Article',
+            headline: post.title,
+            description: post.excerpt ?? undefined,
+            mainEntityOfPage: `${siteConfig.url}/blog/${post.slug}`,
+            datePublished: post.publishedAt ?? undefined,
+            dateModified: post.updatedAt,
+            author: {
+              '@type': 'Person',
+              name: post.author.name,
+            },
+            publisher: {
+              '@type': 'Person',
+              name: siteConfig.name,
+              url: siteConfig.url,
+            },
+            image: post.coverImage ? `${siteConfig.url}${post.coverImage}` : undefined,
+          }),
+        }}
+      />
       <div className="section-container max-w-3xl">
         <Link
           href="/blog"

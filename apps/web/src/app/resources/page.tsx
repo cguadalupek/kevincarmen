@@ -5,6 +5,7 @@ import { FadeIn, StaggerContainer, StaggerItem } from '@/components/motion/fade-
 export const metadata: Metadata = {
   title: 'Recursos',
   description: 'Scripts, plantillas, Docker Compose y recursos descargables gratuitos.',
+  alternates: { canonical: '/recursos' },
 };
 
 const resources = [

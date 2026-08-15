@@ -25,12 +25,22 @@ export function RootShell({ children }: { children: React.ReactNode }) {
         dangerouslySetInnerHTML={{
           __html: JSON.stringify({
             '@context': 'https://schema.org',
-            '@type': 'Person',
-            name: siteConfig.name,
-            url: siteConfig.url,
-            email: siteConfig.email,
-            jobTitle: 'Desarrollador & Profesor de Computación',
-            sameAs: Object.values(siteConfig.social),
+            '@graph': [
+              {
+                '@type': 'WebSite',
+                name: siteConfig.name,
+                url: siteConfig.url,
+                inLanguage: 'es-ES',
+              },
+              {
+                '@type': 'Person',
+                name: siteConfig.name,
+                url: siteConfig.url,
+                email: siteConfig.email,
+                jobTitle: 'Desarrollador y Profesor de Computación',
+                sameAs: Object.values(siteConfig.social),
+              },
+            ],
           }),
         }}
       />

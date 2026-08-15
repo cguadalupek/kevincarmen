@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 export const metadata: Metadata = {
   title: 'Proyectos',
   description: 'Portfolio de proyectos de desarrollo, infraestructura y open source.',
+  alternates: { canonical: '/proyectos' },
 };
 
 const statusLabels = {

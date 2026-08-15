@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 export const metadata: Metadata = {
   title: 'Cursos',
   description: 'Cursos sobre desarrollo web, infraestructura y administración de sistemas.',
+  alternates: { canonical: '/cursos' },
 };
 
 const courses = [

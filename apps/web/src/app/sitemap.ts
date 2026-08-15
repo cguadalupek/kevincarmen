@@ -9,9 +9,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     '',
     '/blog',
     '/proyectos',
-    '/blog',
     '/sobre-mi',
     '/contacto',
+    '/recursos',
+    '/cursos',
   ].map((path) => ({
     url: `${siteConfig.url}${path}`,
     lastModified: new Date(),

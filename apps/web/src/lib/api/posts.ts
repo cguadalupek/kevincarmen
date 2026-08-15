@@ -9,7 +9,9 @@ export interface PublicPost {
   slug: string;
   excerpt: string | null;
   content: string;
+  coverImage: string | null;
   publishedAt: string | null;
+  updatedAt: string;
   readingTime: number;
   author: { id: string; name: string; avatar?: string | null };
   category: { id: string; name: string; slug: string } | null;
