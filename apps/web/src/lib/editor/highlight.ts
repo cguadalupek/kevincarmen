@@ -77,10 +77,22 @@ export function registerHighlightLanguages() {
 
 export function highlightCode(code: string, language: string): string {
   const lib = registerHighlightLanguages();
-  const lang = lib.getLanguage(language) ? language : 'plaintext';
-  try {
-    return lib.highlight(code, { language: lang }).value;
-  } catch {
-    return lib.highlight(code, { language: 'plaintext' }).value;
+  if (!language || language === 'plaintext' || !lib.getLanguage(language)) {
+    return escapeHtml(code);
   }
+
+  try {
+    return lib.highlight(code, { language }).value;
+  } catch {
+    return escapeHtml(code);
+  }
+}
+
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
