@@ -36,9 +36,11 @@ export function Header() {
           ))}
         </nav>
 
-        <div className="hidden lg:block">
-          <Button variant="accent" size="sm" asChild>
-            <Link href="/contact">Contacto</Link>
+        {/* Espaciador invisible: conserva el ancho del antiguo botón "Contacto"
+            para que el menú de navegación mantenga su posición */}
+        <div className="invisible hidden lg:block" aria-hidden="true">
+          <Button variant="accent" size="sm">
+            Contacto
           </Button>
         </div>
 
