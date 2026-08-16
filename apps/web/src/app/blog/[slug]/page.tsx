@@ -6,6 +6,7 @@ import { formatDate } from '@kevincarmen/utils';
 import { siteConfig } from '@kevincarmen/config';
 import { getPostBySlug } from '@/lib/api/posts';
 import { MarkdownContent } from '@/components/blog/markdown-content';
+import { VideoEmbed } from '@/components/blog/video-embed';
 
 interface BlogPostPageProps {
   params: Promise<{ slug: string }>;
@@ -15,6 +16,21 @@ export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
 export const revalidate = 0;
 export const dynamicParams = true;
+
+function isVideoUrl(url: string) {
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname;
+    return (
+      /youtube\.com|youtu\.be/.test(host) ||
+      /tiktok\.com/.test(host) ||
+      /vimeo\.com/.test(host) ||
+      /\.(mp4|webm|ogg)$/i.test(parsed.pathname)
+    );
+  } catch {
+    return false;
+  }
+}
 
 export async function generateMetadata({ params }: BlogPostPageProps): Promise<Metadata> {
   const { slug } = await params;
@@ -116,19 +132,31 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
         )}
 
         {post.externalLinkUrl && (
-          <footer className="mt-8 border-t border-border pt-8">
-            <a
-              href={post.externalLinkUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-4 py-2.5 text-sm font-medium text-accent transition-colors hover:border-accent hover:bg-accent/10"
-            >
-              <ExternalLink className="h-4 w-4" />
-              {post.externalLinkLabel?.trim() || 'Ver enlace'}
-              <span className="truncate text-xs font-normal text-muted-foreground">
-                {post.externalLinkUrl}
-              </span>
-            </a>
+          <footer className="mt-12 border-t border-border pt-8">
+            {post.externalLinkLabel?.trim() && (
+              <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+                {post.externalLinkLabel}
+              </h3>
+            )}
+            {isVideoUrl(post.externalLinkUrl) ? (
+              <VideoEmbed
+                src={post.externalLinkUrl}
+                title={post.externalLinkLabel?.trim() || post.title}
+              />
+            ) : (
+              <a
+                href={post.externalLinkUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-4 py-2.5 text-sm font-medium text-accent transition-colors hover:border-accent hover:bg-accent/10"
+              >
+                <ExternalLink className="h-4 w-4" />
+                {post.externalLinkLabel?.trim() || 'Ver enlace'}
+                <span className="truncate text-xs font-normal text-muted-foreground">
+                  {post.externalLinkUrl}
+                </span>
+              </a>
+            )}
           </footer>
         )}
       </div>
