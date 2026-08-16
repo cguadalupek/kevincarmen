@@ -68,7 +68,7 @@ services:
       REVALIDATE_SECRET: ${REVALIDATE_SECRET:-kevincarmen-dev-secret}
       API_INTERNAL_URL: ${API_INTERNAL_URL:-http://api:4001/api/v1}
     volumes:
-      - uploads_data:/app/public/uploads/posts
+      - uploads_data:/app/apps/web/public/uploads/posts
     ports:
       - '3000:3000'
     depends_on:
