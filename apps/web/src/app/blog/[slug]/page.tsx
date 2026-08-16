@@ -103,7 +103,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
           )}
         </header>
 
-        <MarkdownContent content={post.content} />
+        <MarkdownContent content={post.content} title={post.title} />
 
         {post.tags.length > 0 && (
           <footer className="mt-12 border-t border-border pt-8">

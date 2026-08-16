@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { Github, Linkedin, Youtube } from 'lucide-react';
-import { siteConfig } from '@kevincarmen/config';
+import { contentNav, siteConfig } from '@kevincarmen/config';
 import { Logo } from '@/components/brand/logo';
 
 const socialIcons = {
@@ -22,7 +22,7 @@ export function Footer() {
           <div>
             <h3 className="mb-4 text-sm font-semibold uppercase tracking-wider">Navegación</h3>
             <ul className="grid grid-cols-2 gap-2">
-              {siteConfig.nav.map((item) => (
+              {[...siteConfig.nav, ...contentNav].map((item) => (
                 <li key={item.href}>
                   <Link
                     href={item.href}

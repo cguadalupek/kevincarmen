@@ -6,9 +6,12 @@ import { CodeBlock } from '@/components/blog/code-block';
 
 interface MarkdownContentProps {
   content: string;
+  title?: string;
 }
 
-export function MarkdownContent({ content }: MarkdownContentProps) {
+export function MarkdownContent({ content, title }: MarkdownContentProps) {
+  const visibleContent = removeRepeatedTitle(content, title);
+
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
@@ -60,7 +63,16 @@ export function MarkdownContent({ content }: MarkdownContentProps) {
         },
       }}
     >
-      {content}
+      {visibleContent}
     </ReactMarkdown>
   );
+}
+
+function removeRepeatedTitle(content: string, title?: string) {
+  if (!title) return content;
+
+  const match = content.match(/^\s*#\s+(.+?)(?:\r?\n|$)/);
+  if (!match || match[1].trim() !== title.trim()) return content;
+
+  return content.slice(match[0].length).replace(/^\r?\n/, '');
 }

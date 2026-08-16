@@ -107,7 +107,9 @@
   }
 
   .post-editor-content pre {
-    @apply relative my-4 overflow-hidden rounded-xl border border-border bg-[#0d1117] font-mono text-sm;
+    @apply relative my-4 overflow-hidden rounded-xl border font-mono text-sm;
+    background: rgb(13 17 23 / 1);
+    border-color: rgb(13 17 23 / 1);
   }
 
   .post-editor-content pre code {
@@ -166,23 +168,35 @@
 
   /* Public code blocks */
   .code-block {
-    @apply my-6 overflow-hidden rounded-xl border border-border bg-[#0d1117];
+    @apply my-6 overflow-hidden rounded-xl border;
+    background: rgb(13 17 23 / 1);
+    border-color: rgb(13 17 23 / 1);
   }
 
   .code-block-header {
-    @apply flex items-center justify-end gap-2 border-b border-border/60 bg-card/80 px-3 py-2;
+    @apply flex items-center justify-end gap-2 border-b px-3 py-2;
+    background: rgb(13 17 23 / 1);
+    border-bottom-color: rgb(13 17 23 / 1);
   }
 
   .code-block-lang {
-    @apply mr-auto rounded-md bg-muted/80 px-2.5 py-1 text-xs font-medium text-muted-foreground;
+    @apply mr-auto rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground;
+    background: rgb(13 17 23 / 1);
+    border: 1px solid rgb(13 17 23 / 1);
   }
 
   .code-block-copy {
-    @apply rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground;
+    @apply rounded-md p-1.5 text-muted-foreground transition-colors hover:text-foreground;
+    background: rgb(13 17 23 / 1);
+  }
+
+  .code-block-copy:hover {
+    background: rgb(13 17 23 / 1);
   }
 
   .code-block-pre {
     @apply overflow-x-auto p-0;
+    background: rgb(13 17 23 / 1);
   }
 
   .code-block-pre code {

@@ -17,8 +17,7 @@ export const siteConfig = {
   },
   nav: [
     { label: 'Inicio', href: '/' },
-    { label: 'Proyectos', href: '/proyectos' },
-    { label: 'Blog', href: '/blog' },
+    { label: 'Contenido', href: '/contenido' },
     { label: 'Sobre mí', href: '/sobre-mi' },
     { label: 'Contacto', href: '/contacto', cta: true },
   ],
@@ -31,6 +30,12 @@ export const siteConfig = {
     'Entusiasta Open Source',
   ],
 } as const;
+
+export const contentNav = [
+  { label: 'Blog', href: '/blog' },
+  { label: 'Proyectos', href: '/proyectos' },
+  { label: 'Cursos', href: '/cursos' },
+] as const;
 
 export const techStack = [
   { name: 'Next.js', category: 'Frontend' },
