@@ -180,9 +180,9 @@
   }
 
   .code-block-lang {
-    @apply mr-auto rounded-md px-2.5 py-1 text-xs font-medium text-muted-foreground;
-    background: rgb(31 41 55 / 1);
-    border: 1px solid rgb(71 85 105 / 1);
+    @apply mr-auto rounded-md px-2.5 py-1 text-xs font-medium text-accent;
+    background: rgb(30 41 59 / 1);
+    border: 0;
   }
 
   .code-block-copy {

@@ -4,7 +4,7 @@ import { contentNav } from '@kevincarmen/config';
 
 export const metadata: Metadata = {
   title: 'Contenido',
-  description: 'Blog, proyectos y cursos de Kevin Carmen.',
+  description: 'Blog, proyectos, cursos y recursos de Kevin Carmen.',
   alternates: { canonical: '/contenido' },
 };
 
@@ -16,7 +16,7 @@ export default function ContentPage() {
         <p className="section-subtitle">
           Tutoriales, proyectos y formación sobre desarrollo, infraestructura y tecnología.
         </p>
-        <div className="mt-12 grid gap-6 md:grid-cols-3">
+        <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {contentNav.map((item) => (
             <Link key={item.href} href={item.href} className="glass-card p-6 hover-lift">
               <h2 className="text-xl font-semibold text-accent">{item.label}</h2>

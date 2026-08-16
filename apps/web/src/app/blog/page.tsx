@@ -27,21 +27,6 @@ export default async function BlogPage() {
           </p>
         </FadeIn>
 
-        <div className="mt-8 grid gap-4 sm:grid-cols-2">
-          <Link href="/recursos" className="glass-card p-5 transition-colors hover:border-accent/50">
-            <h2 className="font-semibold text-accent">Recursos</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Scripts, plantillas y stacks útiles para tus proyectos.
-            </p>
-          </Link>
-          <Link href="/cursos" className="glass-card p-5 transition-colors hover:border-accent/50">
-            <h2 className="font-semibold text-accent">Cursos</h2>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Formación sobre desarrollo, infraestructura y DevOps.
-            </p>
-          </Link>
-        </div>
-
         {posts.length === 0 ? (
           <FadeIn className="mt-12">
             <div className="glass-card p-12 text-center">

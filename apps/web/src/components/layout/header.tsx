@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookOpen, FolderKanban, GraduationCap, Menu, X } from 'lucide-react';
+import { BookOpen, FileText, FolderKanban, GraduationCap, Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { contentNav, siteConfig } from '@kevincarmen/config';
 import { Logo } from '@/components/brand/logo';
@@ -16,6 +16,7 @@ export function Header() {
     '/blog': BookOpen,
     '/proyectos': FolderKanban,
     '/cursos': GraduationCap,
+    '/recursos': FileText,
   } as const;
 
   return (

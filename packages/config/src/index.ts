@@ -9,11 +9,11 @@ export const siteConfig = {
   tagline: 'Aprendo • Enseño • Creo • Construyo',
   locale: 'es_ES',
   social: {
-    github: 'https://github.com/kevincarmen',
-    linkedin: 'https://linkedin.com/in/kevincarmen',
-    youtube: 'https://youtube.com/@kevincarmen',
-    tiktok: 'https://tiktok.com/@kevincarmen',
-    instagram: 'https://instagram.com/kevincarmen',
+    youtube: 'https://www.youtube.com/@kevin_carmen',
+    linkedin: 'https://www.linkedin.com/in/kevincarmenguadalupe/',
+    github: 'https://github.com/cguadalupek',
+    tiktok: 'https://www.tiktok.com/@kevin_carmen',
+    instagram: 'https://www.instagram.com/kevin.carmen.1/',
   },
   nav: [
     { label: 'Inicio', href: '/' },
@@ -35,6 +35,7 @@ export const contentNav = [
   { label: 'Blog', href: '/blog' },
   { label: 'Proyectos', href: '/proyectos' },
   { label: 'Cursos', href: '/cursos' },
+  { label: 'Recursos', href: '/recursos' },
 ] as const;
 
 export const techStack = [

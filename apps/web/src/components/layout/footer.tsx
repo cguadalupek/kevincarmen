@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Github, Linkedin, Youtube } from 'lucide-react';
+import { Github, Instagram, Linkedin, Music2, Youtube } from 'lucide-react';
 import { contentNav, siteConfig } from '@kevincarmen/config';
 import { Logo } from '@/components/brand/logo';
 
@@ -7,6 +7,8 @@ const socialIcons = {
   github: Github,
   linkedin: Linkedin,
   youtube: Youtube,
+  tiktok: Music2,
+  instagram: Instagram,
 };
 
 export function Footer() {

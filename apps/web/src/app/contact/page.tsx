@@ -2,15 +2,17 @@
 
 import { useState } from 'react';
 import type { Metadata } from 'next';
-import { Github, Linkedin, Mail, Send, Youtube } from 'lucide-react';
+import { Github, Instagram, Linkedin, Mail, Music2, Send, Youtube } from 'lucide-react';
 import { siteConfig } from '@kevincarmen/config';
 import { Button } from '@/components/ui/button';
 import { FadeIn } from '@/components/motion/fade-in';
 
 const socialLinks = [
-  { name: 'GitHub', url: siteConfig.social.github, icon: Github },
-  { name: 'LinkedIn', url: siteConfig.social.linkedin, icon: Linkedin },
   { name: 'YouTube', url: siteConfig.social.youtube, icon: Youtube },
+  { name: 'LinkedIn', url: siteConfig.social.linkedin, icon: Linkedin },
+  { name: 'GitHub', url: siteConfig.social.github, icon: Github },
+  { name: 'TikTok', url: siteConfig.social.tiktok, icon: Music2 },
+  { name: 'Instagram', url: siteConfig.social.instagram, icon: Instagram },
   { name: 'Email', url: `mailto:${siteConfig.email}`, icon: Mail },
 ];
 
