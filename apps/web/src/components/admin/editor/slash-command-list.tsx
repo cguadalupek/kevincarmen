@@ -144,11 +144,11 @@ export const slashCommandItems: SlashCommandItem[] = [
     },
   },
   {
-    title: 'Video / Archivo',
-    description: 'Insertar video desde URL',
+    title: 'Video / Embed',
+    description: 'Insertar video (YouTube, TikTok, Vimeo, X)',
     category: 'Contenido multimedia',
     icon: <PlayCircle className="h-4 w-4" />,
-    command: ({ editor, range }) => editor.chain().focus().deleteRange(range).run(),
+    command: ({ editor }) => requestVideoEmbed(editor),
   },
   {
     title: 'Archivo multimedia',
@@ -166,6 +166,24 @@ interface SlashCommandListProps {
 
 export interface SlashCommandListRef {
   onKeyDown: (props: { event: KeyboardEvent }) => boolean;
+}
+
+function requestVideoEmbed(editor: import('@tiptap/react').Editor) {
+  if (typeof window === 'undefined') return;
+  const url = window.prompt(
+    'Pega el enlace del video (YouTube, TikTok, Vimeo o X):',
+    'https://',
+  );
+  if (!url || !/^https?:\/\//i.test(url.trim())) {
+    alert('URL inválida. Pega una URL que comience con http(s)://');
+    return;
+  }
+  editor
+    .chain()
+    .focus()
+    .deleteSelection()
+    .insertIframe({ src: url.trim(), title: 'Video embebido' })
+    .run();
 }
 
 function highlightMatch(text: string, query: string) {
