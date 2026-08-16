@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { ArrowLeft, Clock, ExternalLink } from 'lucide-react';
 import { formatDate } from '@kevincarmen/utils';
@@ -113,6 +114,21 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             <p className="mt-4 text-lg text-muted-foreground">{post.excerpt}</p>
           )}
         </header>
+
+        {post.coverImage && (
+          <figure className="mt-8 overflow-hidden rounded-xl border border-border bg-muted/40">
+            <Image
+              src={post.coverImage}
+              alt={post.title}
+              width={1280}
+              height={720}
+              priority
+              sizes="(min-width: 768px) 768px, 100vw"
+              className="h-auto w-full object-cover"
+              unoptimized
+            />
+          </figure>
+        )}
 
         <MarkdownContent content={post.content} title={post.title} />
 
