@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { ArrowLeft, Clock } from 'lucide-react';
+import { ArrowLeft, Clock, ExternalLink } from 'lucide-react';
 import { formatDate } from '@kevincarmen/utils';
 import { siteConfig } from '@kevincarmen/config';
 import { getPostBySlug } from '@/lib/api/posts';
@@ -112,6 +112,23 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
                 </span>
               ))}
             </div>
+          </footer>
+        )}
+
+        {post.externalLinkUrl && (
+          <footer className="mt-8 border-t border-border pt-8">
+            <a
+              href={post.externalLinkUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-lg border border-border bg-muted/40 px-4 py-2.5 text-sm font-medium text-accent transition-colors hover:border-accent hover:bg-accent/10"
+            >
+              <ExternalLink className="h-4 w-4" />
+              {post.externalLinkLabel?.trim() || 'Ver enlace'}
+              <span className="truncate text-xs font-normal text-muted-foreground">
+                {post.externalLinkUrl}
+              </span>
+            </a>
           </footer>
         )}
       </div>

@@ -77,6 +77,8 @@ model Post {
   coverImage  String?    @map("cover_image")
   videoUrl    String?    @map("video_url")
   videoType   VideoType? @map("video_type")
+  externalLinkLabel String? @map("external_link_label")
+  externalLinkUrl   String? @map("external_link_url")
   status      PostStatus @default(DRAFT)
   publishedAt DateTime?  @map("published_at")
   readingTime Int        @default(0) @map("reading_time")

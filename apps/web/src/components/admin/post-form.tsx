@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { ChevronDown, ExternalLink, Save, Video, X } from 'lucide-react';
+import { ChevronDown, ExternalLink, Link2, Save, Video, X } from 'lucide-react';
 import { slugify } from '@kevincarmen/utils';
 import { Button } from '@/components/ui/button';
 import { PostEditor } from '@/components/admin/post-editor';
@@ -65,6 +65,8 @@ export function PostForm({ post }: PostFormProps) {
   const [videoType, setVideoType] = useState<VideoTypeValue | null>(
     post?.videoType ?? null,
   );
+  const [externalLinkLabel, setExternalLinkLabel] = useState(post?.externalLinkLabel ?? '');
+  const [externalLinkUrl, setExternalLinkUrl] = useState(post?.externalLinkUrl ?? '');
 
   useEffect(() => {
     api.getCategories().then(setCategories).catch(() => setCategories([]));
@@ -100,6 +102,8 @@ export function PostForm({ post }: PostFormProps) {
         coverImage: coverImage || undefined,
         videoUrl: videoUrl.trim() || undefined,
         videoType: videoType ?? undefined,
+        externalLinkLabel: externalLinkLabel.trim() || undefined,
+        externalLinkUrl: externalLinkUrl.trim() || undefined,
         categoryId: categoryId || undefined,
         publishedAt: new Date(publishedAt).toISOString(),
       };
@@ -356,6 +360,64 @@ export function PostForm({ post }: PostFormProps) {
               >
                 Quitar portada
               </button>
+            )}
+          </div>
+
+          <div className="glass-card p-5">
+            <h3 className="mb-3 font-semibold">Enlace externo</h3>
+            <p className="mb-3 text-xs text-muted-foreground">
+              Enlace adicional que se mostrará en la publicación del artículo (por ejemplo: Demo,
+              Repositorio, Fuente).
+            </p>
+            <label htmlFor="externalLinkLabel" className="mb-2 block text-sm font-medium">
+              <span className="inline-flex items-center gap-2">
+                <Link2 className="h-4 w-4 text-accent" /> Etiqueta
+              </span>
+            </label>
+            <input
+              id="externalLinkLabel"
+              type="text"
+              value={externalLinkLabel}
+              onChange={(event) => setExternalLinkLabel(event.target.value)}
+              placeholder="Ver demo"
+              maxLength={60}
+              className="w-full rounded-lg border border-border bg-muted/50 px-4 py-2.5 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            />
+            <label htmlFor="externalLinkUrl" className="mt-4 mb-2 block text-sm font-medium">
+              URL
+            </label>
+            <input
+              id="externalLinkUrl"
+              type="url"
+              value={externalLinkUrl}
+              onChange={(event) => setExternalLinkUrl(event.target.value)}
+              placeholder="https://..."
+              className="w-full rounded-lg border border-border bg-muted/50 px-4 py-2.5 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            />
+            {externalLinkUrl && (
+              <div className="mt-3 space-y-3 rounded-md border border-border bg-card/40 p-3 text-xs">
+                <div className="flex items-start gap-2">
+                  <ExternalLink className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" />
+                  <a
+                    href={externalLinkUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="break-all text-accent hover:underline"
+                  >
+                    {externalLinkLabel || externalLinkUrl}
+                  </a>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setExternalLinkUrl('');
+                    setExternalLinkLabel('');
+                  }}
+                  className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-red-400"
+                >
+                  <X className="h-3 w-3" /> Quitar enlace
+                </button>
+              </div>
             )}
           </div>
 

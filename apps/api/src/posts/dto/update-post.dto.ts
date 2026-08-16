@@ -41,6 +41,14 @@ export class UpdatePostDto {
   videoType?: VideoType;
 
   @IsOptional()
+  @IsString()
+  externalLinkLabel?: string;
+
+  @IsOptional()
+  @IsString()
+  externalLinkUrl?: string;
+
+  @IsOptional()
   @IsDateString()
   publishedAt?: string;
 }

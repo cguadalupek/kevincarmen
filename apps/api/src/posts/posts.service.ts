@@ -142,6 +142,8 @@ export class PostsService {
       coverImage: this.normalizeStoredUrl(dto.coverImage),
       videoUrl,
       videoType,
+      externalLinkLabel: dto.externalLinkLabel || null,
+      externalLinkUrl: this.normalizeStoredUrl(dto.externalLinkUrl) ?? null,
       status,
       readingTime,
       authorId,
@@ -186,6 +188,12 @@ export class PostsService {
         : dto.videoUrl !== undefined
           ? { videoType: this.detectVideoType(dto.videoUrl) ?? undefined }
           : {}),
+      ...(dto.externalLinkLabel !== undefined
+        ? { externalLinkLabel: dto.externalLinkLabel || null }
+        : {}),
+      ...(dto.externalLinkUrl !== undefined
+        ? { externalLinkUrl: this.normalizeStoredUrl(dto.externalLinkUrl) ?? null }
+        : {}),
       readingTime,
       publishedAt: dto.publishedAt ? new Date(dto.publishedAt) : undefined,
     };

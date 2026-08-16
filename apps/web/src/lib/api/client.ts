@@ -52,6 +52,8 @@ export interface ApiPost {
   coverImage: string | null;
   videoUrl: string | null;
   videoType: VideoTypeValue | null;
+  externalLinkLabel: string | null;
+  externalLinkUrl: string | null;
   status: 'DRAFT' | 'PUBLISHED' | 'SCHEDULED' | 'TRASHED';
   readingTime: number;
   publishedAt: string | null;

@@ -14,6 +14,8 @@ export interface PublicPost {
   coverImage: string | null;
   videoUrl: string | null;
   videoType: 'YOUTUBE' | 'YOUTUBE_SHORT' | 'TIKTOK' | 'TWITTER' | 'VIMEO' | 'GENERIC' | null;
+  externalLinkLabel: string | null;
+  externalLinkUrl: string | null;
   publishedAt: string | null;
   updatedAt: string;
   readingTime: number;
