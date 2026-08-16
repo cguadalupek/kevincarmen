@@ -33,6 +33,11 @@ export class PostsController {
     );
   }
 
+  @Get('categories')
+  findAllCategories() {
+    return this.postsService.findAllCategories();
+  }
+
   @Get('admin/all')
   @UseGuards(JwtAuthGuard)
   findAllAdmin() {

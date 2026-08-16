@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import { ArrowLeft, Clock } from 'lucide-react';
 import { formatDate } from '@kevincarmen/utils';
 import { siteConfig } from '@kevincarmen/config';
-import { getPostBySlug, getPublishedPosts } from '@/lib/api/posts';
+import { getPostBySlug } from '@/lib/api/posts';
 import { MarkdownContent } from '@/components/blog/markdown-content';
 
 interface BlogPostPageProps {
@@ -15,11 +15,6 @@ export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
 export const revalidate = 0;
 export const dynamicParams = true;
-
-export async function generateStaticParams() {
-  const posts = await getPublishedPosts();
-  return posts.map((post) => ({ slug: post.slug }));
-}
 
 export async function generateMetadata({ params }: BlogPostPageProps): Promise<Metadata> {
   const { slug } = await params;

@@ -34,6 +34,8 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
   return res.json();
 }
 
+export type VideoTypeValue = 'YOUTUBE' | 'YOUTUBE_SHORT' | 'TIKTOK' | 'TWITTER' | 'VIMEO' | 'GENERIC';
+
 export interface AuthUser {
   id: string;
   name: string;
@@ -47,12 +49,23 @@ export interface ApiPost {
   slug: string;
   excerpt: string | null;
   content: string;
-  status: 'DRAFT' | 'PUBLISHED' | 'SCHEDULED' | 'TRASHED';
   coverImage: string | null;
+  videoUrl: string | null;
+  videoType: VideoTypeValue | null;
+  status: 'DRAFT' | 'PUBLISHED' | 'SCHEDULED' | 'TRASHED';
   readingTime: number;
   publishedAt: string | null;
   updatedAt: string;
+  categoryId: string | null;
+  category: { id: string; slug: string; name: string } | null;
   author: { id: string; name: string };
+}
+
+export interface ApiCategory {
+  id: string;
+  slug: string;
+  name: string;
+  description?: string | null;
 }
 
 export const api = {
@@ -74,6 +87,11 @@ export const api = {
 
   deletePost: (id: string) =>
     apiFetch<{ success: boolean }>(`/posts/${id}`, { method: 'DELETE' }),
+
+  getCategories: () => apiFetch<ApiCategory[]>('/posts/categories').catch(() => []),
+
+  getLatestVideos: () =>
+    apiFetch<ApiPost[]>('/posts/videos').catch(() => []),
 
   revalidateSite: async (slug?: string) => {
     const res = await fetch('/api/revalidate', {

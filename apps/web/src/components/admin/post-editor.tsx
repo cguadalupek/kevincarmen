@@ -26,6 +26,8 @@ declare module '@tiptap/core' {
 interface PostEditorProps {
   content: string;
   onChange: (markdown: string) => void;
+  videoUrl?: string;
+  onVideoPaste?: (url: string) => void;
 }
 
 async function insertImageFiles(editor: Editor, files: FileList | File[]) {
@@ -40,7 +42,7 @@ async function insertImageFiles(editor: Editor, files: FileList | File[]) {
   }
 }
 
-export function PostEditor({ content, onChange }: PostEditorProps) {
+export function PostEditor({ content, onChange, onVideoPaste }: PostEditorProps) {
   const editorRef = useRef<Editor | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const onChangeRef = useRef(onChange);
@@ -141,9 +143,10 @@ export function PostEditor({ content, onChange }: PostEditorProps) {
         if (!editorInstance) return false;
 
         const text = event.clipboardData?.getData('text/plain')?.trim();
-        if (text && /^https?:\/\//i.test(text)) {
-          event.preventDefault();
-          const choice = window.prompt(
+if (text && /^https?:\/\//i.test(text)) {
+            onVideoPaste?.(text);
+            event.preventDefault();
+            const choice = window.prompt(
             `Pegaste: ${text}\n\n¿Cómo quieres insertarlo?\n1) URL\n2) Mención (@usuario)\n3) Marcado (#etiqueta)`,
             '1',
           );
