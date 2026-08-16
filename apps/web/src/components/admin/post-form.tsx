@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { slugify } from '@kevincarmen/utils';
 import { Button } from '@/components/ui/button';
 import { PostEditor } from '@/components/admin/post-editor';
@@ -20,6 +21,8 @@ export function PostForm({ post }: PostFormProps) {
   const [excerpt, setExcerpt] = useState(post?.excerpt ?? '');
   const [content, setContent] = useState(post?.content ?? '');
   const [status, setStatus] = useState<ApiPost['status']>(post?.status ?? 'PUBLISHED');
+  const [coverImage, setCoverImage] = useState(post?.coverImage ?? '');
+  const [coverUploading, setCoverUploading] = useState(false);
   const [autoSlug, setAutoSlug] = useState(!post);
   const [savedSlug, setSavedSlug] = useState<string | null>(null);
 
@@ -34,7 +37,7 @@ export function PostForm({ post }: PostFormProps) {
     setError('');
 
     try {
-      const data = { title, slug, excerpt, content, status };
+      const data = { title, slug, excerpt, content, status, coverImage: coverImage || undefined };
       if (post) {
         await api.updatePost(post.id, data);
       } else {
@@ -55,6 +58,21 @@ export function PostForm({ post }: PostFormProps) {
       setError(err instanceof Error ? err.message : 'Error al guardar');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleCoverChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    setCoverUploading(true);
+    try {
+      const result = await api.uploadImage(file);
+      setCoverImage(result.url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al subir la portada');
+    } finally {
+      setCoverUploading(false);
+      event.target.value = '';
     }
   }
 
@@ -169,6 +187,30 @@ export function PostForm({ post }: PostFormProps) {
                 Cancelar
               </Button>
             </div>
+          </div>
+
+          <div className="glass-card p-5">
+            <h3 className="mb-3 font-semibold">Imagen de portada</h3>
+            {coverImage && (
+              <div className="relative mb-3 aspect-video overflow-hidden rounded-lg border border-border">
+                <Image src={coverImage} alt="Portada del artículo" fill className="object-cover" unoptimized />
+              </div>
+            )}
+            <label className="block cursor-pointer rounded-lg border border-dashed border-border px-3 py-3 text-center text-sm text-muted-foreground transition-colors hover:border-accent hover:text-accent">
+              {coverUploading ? 'Subiendo portada...' : coverImage ? 'Cambiar portada' : 'Subir portada / thumbnail'}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/gif,image/webp"
+                className="hidden"
+                onChange={handleCoverChange}
+                disabled={coverUploading}
+              />
+            </label>
+            {coverImage && (
+              <button type="button" className="mt-2 text-xs text-muted-foreground hover:text-red-400" onClick={() => setCoverImage('')}>
+                Quitar portada
+              </button>
+            )}
           </div>
 
           <div className="glass-card p-5 text-sm text-muted-foreground">

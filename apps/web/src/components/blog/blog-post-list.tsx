@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Clock, Search } from 'lucide-react';
 import { formatDate } from '@kevincarmen/utils';
 import type { PublicPost } from '@/lib/api/posts';
@@ -10,15 +10,21 @@ import { FadeIn } from '@/components/motion/fade-in';
 
 export function BlogPostList({ posts }: { posts: PublicPost[] }) {
   const [query, setQuery] = useState('');
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setDebouncedQuery(query), 250);
+    return () => window.clearTimeout(timeout);
+  }, [query]);
+
   const filteredPosts = useMemo(() => {
-    const normalizedQuery = query.trim().toLowerCase();
+    const normalizedQuery = normalizeSearch(debouncedQuery);
     if (!normalizedQuery) return posts;
 
     return posts.filter((post) => {
       const tags = post.tags.map(({ tag }) => `${tag.name} ${tag.slug}`).join(' ');
-      return `${post.title} ${post.excerpt ?? ''} ${tags}`.toLowerCase().includes(normalizedQuery);
+      return normalizeSearch(`${post.title} ${post.excerpt ?? ''} ${tags}`).includes(normalizedQuery);
     });
-  }, [posts, query]);
+  }, [posts, debouncedQuery]);
 
   return (
     <>
@@ -35,8 +41,11 @@ export function BlogPostList({ posts }: { posts: PublicPost[] }) {
       </div>
 
       {filteredPosts.length === 0 ? (
-        <div className="mt-12 rounded-xl border border-border bg-card/50 p-10 text-center text-muted-foreground">
-          No encontramos artículos que coincidan con tu búsqueda.
+        <div className="mt-12 rounded-xl border border-border bg-card/50 p-10 text-center">
+          <p className="text-muted-foreground">No se encontraron artículos que coincidan con tu búsqueda.</p>
+          <button type="button" onClick={() => setQuery('')} className="mt-4 text-sm font-medium text-accent hover:underline">
+            Limpiar búsqueda
+          </button>
         </div>
       ) : (
         <div className="mt-12 space-y-6">
@@ -86,9 +95,7 @@ export function BlogPostList({ posts }: { posts: PublicPost[] }) {
                         unoptimized
                       />
                     </div>
-                  ) : (
-                    <div className="relative order-first aspect-video w-full shrink-0 overflow-hidden rounded-lg border border-border bg-muted/40 md:order-last md:aspect-[4/3] md:w-64" aria-hidden="true" />
-                  )}
+                  ) : null}
                 </article>
               </Link>
             </FadeIn>
@@ -97,4 +104,12 @@ export function BlogPostList({ posts }: { posts: PublicPost[] }) {
       )}
     </>
   );
+}
+
+function normalizeSearch(value: string) {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim();
 }

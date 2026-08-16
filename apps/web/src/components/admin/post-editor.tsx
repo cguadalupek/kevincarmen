@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { EditorContent, useEditor, type Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -32,8 +32,7 @@ async function insertImageFiles(editor: Editor, files: FileList | File[]) {
   for (const file of imageFiles) {
     try {
       const { url } = await api.uploadImage(file);
-      const alt = file.name.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ');
-      editor.chain().focus().setImage({ src: url, alt }).run();
+      editor.chain().focus().setImage({ src: url, alt: '' }).run();
     } catch {
       // silently skip failed uploads in batch
     }
@@ -44,6 +43,7 @@ export function PostEditor({ content, onChange }: PostEditorProps) {
   const editorRef = useRef<Editor | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const onChangeRef = useRef(onChange);
+  const [selectedImagePos, setSelectedImagePos] = useState<number | null>(null);
   onChangeRef.current = onChange;
 
   const handleImageInput = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -83,6 +83,29 @@ export function PostEditor({ content, onChange }: PostEditorProps) {
     editorProps: {
       attributes: {
         class: 'post-editor-content',
+      },
+      handleTextInput: (view, from, _to, text) => {
+        const currentEditor = editorRef.current;
+        if (text !== ' ' || !currentEditor?.isActive('code')) return false;
+        const previousCharacter = view.state.doc.textBetween(Math.max(0, from - 1), from);
+        if (previousCharacter !== ' ') return false;
+
+        currentEditor.commands.unsetCode();
+        currentEditor.commands.insertContent(' ');
+        return true;
+      },
+      handleKeyDown: (_view, event) => {
+        const currentEditor = editorRef.current;
+        if (
+          event.key === 'ArrowRight' &&
+          currentEditor?.isActive('code') &&
+          currentEditor.state.selection.empty &&
+          currentEditor.state.selection.$from.parentOffset ===
+            currentEditor.state.selection.$from.parent.content.size
+        ) {
+          currentEditor.commands.unsetCode();
+        }
+        return false;
       },
       handleDrop: (view, event) => {
         const editorInstance = editorRef.current;
@@ -130,6 +153,29 @@ export function PostEditor({ content, onChange }: PostEditorProps) {
 
   useEffect(() => {
     if (!editor) return;
+
+    const updateSelectedImage = () => {
+      setSelectedImagePos(editor.isActive('image') ? editor.state.selection.from : null);
+    };
+
+    editor.on('selectionUpdate', updateSelectedImage);
+    return () => {
+      editor.off('selectionUpdate', updateSelectedImage);
+    };
+  }, [editor]);
+
+  function updateImageCaption(value: string) {
+    if (!editor || selectedImagePos === null) return;
+    editor.commands.command(({ tr }) => {
+      const node = tr.doc.nodeAt(selectedImagePos);
+      if (!node || node.type.name !== 'image') return false;
+      tr.setNodeMarkup(selectedImagePos, undefined, { ...node.attrs, alt: value });
+      return true;
+    });
+  }
+
+  useEffect(() => {
+    if (!editor) return;
     const current = editor.storage.markdown.getMarkdown();
     if (content !== current) {
       editor.commands.setContent(content);
@@ -153,6 +199,16 @@ export function PostEditor({ content, onChange }: PostEditorProps) {
       <CodeBlockToolbar editor={editor} />
 
       <EditorContent editor={editor} />
+      {selectedImagePos !== null && (
+        <input
+          type="text"
+          value={editor.state.doc.nodeAt(selectedImagePos)?.attrs.alt ?? ''}
+          onChange={(event) => updateImageCaption(event.target.value)}
+          placeholder="Escribe un pie de foto (opcional)..."
+          aria-label="Pie de foto opcional"
+          className="mx-5 mb-4 w-[calc(100%-2.5rem)] border-0 border-b border-border bg-transparent py-2 text-center text-sm text-muted-foreground outline-none placeholder:text-muted-foreground/60 focus:border-accent"
+        />
+      )}
     </div>
   );
 }

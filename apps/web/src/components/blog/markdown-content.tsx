@@ -30,7 +30,7 @@ export function MarkdownContent({ content, title }: MarkdownContentProps) {
                 width={width}
                 height={height}
               />
-              {alt && alt !== 'Imagen del artículo' && (
+              {alt && !isDefaultImageAlt(alt) && (
                 <span className="mt-2 block text-center text-sm text-muted-foreground">{alt}</span>
               )}
             </span>
@@ -69,4 +69,12 @@ function removeRepeatedTitle(content: string, title?: string) {
   if (!match || match[1].trim() !== title.trim()) return content;
 
   return content.slice(match[0].length).replace(/^\r?\n/, '');
+}
+
+function isDefaultImageAlt(alt: string) {
+  return (
+    alt === 'Imagen del artículo' ||
+    alt.toLowerCase() === 'image' ||
+    /\.(png|jpe?g|gif|webp)$/i.test(alt)
+  );
 }
