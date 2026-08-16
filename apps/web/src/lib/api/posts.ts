@@ -5,6 +5,53 @@ export const POSTS_CACHE_TAG = 'posts';
 export const VIDEOS_CACHE_TAG = 'videos';
 export const CATEGORIES_CACHE_TAG = 'categories';
 
+export type PublicVideoType =
+  | 'YOUTUBE'
+  | 'YOUTUBE_SHORT'
+  | 'TIKTOK'
+  | 'TWITTER'
+  | 'VIMEO'
+  | 'ODYSEE'
+  | 'GENERIC';
+
+export interface PublicVideo {
+  id: string;
+  title: string;
+  url: string;
+  videoType: PublicVideoType;
+  thumbnail: string | null;
+  description: string | null;
+  publishedAt: string;
+  isShort: boolean;
+  featured: boolean;
+  position: number;
+}
+
+export interface PublicCourse {
+  id: string;
+  title: string;
+  slug: string;
+  description: string;
+  level: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
+  duration: string;
+  lessonsCount: number;
+  status: 'COMING_SOON' | 'AVAILABLE' | 'IN_PROGRESS' | 'ARCHIVED';
+  coverImage: string | null;
+  position: number;
+}
+
+export interface PublicLabService {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  stack: string[];
+  icon: string | null;
+  status: 'ONLINE' | 'OFFLINE' | 'MAINTENANCE';
+  url: string | null;
+  position: number;
+}
+
 export interface PublicPost {
   id: string;
   title: string;
@@ -13,7 +60,7 @@ export interface PublicPost {
   content: string;
   coverImage: string | null;
   videoUrl: string | null;
-  videoType: 'YOUTUBE' | 'YOUTUBE_SHORT' | 'TIKTOK' | 'TWITTER' | 'VIMEO' | 'GENERIC' | null;
+  videoType: PublicVideoType | null;
   externalLinkLabel: string | null;
   externalLinkUrl: string | null;
   publishedAt: string | null;
@@ -57,10 +104,28 @@ export async function getPostBySlug(slug: string): Promise<PublicPost | null> {
   }
 }
 
-export async function getLatestVideos(limit = 6): Promise<PublicPost[]> {
+export async function getLatestVideos(limit = 6): Promise<PublicVideo[]> {
   try {
-    const data = await fetchJson(`${API_URL}/posts/videos?limit=${limit}`);
-    return Array.isArray(data) ? data : [];
+    const data = await fetchJson(`${API_URL}/videos?limit=${limit}`);
+    return Array.isArray(data) ? (data as PublicVideo[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function getPublishedCourses(): Promise<PublicCourse[]> {
+  try {
+    const data = await fetchJson(`${API_URL}/courses`);
+    return Array.isArray(data) ? (data as PublicCourse[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function getPublishedLabServices(): Promise<PublicLabService[]> {
+  try {
+    const data = await fetchJson(`${API_URL}/lab`);
+    return Array.isArray(data) ? (data as PublicLabService[]) : [];
   } catch {
     return [];
   }

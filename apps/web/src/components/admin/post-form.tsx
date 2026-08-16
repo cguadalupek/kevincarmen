@@ -100,10 +100,10 @@ export function PostForm({ post }: PostFormProps) {
         content,
         status,
         coverImage: coverImage || undefined,
-        videoUrl: videoUrl.trim() || undefined,
+        videoUrl: videoUrl.trim(),
         videoType: videoType ?? undefined,
-        externalLinkLabel: externalLinkLabel.trim() || undefined,
-        externalLinkUrl: externalLinkUrl.trim() || undefined,
+        externalLinkLabel: externalLinkLabel.trim(),
+        externalLinkUrl: externalLinkUrl.trim(),
         categoryId: categoryId || undefined,
         publishedAt: new Date(publishedAt).toISOString(),
       };

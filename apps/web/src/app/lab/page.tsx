@@ -2,15 +2,18 @@ import type { Metadata } from 'next';
 import {
   Cloud,
   Container,
+  Cpu,
   Film,
   HardDrive,
   LayoutDashboard,
   Music,
   Server,
   Box,
+  Wifi,
   type LucideIcon,
 } from 'lucide-react';
-import type { LabService } from '@kevincarmen/types';
+import type { PublicLabService } from '@/lib/api/posts';
+import { getPublishedLabServices } from '@/lib/api/posts';
 import { FadeIn, StaggerContainer, StaggerItem } from '@/components/motion/fade-in';
 import { cn } from '@/lib/utils';
 
@@ -19,97 +22,28 @@ export const metadata: Metadata = {
   description: 'Mi laboratorio personal: servicios self-hosted, virtualización y contenedores.',
 };
 
-const labServices: (Omit<LabService, 'icon'> & { icon: LucideIcon })[] = [
-  {
-    id: '1',
-    name: 'Proxmox',
-    slug: 'proxmox',
-    description: 'Hypervisor para virtualización de VMs y contenedores LXC.',
-    stack: ['Proxmox VE', 'ZFS', 'Linux'],
-    status: 'online',
-    icon: Server,
-  },
-  {
-    id: '2',
-    name: 'Docker',
-    slug: 'docker',
-    description: 'Orquestación de contenedores para servicios y aplicaciones.',
-    stack: ['Docker', 'Docker Compose', 'Portainer'],
-    status: 'online',
-    icon: Container,
-  },
-  {
-    id: '3',
-    name: 'OpenMediaVault',
-    slug: 'omv',
-    description: 'NAS basado en Debian para almacenamiento en red.',
-    stack: ['OMV', 'MergerFS', 'SnapRAID'],
-    status: 'online',
-    icon: HardDrive,
-  },
-  {
-    id: '4',
-    name: 'Immich',
-    slug: 'immich',
-    description: 'Alternativa self-hosted a Google Photos con backup automático.',
-    stack: ['Immich', 'PostgreSQL', 'Redis'],
-    status: 'online',
-    icon: Cloud,
-  },
-  {
-    id: '5',
-    name: 'Jellyfin',
-    slug: 'jellyfin',
-    description: 'Servidor multimedia para películas, series y música.',
-    stack: ['Jellyfin', 'FFmpeg', 'Hardware Transcoding'],
-    status: 'online',
-    icon: Film,
-  },
-  {
-    id: '6',
-    name: 'Navidrome',
-    slug: 'navidrome',
-    description: 'Streaming de música personal con soporte Subsonic.',
-    stack: ['Navidrome', 'Docker'],
-    status: 'online',
-    icon: Music,
-  },
-  {
-    id: '7',
-    name: 'Nextcloud',
-    slug: 'nextcloud',
-    description: 'Nube privada para archivos, calendario y colaboración.',
-    stack: ['Nextcloud', 'MariaDB', 'Redis'],
-    status: 'online',
-    icon: Cloud,
-  },
-  {
-    id: '8',
-    name: 'Minecraft',
-    slug: 'minecraft',
-    description: 'Servidor de Minecraft para la comunidad.',
-    stack: ['Paper MC', 'Docker', 'Plugins'],
-    status: 'online',
-    icon: Box,
-  },
-  {
-    id: '9',
-    name: 'Grafana',
-    slug: 'grafana',
-    description: 'Monitoreo y visualización de métricas del homelab.',
-    stack: ['Grafana', 'Prometheus', 'Node Exporter'],
-    status: 'online',
-    icon: LayoutDashboard,
-  },
-];
-
-const statusColors = {
-  online: 'bg-accent/10 text-accent',
-  offline: 'bg-red-500/10 text-red-400',
-  maintenance: 'bg-yellow-500/10 text-yellow-400',
+const ICON_MAP: Record<string, LucideIcon> = {
+  Server,
+  Container,
+  HardDrive,
+  Cloud,
+  Film,
+  Music,
+  Box,
+  LayoutDashboard,
+  Cpu,
+  Wifi,
 };
 
-export default function LabPage() {
+const statusColors = {
+  ONLINE: 'bg-accent/10 text-accent',
+  OFFLINE: 'bg-red-500/10 text-red-400',
+  MAINTENANCE: 'bg-yellow-500/10 text-yellow-400',
+};
+
+export default async function LabPage() {
+  const services: PublicLabService[] = await getPublishedLabServices();
+
   return (
     <div className="py-16">
       <div className="section-container">
@@ -120,16 +54,21 @@ export default function LabPage() {
           </p>
         </FadeIn>
 
-        <StaggerContainer className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {labServices.map((service) => {
-            const Icon = service.icon;
-            return (
-              <StaggerItem key={service.id}>
-                <article className="glass-card p-6 hover-lift">
+        {services.length === 0 ? (
+          <div className="mt-12 rounded-xl border border-border bg-card/40 p-10 text-center text-muted-foreground">
+            Aún no hay servicios publicados en el homelab.
+          </div>
+        ) : (
+          <StaggerContainer className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {services.map((service) => {
+              const IconComponent: LucideIcon = (service.icon && ICON_MAP[service.icon]) || Server;
+              const cardClass = 'glass-card block p-6 hover-lift';
+              const inner = (
+                <>
                   <div className="mb-4 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <div className="rounded-lg bg-muted p-2">
-                        <Icon className="h-5 w-5 text-accent" />
+                        <IconComponent className="h-5 w-5 text-accent" />
                       </div>
                       <h2 className="font-semibold">{service.name}</h2>
                     </div>
@@ -139,25 +78,43 @@ export default function LabPage() {
                         statusColors[service.status],
                       )}
                     >
-                      {service.status}
+                      {service.status.toLowerCase()}
                     </span>
                   </div>
                   <p className="text-sm text-muted-foreground">{service.description}</p>
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {service.stack.map((tech) => (
-                      <span
-                        key={tech}
-                        className="rounded-md bg-muted px-2 py-0.5 font-mono text-xs text-muted-foreground"
-                      >
-                        {tech}
-                      </span>
-                    ))}
-                  </div>
-                </article>
-              </StaggerItem>
-            );
-          })}
-        </StaggerContainer>
+                  {service.stack.length > 0 && (
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {service.stack.map((tech) => (
+                        <span
+                          key={tech}
+                          className="rounded-md bg-muted px-2 py-0.5 font-mono text-xs text-muted-foreground"
+                        >
+                          {tech}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </>
+              );
+              return (
+                <StaggerItem key={service.id}>
+                  {service.url ? (
+                    <a
+                      href={service.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={cardClass}
+                    >
+                      {inner}
+                    </a>
+                  ) : (
+                    <div className={cardClass}>{inner}</div>
+                  )}
+                </StaggerItem>
+              );
+            })}
+          </StaggerContainer>
+        )}
       </div>
     </div>
   );

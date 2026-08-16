@@ -1,34 +1,316 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { api } from '@/lib/api/client';
+import { ArrowLeft, Pencil, Plus, Save, Trash2, X } from 'lucide-react';
+import { AdminAuthGuard } from '@/components/admin/auth-guard';
+import { AdminSidebar } from '@/components/admin/sidebar';
+import { Button } from '@/components/ui/button';
+import { api, type ApiCourse } from '@/lib/api/client';
+
+const LEVEL_LABELS = {
+  BEGINNER: 'Principiante',
+  INTERMEDIATE: 'Intermedio',
+  ADVANCED: 'Avanzado',
+} as const;
+
+const STATUS_LABELS = {
+  COMING_SOON: 'Próximamente',
+  AVAILABLE: 'Disponible',
+  IN_PROGRESS: 'En producción',
+  ARCHIVED: 'Archivado',
+} as const;
+
+function emptyCourse(): Partial<ApiCourse> {
+  return {
+    title: '',
+    slug: '',
+    description: '',
+    level: 'BEGINNER',
+    duration: '',
+    lessonsCount: 0,
+    status: 'COMING_SOON',
+    coverImage: '',
+    position: 0,
+  };
+}
 
 export default function AdminCoursesPage() {
-  const router = useRouter();
+  const [courses, setCourses] = useState<ApiCourse[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [editing, setEditing] = useState<Partial<ApiCourse> | null>(null);
+  const [saving, setSaving] = useState(false);
 
-  function logout() {
-    localStorage.removeItem('kc_token');
-    router.push('/admin/login');
+  function load() {
+    setLoading(true);
+    api
+      .getCourses()
+      .then(setCourses)
+      .catch((err) => setError(err instanceof Error ? err.message : 'Error al cargar cursos'))
+      .finally(() => setLoading(false));
+  }
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editing) return;
+    setSaving(true);
+    setError('');
+
+    const payload: Partial<ApiCourse> = {
+      title: (editing.title ?? '').trim(),
+      slug: editing.slug?.trim() || undefined,
+      description: (editing.description ?? '').trim(),
+      level: editing.level,
+      duration: (editing.duration ?? '').trim(),
+      lessonsCount: editing.lessonsCount ?? 0,
+      status: editing.status,
+      coverImage: editing.coverImage?.trim() || undefined,
+      position: editing.position ?? 0,
+    };
+
+    try {
+      if (editing.id) await api.updateCourse(editing.id, payload);
+      else await api.createCourse(payload);
+      setEditing(null);
+      load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al guardar');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete(course: ApiCourse) {
+    if (!window.confirm(`¿Eliminar el curso "${course.title}"?`)) return;
+    try {
+      await api.deleteCourse(course.id);
+      load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al eliminar');
+    }
   }
 
   return (
-    <main className="flex flex-1 items-center justify-center p-8">
-      <div className="max-w-md text-center">
-        <h1 className="text-2xl font-semibold">Próximamente: Cursos</h1>
-        <p className="mt-3 text-sm text-muted-foreground">
-          La administración de cursos se habilitó en el CMS. Termina el formulario en
-          `apps/web/src/app/admin/courses/page.tsx` para empezar a listar cursos.
-        </p>
-        <button
-          type="button"
-          onClick={logout}
-          className="mt-6 rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground hover:bg-muted/50 hover:text-foreground"
-        >
-          Cerrar sesión
-        </button>
-      </div>
-    </main>
+    <AdminAuthGuard>
+      <AdminSidebar />
+      <main className="flex-1 overflow-auto p-8">
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <Link
+              href="/admin"
+              className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-accent"
+            >
+              <ArrowLeft className="h-4 w-4" /> Dashboard
+            </Link>
+            <h1 className="mt-2 text-2xl font-bold">Cursos</h1>
+            <p className="text-sm text-muted-foreground">
+              Agrega los cursos que se mostrarán en la sección Cursos del sitio.
+            </p>
+          </div>
+          <Button variant="accent" onClick={() => setEditing(emptyCourse())} disabled={!!editing}>
+            <Plus className="h-4 w-4" /> Nuevo curso
+          </Button>
+        </div>
+
+        {error && (
+          <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+            {error}
+          </div>
+        )}
+
+        {editing && (
+          <form onSubmit={handleSubmit} className="glass-card mb-6 space-y-4 p-5">
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold">{editing.id ? 'Editar curso' : 'Nuevo curso'}</h2>
+              <button
+                type="button"
+                onClick={() => setEditing(null)}
+                className="text-muted-foreground hover:text-foreground"
+                aria-label="Cerrar formulario"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-sm font-medium">Título</label>
+                <input
+                  value={editing.title ?? ''}
+                  onChange={(e) => setEditing({ ...editing, title: e.target.value })}
+                  required
+                  className="w-full rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm focus:border-accent focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium">Slug (opcional)</label>
+                <input
+                  value={editing.slug ?? ''}
+                  onChange={(e) => setEditing({ ...editing, slug: e.target.value })}
+                  placeholder="Se genera del título si lo dejas vacío"
+                  className="w-full rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm focus:border-accent focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-sm font-medium">Descripción</label>
+              <textarea
+                value={editing.description ?? ''}
+                onChange={(e) => setEditing({ ...editing, description: e.target.value })}
+                rows={3}
+                className="w-full rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm focus:border-accent focus:outline-none"
+              />
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium">Nivel</label>
+                <select
+                  value={editing.level ?? 'BEGINNER'}
+                  onChange={(e) =>
+                    setEditing({ ...editing, level: e.target.value as ApiCourse['level'] })
+                  }
+                  className="w-full rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm focus:border-accent focus:outline-none"
+                >
+                  {Object.entries(LEVEL_LABELS).map(([k, v]) => (
+                    <option key={k} value={k}>
+                      {v}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium">Estado</label>
+                <select
+                  value={editing.status ?? 'COMING_SOON'}
+                  onChange={(e) =>
+                    setEditing({ ...editing, status: e.target.value as ApiCourse['status'] })
+                  }
+                  className="w-full rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm focus:border-accent focus:outline-none"
+                >
+                  {Object.entries(STATUS_LABELS).map(([k, v]) => (
+                    <option key={k} value={k}>
+                      {v}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium">Duración</label>
+                <input
+                  value={editing.duration ?? ''}
+                  onChange={(e) => setEditing({ ...editing, duration: e.target.value })}
+                  placeholder="8 horas"
+                  className="w-full rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm focus:border-accent focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium">Lecciones</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={editing.lessonsCount ?? 0}
+                  onChange={(e) =>
+                    setEditing({
+                      ...editing,
+                      lessonsCount: Number.parseInt(e.target.value, 10) || 0,
+                    })
+                  }
+                  className="w-full rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm focus:border-accent focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="mb-1 block text-sm font-medium">Portada (URL)</label>
+                <input
+                  value={editing.coverImage ?? ''}
+                  onChange={(e) => setEditing({ ...editing, coverImage: e.target.value })}
+                  className="w-full rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm focus:border-accent focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium">Posición</label>
+                <input
+                  type="number"
+                  value={editing.position ?? 0}
+                  onChange={(e) =>
+                    setEditing({
+                      ...editing,
+                      position: Number.parseInt(e.target.value, 10) || 0,
+                    })
+                  }
+                  className="w-full rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm focus:border-accent focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <Button type="submit" variant="accent" disabled={saving}>
+                <Save className="h-4 w-4" />
+                {saving ? 'Guardando...' : editing.id ? 'Actualizar curso' : 'Crear curso'}
+              </Button>
+              <Button type="button" variant="outline" onClick={() => setEditing(null)}>
+                Cancelar
+              </Button>
+            </div>
+          </form>
+        )}
+
+        {loading ? (
+          <div className="text-sm text-muted-foreground">Cargando...</div>
+        ) : courses.length === 0 ? (
+          <div className="rounded-xl border border-border bg-card/40 p-10 text-center text-muted-foreground">
+            Aún no hay cursos.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {courses.map((course) => (
+              <div key={course.id} className="glass-card flex items-center gap-4 p-4">
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-semibold">{course.title}</span>
+                    <span className="rounded-full bg-accent/10 px-2 py-0.5 text-xs text-accent">
+                      {STATUS_LABELS[course.status]}
+                    </span>
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                      {LEVEL_LABELS[course.level]}
+                    </span>
+                    <span className="rounded-full bg-muted px-2 py-0.5 font-mono text-xs text-muted-foreground">
+                      {course.duration}
+                    </span>
+                  </div>
+                  <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
+                    {course.description}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" onClick={() => setEditing({ ...course })}>
+                    <Pencil className="h-4 w-4" />
+                    Editar
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDelete(course)}
+                    className="text-red-400 hover:text-red-300"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Quitar
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </main>
+    </AdminAuthGuard>
   );
 }

@@ -139,11 +139,13 @@ export class PostsService {
       slug: dto.slug,
       excerpt: dto.excerpt,
       content,
-      coverImage: this.normalizeStoredUrl(dto.coverImage),
+      coverImage: this.normalizeStoredUrl(dto.coverImage) || null,
       videoUrl,
       videoType,
-      externalLinkLabel: dto.externalLinkLabel || null,
-      externalLinkUrl: this.normalizeStoredUrl(dto.externalLinkUrl) ?? null,
+      externalLinkLabel: dto.externalLinkLabel?.trim() ? dto.externalLinkLabel : null,
+      externalLinkUrl: dto.externalLinkUrl?.trim()
+        ? this.normalizeStoredUrl(dto.externalLinkUrl)
+        : null,
       status,
       readingTime,
       authorId,
@@ -178,21 +180,21 @@ export class PostsService {
       ...dto,
       content,
       ...(dto.coverImage !== undefined
-        ? { coverImage: this.normalizeStoredUrl(dto.coverImage) }
+        ? { coverImage: this.normalizeStoredUrl(dto.coverImage) || null }
         : {}),
       ...(dto.videoUrl !== undefined
-        ? { videoUrl: this.normalizeStoredUrl(dto.videoUrl) }
+        ? { videoUrl: this.normalizeStoredUrl(dto.videoUrl) || null }
         : {}),
       ...(dto.videoType !== undefined
         ? { videoType: dto.videoType }
         : dto.videoUrl !== undefined
-          ? { videoType: this.detectVideoType(dto.videoUrl) ?? undefined }
+          ? { videoType: this.detectVideoType(dto.videoUrl) ?? null }
           : {}),
       ...(dto.externalLinkLabel !== undefined
         ? { externalLinkLabel: dto.externalLinkLabel || null }
         : {}),
       ...(dto.externalLinkUrl !== undefined
-        ? { externalLinkUrl: this.normalizeStoredUrl(dto.externalLinkUrl) ?? null }
+        ? { externalLinkUrl: this.normalizeStoredUrl(dto.externalLinkUrl) || null }
         : {}),
       readingTime,
       publishedAt: dto.publishedAt ? new Date(dto.publishedAt) : undefined,

@@ -27,7 +27,27 @@ enum VideoType {
   TIKTOK
   TWITTER
   VIMEO
+  ODYSEE
   GENERIC
+}
+
+enum CourseStatus {
+  COMING_SOON
+  AVAILABLE
+  IN_PROGRESS
+  ARCHIVED
+}
+
+enum CourseDifficulty {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum LabStatus {
+  ONLINE
+  OFFLINE
+  MAINTENANCE
 }
 
 model User {
@@ -154,6 +174,59 @@ model Project {
   updatedAt       DateTime      @updatedAt @map("updated_at")
 
   @@map("projects")
+}
+
+model Video {
+  id          String    @id @default(cuid())
+  title       String
+  url         String
+  videoType   VideoType @default(YOUTUBE)
+  thumbnail   String?
+  description String?
+  publishedAt DateTime  @default(now()) @map("published_at")
+  isShort     Boolean   @default(false) @map("is_short")
+  featured    Boolean   @default(false)
+  position    Int       @default(0)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@index([featured, position])
+  @@map("videos")
+}
+
+model Course {
+  id           String           @id @default(cuid())
+  title        String
+  slug         String           @unique
+  description  String
+  level        CourseDifficulty @default(BEGINNER)
+  duration     String
+  lessonsCount Int              @default(0) @map("lessons_count")
+  status       CourseStatus @default(COMING_SOON)
+  coverImage   String?          @map("cover_image")
+  position     Int              @default(0)
+  createdAt    DateTime         @default(now()) @map("created_at")
+  updatedAt    DateTime         @updatedAt @map("updated_at")
+
+  @@index([status, position])
+  @@map("courses")
+}
+
+model LabService {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  description String
+  stack       String[]
+  icon        String?
+  status      LabStatus @default(ONLINE)
+  url         String?
+  position    Int       @default(0)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@index([status, position])
+  @@map("lab_services")
 }
 
 model Media {

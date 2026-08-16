@@ -10,18 +10,20 @@ import {
   FolderOpen,
   GraduationCap,
   FlaskConical,
+  Video,
 } from 'lucide-react';
 import { Logo } from '@/components/brand/logo';
 import { clearToken } from '@/lib/api/client';
 import { cn } from '@/lib/utils';
 
-const navItems = [
+const navItems: { label: string; href: string; icon: typeof LayoutDashboard; disabled?: boolean }[] = [
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { label: 'Artículos', href: '/admin/posts', icon: FileText },
+  { label: 'Videos', href: '/admin/videos', icon: Video },
   { label: 'Proyectos', href: '/admin/projects', icon: FolderOpen },
   { label: 'Cursos', href: '/admin/courses', icon: GraduationCap },
-  { label: 'Lab', href: '/admin/lab', icon: FlaskConical, disabled: true },
-  { label: 'Configuración', href: '/admin/settings', icon: Settings, disabled: true },
+  { label: 'Lab', href: '/admin/lab', icon: FlaskConical },
+  { label: 'Configuración', href: '/admin/settings', icon: Settings },
 ];
 
 export function AdminSidebar() {

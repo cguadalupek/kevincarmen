@@ -1,24 +1,35 @@
 import Link from 'next/link';
 import { ArrowUpRight, Play, Youtube, Smartphone } from 'lucide-react';
 import { formatDate } from '@kevincarmen/utils';
-import { getLatestVideos, type PublicPost } from '@/lib/api/posts';
+import { getLatestVideos, type PublicVideo, type PublicVideoType } from '@/lib/api/posts';
 import { FadeIn, StaggerContainer, StaggerItem } from '@/components/motion/fade-in';
 
-type LayoutVideo = PublicPost & { embedUrl: string; thumbnailUrl: string | null; providerLabel: string; isShort: boolean };
+type Provider = 'youtube' | 'tiktok' | 'twitter' | 'vimeo' | 'odysee' | 'generic';
+type LayoutVideo = PublicVideo & { embedUrl: string; thumbnailUrl: string | null; providerLabel: string; isShort: boolean };
 
-function toEmbed(url: string): { embed: string; provider: 'youtube' | 'tiktok' | 'twitter' | 'vimeo' | 'generic' } {
+function youtubeId(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+    if (!/youtube\.com|youtu\.be/.test(parsed.hostname)) return null;
+    if (parsed.hostname === 'youtu.be') return parsed.pathname.slice(1);
+    return parsed.searchParams.get('v') ?? parsed.pathname.split('/').filter(Boolean).pop() ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function toEmbed(url: string): { embed: string; provider: Provider } {
   try {
     const parsed = new URL(url);
     const hostname = parsed.hostname;
     if (/youtube\.com|youtu\.be/.test(hostname)) {
-      let id = '';
-      if (hostname === 'youtu.be') id = parsed.pathname.slice(1);
-      else id = parsed.searchParams.get('v') ?? parsed.pathname.split('/').filter(Boolean).pop() ?? '';
+      const id = youtubeId(url);
       return { embed: id ? `https://www.youtube.com/embed/${id}` : url, provider: 'youtube' };
     }
     if (/tiktok\.com/.test(hostname)) return { embed: url, provider: 'tiktok' };
     if (/twitter\.com|x\.com/.test(hostname)) return { embed: url, provider: 'twitter' };
     if (/vimeo\.com/.test(hostname)) return { embed: url, provider: 'vimeo' };
+    if (/odysee\.com/.test(hostname)) return { embed: url, provider: 'odysee' };
   } catch {
     // ignore
   }
@@ -26,32 +37,31 @@ function toEmbed(url: string): { embed: string; provider: 'youtube' | 'tiktok' |
 }
 
 function youtubeThumbnail(url: string): string | null {
-  try {
-    const parsed = new URL(url);
-    if (!/youtube\.com|youtu\.be/.test(parsed.hostname)) return null;
-    let id = '';
-    if (parsed.hostname === 'youtu.be') id = parsed.pathname.slice(1);
-    else id = parsed.searchParams.get('v') ?? parsed.pathname.split('/').filter(Boolean).pop() ?? '';
-    return id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : null;
-  } catch {
-    return null;
-  }
+  const id = youtubeId(url);
+  return id ? `https://i.ytimg.com/vi/${id}/hqdefault.jpg` : null;
 }
 
-function buildVideo(post: PublicPost): LayoutVideo | null {
-  if (!post.videoUrl) return null;
-  const { embed, provider } = toEmbed(post.videoUrl);
+function buildVideo(video: PublicVideo): LayoutVideo {
+  const { embed, provider } = toEmbed(video.url);
+  const isShort = video.isShort || video.videoType === 'YOUTUBE_SHORT';
   return {
-    ...post,
+    ...video,
     embedUrl: embed,
-    thumbnailUrl: youtubeThumbnail(post.videoUrl),
-    providerLabel: post.videoType === 'YOUTUBE_SHORT' ? 'Short' : provider.toUpperCase(),
-    isShort: post.videoType === 'YOUTUBE_SHORT',
+    thumbnailUrl: video.thumbnail ?? youtubeThumbnail(video.url),
+    providerLabel:
+      video.videoType === 'YOUTUBE_SHORT'
+        ? 'Short'
+        : video.videoType === 'ODYSEE'
+          ? 'Odysee'
+          : (provider.charAt(0).toUpperCase() + provider.slice(1)) as string,
+    isShort,
   };
 }
 
 export async function VideosSection() {
-  const videos = (await getLatestVideos(12)).map(buildVideo).filter((v): v is LayoutVideo => Boolean(v));
+  const videos = (await getLatestVideos(24))
+    .map(buildVideo)
+    .filter((v): v is LayoutVideo => Boolean(v));
   const shorts = videos.filter((video) => video.isShort).slice(0, 6);
   const feature = videos.find((video) => !video.isShort) ?? videos[0];
 
@@ -70,7 +80,7 @@ export async function VideosSection() {
             <article className="glass-card overflow-hidden">
               <div className="grid gap-0 lg:grid-cols-[1.4fr_1fr]">
                 <a
-                  href={feature.videoUrl ?? '#'}
+                  href={feature.url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="group relative flex aspect-video items-center justify-center overflow-hidden bg-muted lg:aspect-auto lg:min-h-[320px]"
@@ -99,24 +109,22 @@ export async function VideosSection() {
                     Destacado
                   </span>
                   <h3 className="text-2xl font-semibold leading-tight">{feature.title}</h3>
-                  {feature.publishedAt && (
-                    <time
-                      className="text-xs uppercase tracking-wider text-muted-foreground"
-                      dateTime={feature.publishedAt}
-                    >
-                      {formatDate(feature.publishedAt)}
-                    </time>
-                  )}
-                  {feature.excerpt && (
-                    <p className="text-sm text-muted-foreground">{feature.excerpt}</p>
+                  <time
+                    className="text-xs uppercase tracking-wider text-muted-foreground"
+                    dateTime={feature.publishedAt}
+                  >
+                    {formatDate(feature.publishedAt)}
+                  </time>
+                  {feature.description && (
+                    <p className="text-sm text-muted-foreground">{feature.description}</p>
                   )}
                   <a
-                    href={feature.videoUrl ?? '#'}
+                    href={feature.url}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex w-fit items-center gap-1 rounded-md bg-accent px-4 py-2 text-sm font-medium text-accent-foreground hover:bg-accent/90"
                   >
-                    Ver video en YouTube
+                    Ver video
                     <ArrowUpRight className="h-4 w-4" />
                   </a>
                 </div>
@@ -132,7 +140,7 @@ export async function VideosSection() {
               {shorts.map((video) => (
                 <StaggerItem key={video.id}>
                   <a
-                    href={video.videoUrl ?? '#'}
+                    href={video.url}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="group block"
@@ -161,14 +169,12 @@ export async function VideosSection() {
                         <h4 className="line-clamp-2 text-sm font-medium transition-colors group-hover:text-accent">
                           {video.title}
                         </h4>
-                        {video.publishedAt && (
-                          <time
-                            dateTime={video.publishedAt}
-                            className="mt-1 block text-[11px] text-muted-foreground"
-                          >
-                            {formatDate(video.publishedAt)}
-                          </time>
-                        )}
+                        <time
+                          dateTime={video.publishedAt}
+                          className="mt-1 block text-[11px] text-muted-foreground"
+                        >
+                          {formatDate(video.publishedAt)}
+                        </time>
                       </div>
                     </article>
                   </a>

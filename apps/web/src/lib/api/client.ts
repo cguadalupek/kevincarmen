@@ -34,7 +34,14 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
   return res.json();
 }
 
-export type VideoTypeValue = 'YOUTUBE' | 'YOUTUBE_SHORT' | 'TIKTOK' | 'TWITTER' | 'VIMEO' | 'GENERIC';
+export type VideoTypeValue =
+  | 'YOUTUBE'
+  | 'YOUTUBE_SHORT'
+  | 'TIKTOK'
+  | 'TWITTER'
+  | 'VIMEO'
+  | 'ODYSEE'
+  | 'GENERIC';
 
 export interface AuthUser {
   id: string;
@@ -70,6 +77,50 @@ export interface ApiCategory {
   description?: string | null;
 }
 
+export interface ApiVideo {
+  id: string;
+  title: string;
+  url: string;
+  videoType: VideoTypeValue;
+  thumbnail: string | null;
+  description: string | null;
+  publishedAt: string;
+  isShort: boolean;
+  featured: boolean;
+  position: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ApiCourse {
+  id: string;
+  title: string;
+  slug: string;
+  description: string;
+  level: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
+  duration: string;
+  lessonsCount: number;
+  status: 'COMING_SOON' | 'AVAILABLE' | 'IN_PROGRESS' | 'ARCHIVED';
+  coverImage: string | null;
+  position: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ApiLabService {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  stack: string[];
+  icon: string | null;
+  status: 'ONLINE' | 'OFFLINE' | 'MAINTENANCE';
+  url: string | null;
+  position: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const api = {
   login: (email: string, password: string) =>
     apiFetch<{ accessToken: string; user: AuthUser }>('/auth/login', {
@@ -93,7 +144,38 @@ export const api = {
   getCategories: () => apiFetch<ApiCategory[]>('/posts/categories').catch(() => []),
 
   getLatestVideos: () =>
-    apiFetch<ApiPost[]>('/posts/videos').catch(() => []),
+    apiFetch<ApiVideo[]>('/videos').catch(() => []),
+
+  getVideos: () => apiFetch<ApiVideo[]>('/videos/admin/all'),
+  createVideo: (data: Partial<ApiVideo>) =>
+    apiFetch<ApiVideo>('/videos', { method: 'POST', body: JSON.stringify(data) }),
+  updateVideo: (id: string, data: Partial<ApiVideo>) =>
+    apiFetch<ApiVideo>(`/videos/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteVideo: (id: string) =>
+    apiFetch<{ success: boolean }>(`/videos/${id}`, { method: 'DELETE' }),
+
+  getCourses: () => apiFetch<ApiCourse[]>('/courses/admin/all'),
+  createCourse: (data: Partial<ApiCourse>) =>
+    apiFetch<ApiCourse>('/courses', { method: 'POST', body: JSON.stringify(data) }),
+  updateCourse: (id: string, data: Partial<ApiCourse>) =>
+    apiFetch<ApiCourse>(`/courses/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteCourse: (id: string) =>
+    apiFetch<{ success: boolean }>(`/courses/${id}`, { method: 'DELETE' }),
+
+  getLabServices: () => apiFetch<ApiLabService[]>('/lab/admin/all'),
+  createLabService: (data: Partial<ApiLabService>) =>
+    apiFetch<ApiLabService>('/lab', { method: 'POST', body: JSON.stringify(data) }),
+  updateLabService: (id: string, data: Partial<ApiLabService>) =>
+    apiFetch<ApiLabService>(`/lab/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteLabService: (id: string) =>
+    apiFetch<{ success: boolean }>(`/lab/${id}`, { method: 'DELETE' }),
+
+  getSettings: () => apiFetch<Record<string, string>>('/settings'),
+  saveSettings: (settings: Record<string, string>) =>
+    apiFetch<Record<string, string>>('/settings', {
+      method: 'PUT',
+      body: JSON.stringify({ settings }),
+    }),
 
   revalidateSite: async (slug?: string) => {
     const res = await fetch('/api/revalidate', {

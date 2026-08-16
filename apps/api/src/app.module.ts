@@ -7,6 +7,10 @@ import { PrismaModule } from './prisma/prisma.module';
 import { PostsModule } from './posts/posts.module';
 import { HealthModule } from './health/health.module';
 import { MediaModule } from './media/media.module';
+import { VideosModule } from './videos/videos.module';
+import { CoursesModule } from './courses/courses.module';
+import { LabModule } from './lab/lab.module';
+import { SettingsModule } from './settings/settings.module';
 
 @Module({
   imports: [
@@ -21,6 +25,10 @@ import { MediaModule } from './media/media.module';
     PostsModule,
     HealthModule,
     MediaModule,
+    VideosModule,
+    CoursesModule,
+    LabModule,
+    SettingsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

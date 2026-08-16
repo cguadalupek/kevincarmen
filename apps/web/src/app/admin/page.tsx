@@ -1,10 +1,57 @@
 'use client';
 
 import Link from 'next/link';
-import { FileText, Plus } from 'lucide-react';
+import {
+  FileText,
+  FolderOpen,
+  GraduationCap,
+  FlaskConical,
+  Plus,
+  Settings,
+  Video,
+} from 'lucide-react';
 import { AdminAuthGuard } from '@/components/admin/auth-guard';
 import { AdminSidebar } from '@/components/admin/sidebar';
 import { Button } from '@/components/ui/button';
+
+const sections = [
+  {
+    href: '/admin/posts',
+    icon: FileText,
+    title: 'Artículos',
+    description: 'Crear, editar y publicar entradas del blog',
+  },
+  {
+    href: '/admin/videos',
+    icon: Video,
+    title: 'Videos del inicio',
+    description: 'Enlaces de video que aparecen en la sección "Últimos videos"',
+  },
+  {
+    href: '/admin/projects',
+    icon: FolderOpen,
+    title: 'Proyectos',
+    description: 'Gestionar proyectos del portfolio',
+  },
+  {
+    href: '/admin/courses',
+    icon: GraduationCap,
+    title: 'Cursos',
+    description: 'Cursos publicados en la sección Cursos',
+  },
+  {
+    href: '/admin/lab',
+    icon: FlaskConical,
+    title: 'Homelab',
+    description: 'Servicios self-hosted del lab',
+  },
+  {
+    href: '/admin/settings',
+    icon: Settings,
+    title: 'Configuración',
+    description: 'Título, contacto y redes sociales',
+  },
+];
 
 export default function AdminDashboardPage() {
   return (
@@ -17,13 +64,20 @@ export default function AdminDashboardPage() {
         </div>
 
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          <Link href="/admin/posts" className="glass-card block p-6 hover-lift">
-            <FileText className="h-8 w-8 text-accent" />
-            <h2 className="mt-4 font-semibold">Artículos</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Crear, editar y publicar entradas del blog
-            </p>
-          </Link>
+          {sections.map((section) => {
+            const Icon = section.icon;
+            return (
+              <Link
+                key={section.href}
+                href={section.href}
+                className="glass-card block p-6 hover-lift"
+              >
+                <Icon className="h-8 w-8 text-accent" />
+                <h2 className="mt-4 font-semibold">{section.title}</h2>
+                <p className="mt-2 text-sm text-muted-foreground">{section.description}</p>
+              </Link>
+            );
+          })}
         </div>
 
         <div className="mt-8">
