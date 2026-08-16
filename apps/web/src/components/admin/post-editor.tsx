@@ -86,7 +86,7 @@ export function PostEditor({ content, onChange }: PostEditorProps) {
       },
       handleTextInput: (view, from, _to, text) => {
         const currentEditor = editorRef.current;
-        if (text !== ' ' || !currentEditor?.isActive('code')) return false;
+        if (text !== ' ' || !currentEditor || !isInlineCodeActive(currentEditor)) return false;
         const previousCharacter = view.state.doc.textBetween(Math.max(0, from - 1), from);
         if (previousCharacter !== ' ') return false;
 
@@ -96,9 +96,19 @@ export function PostEditor({ content, onChange }: PostEditorProps) {
       },
       handleKeyDown: (_view, event) => {
         const currentEditor = editorRef.current;
+        if (event.key === ' ' && currentEditor && isInlineCodeActive(currentEditor)) {
+          const { $from } = currentEditor.state.selection;
+          const previousCharacter = currentEditor.state.doc.textBetween($from.pos - 1, $from.pos);
+          if (previousCharacter === ' ') {
+            currentEditor.commands.unsetCode();
+            return false;
+          }
+        }
+
         if (
           event.key === 'ArrowRight' &&
-          currentEditor?.isActive('code') &&
+          currentEditor &&
+          isInlineCodeActive(currentEditor) &&
           currentEditor.state.selection.empty &&
           currentEditor.state.selection.$from.parentOffset ===
             currentEditor.state.selection.$from.parent.content.size
@@ -211,4 +221,10 @@ export function PostEditor({ content, onChange }: PostEditorProps) {
       )}
     </div>
   );
+}
+
+function isInlineCodeActive(editor: Editor) {
+  const codeMark = editor.schema.marks.code;
+  if (!codeMark) return false;
+  return editor.state.selection.$from.marks().some((mark) => mark.type === codeMark);
 }

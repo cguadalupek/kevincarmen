@@ -13,12 +13,16 @@ interface LightboxImageProps {
 
 export function LightboxImage({ src, alt, width, height }: LightboxImageProps) {
   const [open, setOpen] = useState(false);
+  const [zoomed, setZoomed] = useState(false);
 
   useEffect(() => {
     if (!open) return;
 
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false);
+      if (event.key === 'Escape') {
+        setOpen(false);
+        setZoomed(false);
+      }
     };
     document.addEventListener('keydown', handleKeyDown);
     document.body.style.overflow = 'hidden';
@@ -54,12 +58,18 @@ export function LightboxImage({ src, alt, width, height }: LightboxImageProps) {
           role="dialog"
           aria-modal="true"
           aria-label={alt}
-          onClick={() => setOpen(false)}
+          onClick={() => {
+            setOpen(false);
+            setZoomed(false);
+          }}
         >
           <button
             type="button"
             className="absolute right-4 top-4 flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20"
-            onClick={() => setOpen(false)}
+            onClick={() => {
+              setOpen(false);
+              setZoomed(false);
+            }}
             aria-label="Cerrar imagen ampliada"
           >
             <X className="h-6 w-6" />
@@ -73,7 +83,8 @@ export function LightboxImage({ src, alt, width, height }: LightboxImageProps) {
               alt={alt}
               width={Math.max(width, 1200)}
               height={Math.max(height, 800)}
-              className="max-h-[90vh] w-auto max-w-[95vw] rounded-lg object-contain"
+              className={`max-h-[90vh] w-auto max-w-[95vw] rounded-lg object-contain transition-transform duration-300 ${zoomed ? 'scale-150 cursor-zoom-out' : 'cursor-zoom-in'}`}
+              onDoubleClick={() => setZoomed((value) => !value)}
               unoptimized
             />
           </div>
