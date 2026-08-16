@@ -1,9 +1,8 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { Clock } from 'lucide-react';
-import { formatDate } from '@kevincarmen/utils';
 import { getPublishedPosts } from '@/lib/api/posts';
 import { FadeIn } from '@/components/motion/fade-in';
+import { BlogPostList } from '@/components/blog/blog-post-list';
 
 export const metadata: Metadata = {
   title: 'Blog',
@@ -39,47 +38,7 @@ export default async function BlogPage() {
               </p>
             </div>
           </FadeIn>
-        ) : (
-          <div className="mt-12 space-y-6">
-            {posts.map((post) => (
-              <FadeIn key={post.id}>
-                <Link href={`/blog/${post.slug}`} className="group block">
-                  <article className="glass-card p-6 hover-lift">
-                    <div className="mb-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                      {post.publishedAt && (
-                        <time dateTime={post.publishedAt}>{formatDate(post.publishedAt)}</time>
-                      )}
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {post.readingTime} min lectura
-                      </span>
-                      {post.category && (
-                        <span className="rounded-full bg-primary/20 px-2 py-0.5 text-accent">
-                          {post.category.name}
-                        </span>
-                      )}
-                    </div>
-                    <h2 className="text-xl font-semibold transition-colors group-hover:text-accent">
-                      {post.title}
-                    </h2>
-                    {post.excerpt && (
-                      <p className="mt-2 text-muted-foreground">{post.excerpt}</p>
-                    )}
-                    {post.tags.length > 0 && (
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {post.tags.map(({ tag }) => (
-                          <span key={tag.id} className="font-mono text-xs text-muted-foreground">
-                            #{tag.slug}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </article>
-                </Link>
-              </FadeIn>
-            ))}
-          </div>
-        )}
+        ) : <BlogPostList posts={posts} />}
       </div>
     </div>
   );

@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookOpen, FileText, FolderKanban, GraduationCap, Menu, X } from 'lucide-react';
+import { BookOpen, FileText, FolderKanban, GraduationCap, Home, Menu, UserRound, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { contentNav, siteConfig } from '@kevincarmen/config';
 import { Logo } from '@/components/brand/logo';
@@ -17,6 +17,10 @@ export function Header() {
     '/proyectos': FolderKanban,
     '/cursos': GraduationCap,
     '/recursos': FileText,
+  } as const;
+  const mainIcons = {
+    '/': Home,
+    '/sobre-mi': UserRound,
   } as const;
 
   return (
@@ -63,7 +67,7 @@ export function Header() {
 
         <button
           type="button"
-          className="rounded-md p-2 text-muted-foreground hover:text-foreground lg:hidden"
+          className="flex h-11 w-11 items-center justify-center rounded-md text-muted-foreground hover:text-foreground lg:hidden"
           onClick={() => setMobileOpen(!mobileOpen)}
           aria-label={mobileOpen ? 'Cerrar menú' : 'Abrir menú'}
           aria-expanded={mobileOpen}
@@ -87,24 +91,28 @@ export function Header() {
                     href={item.href}
                     onClick={() => setMobileOpen(false)}
                     className={cn(
-                      'block rounded-md px-3 py-2.5 text-sm font-medium transition-colors',
+                      'flex min-h-11 items-center gap-2 rounded-md px-3 py-3 text-sm font-medium transition-colors',
                       item.href === '/contacto'
-                        ? 'bg-accent text-accent-foreground hover:bg-accent/90'
+                        ? 'justify-center rounded-xl bg-accent text-accent-foreground hover:bg-accent/90'
                         : pathname === item.href
                           ? 'bg-muted text-accent'
                           : 'text-muted-foreground hover:bg-muted/50',
                     )}
                   >
+                    {(() => {
+                      const Icon = mainIcons[item.href as keyof typeof mainIcons];
+                      return Icon ? <Icon className="h-4 w-4" /> : null;
+                    })()}
                     {item.label}
                   </Link>
                   {item.href === '/contenido' && (
-                    <div className="ml-3 border-l border-border pl-3">
+                    <div className="ml-3 pl-2">
                       {contentNav.map((child) => (
                         <Link
                           key={child.href}
                           href={child.href}
                           onClick={() => setMobileOpen(false)}
-                           className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted/50 hover:text-accent"
+                           className="flex min-h-11 items-center gap-2 rounded-md px-3 py-3 text-sm text-muted-foreground hover:bg-muted/50 hover:text-accent"
                          >
                            {(() => {
                              const Icon = contentIcons[child.href as keyof typeof contentIcons];

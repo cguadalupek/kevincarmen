@@ -1,7 +1,7 @@
 'use client';
 
 import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
-import { Code2, ImageIcon } from 'lucide-react';
+import { Code2, ImageIcon, TerminalSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface SlashCommandItem {
@@ -23,6 +23,14 @@ export const slashCommandItems: SlashCommandItem[] = [
         .deleteRange(range)
         .setCodeBlock({ language: 'powershell' })
         .run();
+    },
+  },
+  {
+    title: 'Código en línea',
+    description: 'Aplicar formato `inline code` al texto seleccionado',
+    icon: <TerminalSquare className="h-4 w-4" />,
+    command: ({ editor, range }) => {
+      editor.chain().focus().deleteRange(range).toggleCode().run();
     },
   },
   {

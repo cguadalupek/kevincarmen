@@ -11,16 +11,23 @@ import {
 function filterItems(query: string): SlashCommandItem[] {
   const q = query.toLowerCase();
   return slashCommandItems.filter(
-    (item) =>
+      (item) =>
       item.title.toLowerCase().includes(q) ||
       item.description.toLowerCase().includes(q) ||
-      (q.startsWith('cod') && item.title === 'Código') ||
+        (q.startsWith('cod') && item.title.startsWith('Código')) ||
+        (q.startsWith('inline') && item.title === 'Código en línea') ||
       (q.startsWith('img') && item.title === 'Imagen'),
   );
 }
 
 export const SlashCommand = Extension.create({
   name: 'slashCommand',
+
+  addKeyboardShortcuts() {
+    return {
+      'Mod-e': () => this.editor.commands.toggleCode(),
+    };
+  },
 
   addOptions() {
     return {

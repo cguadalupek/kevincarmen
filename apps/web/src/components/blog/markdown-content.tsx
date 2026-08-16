@@ -1,8 +1,8 @@
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
-import Image from 'next/image';
 import { CodeBlock } from '@/components/blog/code-block';
+import { LightboxImage } from '@/components/blog/lightbox-image';
 
 interface MarkdownContentProps {
   content: string;
@@ -24,17 +24,11 @@ export function MarkdownContent({ content, title }: MarkdownContentProps) {
           const height = typeof props.height === 'number' ? props.height : 450;
           return (
             <span className="my-6 block">
-              <Image
+              <LightboxImage
                 src={src}
                 alt={alt ?? 'Imagen del artículo'}
                 width={width}
                 height={height}
-                className="h-auto max-w-full rounded-lg border border-border"
-                style={{
-                  width: props.width ? `${props.width}px` : '100%',
-                  maxWidth: '100%',
-                }}
-                unoptimized
               />
               {alt && alt !== 'Imagen del artículo' && (
                 <span className="mt-2 block text-center text-sm text-muted-foreground">{alt}</span>
