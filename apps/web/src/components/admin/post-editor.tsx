@@ -262,7 +262,10 @@ export function PostEditor({ content, onChange }: PostEditorProps) {
 
 function insertVideo(url?: string) {
     if (!editor || !url) return;
-    editor.chain().focus().insertContent(`\n<video src="${url}" controls></video>\n`).run();
+    const safeUrl = youtubeEmbed(url) ?? url;
+    const title = prompt('Título del video (opcional):', 'Video embebido') ?? 'Video embebido';
+    const html = `\n<iframe src="${safeUrl}" title="${title}" width="800" height="450" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>\n`;
+    editor.chain().focus().insertContent(html).run();
     setPastePrompt(null);
   }
 

@@ -5,11 +5,15 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   BookOpen,
+  ChevronsDownUp,
+  ChevronsUpDown,
   FileText,
   FolderKanban,
   GraduationCap,
   Home,
+  Layers,
   Menu,
+  Server,
   UserRound,
   X,
 } from 'lucide-react';
@@ -20,16 +24,19 @@ import { cn } from '@/lib/utils';
 
 export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [contentExpanded, setContentExpanded] = useState(false);
   const pathname = usePathname();
   const contentIcons = {
     '/blog': BookOpen,
     '/proyectos': FolderKanban,
     '/cursos': GraduationCap,
     '/recursos': FileText,
+    '/lab': Server,
   } as const;
   const mainIcons = {
     '/': Home,
     '/sobre-mi': UserRound,
+    '/contenido': Layers,
   } as const;
 
   return (
@@ -97,9 +104,66 @@ export function Header() {
             className="border-t border-border lg:hidden"
           >
             <nav className="section-container flex flex-col gap-1 py-4" aria-label="Menú móvil">
-              {siteConfig.nav.map((item) => (
-                <div key={item.href}>
+              {siteConfig.nav.map((item) => {
+                if (item.href === '/contenido') {
+                  const Icon = mainIcons['/contenido'];
+                  return (
+                    <div key={item.href}>
+                      <button
+                        type="button"
+                        onClick={() => setContentExpanded((value) => !value)}
+                        aria-expanded={contentExpanded}
+                        className={cn(
+                          'flex w-full min-h-11 items-center gap-2 rounded-md px-3 py-3 text-left text-sm font-medium transition-colors',
+                          pathname === item.href || pathname.startsWith('/blog')
+                            ? 'bg-muted text-accent'
+                            : 'text-muted-foreground hover:bg-muted/50',
+                        )}
+                      >
+                        {Icon ? <Icon className="h-4 w-4" /> : null}
+                        <span className="flex-1">{item.label}</span>
+                        {contentExpanded ? (
+                          <ChevronsUpDown className="h-4 w-4 text-muted-foreground" />
+                        ) : (
+                          <ChevronsDownUp className="h-4 w-4 text-muted-foreground" />
+                        )}
+                      </button>
+                      <AnimatePresence initial={false}>
+                        {contentExpanded && (
+                          <motion.div
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: 'auto' }}
+                            exit={{ opacity: 0, height: 0 }}
+                            className="overflow-hidden pl-3"
+                          >
+                            <div className="flex flex-col gap-1 border-l border-border pl-3">
+                              {contentNav.map((child) => (
+                                <Link
+                                  key={child.href}
+                                  href={child.href}
+                                  onClick={() => setMobileOpen(false)}
+                                  className="flex min-h-11 items-center gap-2 rounded-md px-3 py-3 text-sm text-muted-foreground hover:bg-muted/50 hover:text-accent"
+                                >
+                                  {(() => {
+                                    const Icon =
+                                      contentIcons[child.href as keyof typeof contentIcons];
+                                    return Icon ? <Icon className="h-4 w-4" /> : null;
+                                  })()}
+                                  {child.label}
+                                </Link>
+                              ))}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  );
+                }
+
+                const Icon = mainIcons[item.href as keyof typeof mainIcons];
+                return (
                   <Link
+                    key={item.href}
                     href={item.href}
                     onClick={() => setMobileOpen(false)}
                     className={cn(
@@ -111,32 +175,11 @@ export function Header() {
                           : 'text-muted-foreground hover:bg-muted/50',
                     )}
                   >
-                    {(() => {
-                      const Icon = mainIcons[item.href as keyof typeof mainIcons];
-                      return Icon ? <Icon className="h-4 w-4" /> : null;
-                    })()}
+                    {Icon ? <Icon className="h-4 w-4" /> : null}
                     {item.label}
                   </Link>
-                  {item.href === '/contenido' && (
-                    <div className="ml-3 pl-2">
-                      {contentNav.map((child) => (
-                        <Link
-                          key={child.href}
-                          href={child.href}
-                          onClick={() => setMobileOpen(false)}
-                          className="flex min-h-11 items-center gap-2 rounded-md px-3 py-3 text-sm text-muted-foreground hover:bg-muted/50 hover:text-accent"
-                        >
-                          {(() => {
-                            const Icon = contentIcons[child.href as keyof typeof contentIcons];
-                            return Icon ? <Icon className="h-4 w-4" /> : null;
-                          })()}
-                          {child.label}
-                        </Link>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </nav>
           </motion.div>
         )}

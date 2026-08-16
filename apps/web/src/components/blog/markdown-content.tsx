@@ -1,9 +1,11 @@
 import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
+import remarkGfm from 'remark-gfm';
+import Link from 'next/link';
+import type { ComponentProps } from 'react';
 import { CodeBlock } from '@/components/blog/code-block';
 import { LightboxImage } from '@/components/blog/lightbox-image';
-import type { ComponentProps } from 'react';
+import { VideoEmbed } from '@/components/blog/video-embed';
 
 interface MarkdownContentProps {
   content: string;
@@ -12,6 +14,7 @@ interface MarkdownContentProps {
 
 export function MarkdownContent({ content, title }: MarkdownContentProps) {
   const visibleContent = removeRepeatedTitle(content, title);
+  const normalizedContent = normalizeEmbeds(visibleContent);
 
   return (
     <ReactMarkdown
@@ -56,11 +59,69 @@ export function MarkdownContent({ content, title }: MarkdownContentProps) {
 
           return <CodeBlock code={codeString} language={match?.[1] ?? 'plaintext'} />;
         },
+        a: ({ href, children, ...props }) => (
+          <a href={href} target="_blank" rel="noopener noreferrer" {...props}>
+            {children}
+          </a>
+        ),
+        iframe: ({ src, ...props }) => {
+          if (!src || typeof src !== 'string') return null;
+          return (
+            <VideoEmbed
+              src={src}
+              title={(props.title as string | undefined) ?? 'Video embebido'}
+              width={typeof props.width === 'string' ? props.width : undefined}
+              height={typeof props.height === 'string' ? props.height : undefined}
+            />
+          );
+        },
+        video: ({ src, ...props }) => {
+          if (!src || typeof src !== 'string') return null;
+          return (
+            <VideoEmbed
+              src={src}
+              title={(props.title as string | undefined) ?? 'Video embebido'}
+              width={typeof props.width === 'string' ? props.width : undefined}
+              height={typeof props.height === 'string' ? props.height : undefined}
+            />
+          );
+        },
       }}
     >
-      {visibleContent}
+      {normalizedContent}
     </ReactMarkdown>
   );
+}
+
+function normalizeEmbeds(content: string) {
+  return content.replace(
+    /<video[^>]*src=["']([^"']+)["'][^>]*>\s*<\/video>|<iframe[^>]*src=["']([^"']+)["'][^>]*>\s*<\/iframe>/g,
+    (match, src: string) => {
+      const embedUrl = youtubeEmbed(src) ?? src;
+      const title = extractAttr(match, 'title') ?? 'Video embebido';
+      const width = extractAttr(match, 'width') ?? '800';
+      const height = extractAttr(match, 'height') ?? '450';
+      return `<div data-embed="${encodeURIComponent(embedUrl)}" data-title="${encodeURIComponent(title)}" data-width="${width}" data-height="${height}"></div>`;
+    },
+  );
+}
+
+function extractAttr(tag: string, name: string) {
+  const regex = new RegExp(`${name}=["']([^"']+)["']`, 'i');
+  return tag.match(regex)?.[1];
+}
+
+function youtubeEmbed(url: string) {
+  try {
+    const u = new URL(url);
+    let id = '';
+    if (u.hostname === 'youtu.be') id = u.pathname.slice(1);
+    if (u.hostname.includes('youtube.com')) id = u.searchParams.get('v') ?? u.pathname.split('/').pop() ?? '';
+    if (u.hostname.includes('youtube-nocookie')) id = u.pathname.split('/').pop() ?? '';
+    return id ? `https://www.youtube.com/embed/${id}` : null;
+  } catch {
+    return null;
+  }
 }
 
 function removeRepeatedTitle(content: string, title?: string) {

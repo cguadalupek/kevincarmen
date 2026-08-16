@@ -36,6 +36,7 @@ export const contentNav = [
   { label: 'Proyectos', href: '/proyectos' },
   { label: 'Cursos', href: '/cursos' },
   { label: 'Recursos', href: '/recursos' },
+  { label: 'Lab', href: '/lab' },
 ] as const;
 
 export const techStack = [
