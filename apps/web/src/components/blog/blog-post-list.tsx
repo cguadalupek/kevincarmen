@@ -1,9 +1,9 @@
 'use client';
 
+import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
-import { Clock, Search } from 'lucide-react';
+import { Clock, Search, X } from 'lucide-react';
 import { formatDate } from '@kevincarmen/utils';
 import type { PublicPost } from '@/lib/api/posts';
 import { FadeIn } from '@/components/motion/fade-in';
@@ -12,7 +12,7 @@ export function BlogPostList({ posts }: { posts: PublicPost[] }) {
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
   useEffect(() => {
-    const timeout = window.setTimeout(() => setDebouncedQuery(query), 250);
+    const timeout = window.setTimeout(() => setDebouncedQuery(query), 200);
     return () => window.clearTimeout(timeout);
   }, [query]);
 
@@ -20,11 +20,14 @@ export function BlogPostList({ posts }: { posts: PublicPost[] }) {
     const normalizedQuery = normalizeSearch(debouncedQuery);
     if (!normalizedQuery) return posts;
 
-    return posts.filter((post) => {
-      const tags = post.tags.map(({ tag }) => `${tag.name} ${tag.slug}`).join(' ');
-      return normalizeSearch(`${post.title} ${post.excerpt ?? ''} ${tags}`).includes(normalizedQuery);
-    });
+    return posts
+      .map((post) => ({ post, score: scoreMatch(post, normalizedQuery) }))
+      .filter(({ score }) => score > 0)
+      .sort((a, b) => b.score - a.score)
+      .map(({ post }) => post);
   }, [posts, debouncedQuery]);
+
+  const showDropdown = debouncedQuery.trim().length >= 2;
 
   return (
     <>
@@ -36,16 +39,67 @@ export function BlogPostList({ posts }: { posts: PublicPost[] }) {
           onChange={(event) => setQuery(event.target.value)}
           placeholder="Buscar artículos..."
           aria-label="Buscar artículos"
-          className="w-full rounded-lg border border-border bg-muted/40 py-3 pl-10 pr-4 text-sm outline-none transition-colors placeholder:text-muted-foreground focus:border-accent focus:ring-1 focus:ring-accent"
+          className="w-full rounded-lg border border-border bg-muted/40 py-3 pl-10 pr-10 outline-none transition-colors placeholder:text-muted-foreground focus:border-accent focus:ring-1 focus:ring-accent"
         />
+        {query && (
+          <button
+            type="button"
+            onClick={() => setQuery('')}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            aria-label="Limpiar búsqueda"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
       </div>
+
+      {showDropdown && filteredPosts.length > 0 && !query.length && filteredPosts.length > 0 ? null : null}
+
+      {showDropdown && filteredPosts.length > 0 && (
+        <div className="mt-3 rounded-xl border border-border bg-card/70 p-2 shadow-xl">
+          {filteredPosts.slice(0, 5).map((post) => (
+            <Link
+              key={post.id}
+              href={`/blog/${post.slug}`}
+              className="flex items-start gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-muted/60"
+            >
+              {post.coverImage ? (
+                <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md border border-border">
+                  <Image
+                    src={post.coverImage}
+                    alt=""
+                    fill
+                    sizes="48px"
+                    className="object-cover"
+                    unoptimized
+                  />
+                </div>
+              ) : (
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md border border-border bg-muted/40 text-[10px] text-muted-foreground">
+                  Blog
+                </div>
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium">{post.title}</p>
+                <p className="truncate text-xs text-muted-foreground">{post.excerpt}</p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      )}
 
       {filteredPosts.length === 0 ? (
         <div className="mt-12 rounded-xl border border-border bg-card/50 p-10 text-center">
           <p className="text-muted-foreground">No se encontraron artículos que coincidan con tu búsqueda.</p>
-          <button type="button" onClick={() => setQuery('')} className="mt-4 text-sm font-medium text-accent hover:underline">
-            Limpiar búsqueda
-          </button>
+          {query && (
+            <button
+              type="button"
+              onClick={() => setQuery('')}
+              className="mt-4 text-sm font-medium text-accent hover:underline"
+            >
+              Limpiar búsqueda
+            </button>
+          )}
         </div>
       ) : (
         <div className="mt-12 space-y-6">
@@ -112,4 +166,15 @@ function normalizeSearch(value: string) {
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .trim();
+}
+
+function scoreMatch(post: PublicPost, query: string) {
+  const title = normalizeSearch(post.title);
+  const excerpt = normalizeSearch(post.excerpt ?? '');
+  const tags = post.tags.map(({ tag }) => normalizeSearch(`${tag.name} ${tag.slug}`)).join(' ');
+  if (title.startsWith(query)) return 4;
+  if (title.includes(query)) return 3;
+  if (excerpt.includes(query)) return 2;
+  if (tags.includes(query)) return 1;
+  return 0;
 }

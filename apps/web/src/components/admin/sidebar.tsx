@@ -18,9 +18,9 @@ import { cn } from '@/lib/utils';
 const navItems = [
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { label: 'Artículos', href: '/admin/posts', icon: FileText },
-  { label: 'Proyectos', href: '/admin/projects', icon: FolderOpen, disabled: true },
+  { label: 'Proyectos', href: '/admin/projects', icon: FolderOpen },
+  { label: 'Cursos', href: '/admin/courses', icon: GraduationCap },
   { label: 'Lab', href: '/admin/lab', icon: FlaskConical, disabled: true },
-  { label: 'Cursos', href: '/admin/courses', icon: GraduationCap, disabled: true },
   { label: 'Configuración', href: '/admin/settings', icon: Settings, disabled: true },
 ];
 

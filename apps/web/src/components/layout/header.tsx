@@ -3,7 +3,16 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookOpen, FileText, FolderKanban, GraduationCap, Home, Menu, UserRound, X } from 'lucide-react';
+import {
+  BookOpen,
+  FileText,
+  FolderKanban,
+  GraduationCap,
+  Home,
+  Menu,
+  UserRound,
+  X,
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { contentNav, siteConfig } from '@kevincarmen/config';
 import { Logo } from '@/components/brand/logo';
@@ -30,7 +39,10 @@ export function Header() {
           <Logo size={36} />
         </Link>
 
-        <nav className="hidden items-center gap-1 lg:flex" aria-label="Navegación principal">
+        <nav
+          className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 lg:flex"
+          aria-label="Navegación principal"
+        >
           {siteConfig.nav.map((item) => (
             <div key={item.href} className="group relative">
               <Link
@@ -39,7 +51,7 @@ export function Header() {
                   'rounded-md px-3 py-2 text-sm font-medium transition-colors',
                   item.href === '/contacto'
                     ? 'bg-accent text-accent-foreground shadow-sm hover:bg-accent/90'
-                    : pathname === item.href || item.href === '/contenido' && pathname.startsWith('/blog')
+                    : pathname === item.href || (item.href === '/contenido' && pathname.startsWith('/blog'))
                       ? 'text-accent hover:text-accent'
                       : 'text-muted-foreground hover:text-accent',
                 )}
@@ -112,13 +124,13 @@ export function Header() {
                           key={child.href}
                           href={child.href}
                           onClick={() => setMobileOpen(false)}
-                           className="flex min-h-11 items-center gap-2 rounded-md px-3 py-3 text-sm text-muted-foreground hover:bg-muted/50 hover:text-accent"
-                         >
-                           {(() => {
-                             const Icon = contentIcons[child.href as keyof typeof contentIcons];
-                             return Icon ? <Icon className="h-4 w-4" /> : null;
-                           })()}
-                           {child.label}
+                          className="flex min-h-11 items-center gap-2 rounded-md px-3 py-3 text-sm text-muted-foreground hover:bg-muted/50 hover:text-accent"
+                        >
+                          {(() => {
+                            const Icon = contentIcons[child.href as keyof typeof contentIcons];
+                            return Icon ? <Icon className="h-4 w-4" /> : null;
+                          })()}
+                          {child.label}
                         </Link>
                       ))}
                     </div>

@@ -1,3 +1,5 @@
+'use client';
+
 import { Extension } from '@tiptap/core';
 import { ReactRenderer } from '@tiptap/react';
 import Suggestion, { type SuggestionOptions } from '@tiptap/suggestion';
@@ -11,12 +13,12 @@ import {
 function filterItems(query: string): SlashCommandItem[] {
   const q = query.toLowerCase();
   return slashCommandItems.filter(
-      (item) =>
+    (item) =>
       item.title.toLowerCase().includes(q) ||
       item.description.toLowerCase().includes(q) ||
-        (q.startsWith('cod') && item.title.startsWith('Código')) ||
-        (q.startsWith('inline') && item.title === 'Código en línea') ||
-      (q.startsWith('img') && item.title === 'Imagen'),
+      (q.startsWith('cod') && item.title.startsWith('Código')) ||
+      (q.startsWith('inline') && item.title === 'Código en línea') ||
+      (q.startsWith('en linea') && item.title === 'Código en línea'),
   );
 }
 
@@ -25,7 +27,7 @@ export const SlashCommand = Extension.create({
 
   addKeyboardShortcuts() {
     return {
-      'Mod-e': () => this.editor.commands.toggleCode(),
+      'Mod-e': () => this.editor.commands.unsetMark('code'),
     };
   },
 
@@ -42,7 +44,7 @@ export const SlashCommand = Extension.create({
           range: { from: number; to: number };
           props: SlashCommandItem;
         }) => {
-          props.command({ editor, range });
+          props.command?.({ editor, range });
         },
       } satisfies Partial<SuggestionOptions>,
     };

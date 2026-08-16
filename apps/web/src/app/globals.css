@@ -110,14 +110,14 @@
     @apply mb-3 border-l-4 border-accent/50 pl-4 italic text-muted-foreground;
   }
 
-  .post-editor-content pre {
-    @apply relative my-4 overflow-hidden rounded-xl border font-mono text-sm;
-    background: rgb(31 41 55 / 1);
-    border-color: rgb(71 85 105 / 1);
+.post-editor-content pre {
+    @apply relative my-3 overflow-hidden rounded-xl border font-mono text-sm;
+    background: rgb(15 23 42 / 1);
+    border-color: rgb(51 65 85 / 1);
   }
 
   .post-editor-content pre code {
-    @apply block overflow-x-auto p-4 text-[13px] leading-relaxed;
+    @apply block overflow-x-auto px-4 py-2.5 text-sm leading-[1.5];
   }
 
   .post-editor-content img {
@@ -170,27 +170,27 @@
     @apply bg-muted/70;
   }
 
-  /* Public code blocks */
+/* Public code blocks */
   .code-block {
-    @apply my-6 overflow-hidden rounded-xl border;
+    @apply my-4 overflow-hidden rounded-xl border;
     background: rgb(31 41 55 / 1);
     border-color: rgb(71 85 105 / 1);
   }
 
   .code-block-header {
-    @apply flex items-center justify-end gap-2 border-b px-3 py-2;
+    @apply flex items-center justify-end gap-1.5 border-b px-2.5 py-1.5;
     background: rgb(31 41 55 / 1);
     border-bottom-color: rgb(71 85 105 / 1);
   }
 
   .code-block-lang {
-    @apply mr-auto rounded-md px-2.5 py-1 text-xs font-medium text-accent;
+    @apply mr-auto rounded-md px-2 py-0.5 text-[11px] font-medium text-accent;
     background: rgb(30 41 59 / 1);
     border: 0;
   }
 
   .code-block-copy {
-    @apply rounded-md p-1.5 text-muted-foreground transition-colors hover:text-foreground;
+    @apply rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground;
     background: rgb(31 41 55 / 1);
   }
 
@@ -204,7 +204,7 @@
   }
 
   .code-block-pre code {
-    @apply block p-4 font-mono text-[13px] leading-relaxed;
+    @apply block px-4 py-2.5 font-mono text-sm leading-[1.5];
   }
 
   /* Syntax highlighting — tema oscuro alineado al sitio */

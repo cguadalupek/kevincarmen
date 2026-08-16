@@ -9,9 +9,11 @@ import {
   Heading2,
   Heading3,
   ImageIcon,
+  Link as LinkIcon,
   List,
   ListOrdered,
   Minus,
+  PlayCircle,
   Quote,
   TerminalSquare,
 } from 'lucide-react';
@@ -22,7 +24,7 @@ export interface SlashCommandItem {
   description: string;
   category: 'Bloques básicos' | 'Contenido multimedia';
   icon: React.ReactNode;
-  command: (props: { editor: import('@tiptap/react').Editor; range: { from: number; to: number } }) => void;
+  command?: (props: { editor: import('@tiptap/react').Editor; range: { from: number; to: number } }) => void;
 }
 
 export const slashCommandItems: SlashCommandItem[] = [
@@ -32,7 +34,12 @@ export const slashCommandItems: SlashCommandItem[] = [
     category: 'Bloques básicos',
     icon: <AlignLeft className="h-4 w-4" />,
     command: ({ editor, range }) => {
-      editor.chain().focus().deleteRange(range).setParagraph().run();
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .setNode('paragraph')
+        .run();
     },
   },
   {
@@ -40,49 +47,82 @@ export const slashCommandItems: SlashCommandItem[] = [
     description: 'Título principal',
     category: 'Bloques básicos',
     icon: <Heading1 className="h-4 w-4" />,
-    command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleHeading({ level: 1 }).run(),
+    command: ({ editor, range }) =>
+      editor.chain().focus().deleteRange(range).setNode('heading', { level: 1 }).run(),
   },
   {
     title: 'Encabezado 2',
     description: 'Título de sección',
     category: 'Bloques básicos',
     icon: <Heading2 className="h-4 w-4" />,
-    command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleHeading({ level: 2 }).run(),
+    command: ({ editor, range }) =>
+      editor.chain().focus().deleteRange(range).setNode('heading', { level: 2 }).run(),
   },
   {
     title: 'Encabezado 3',
     description: 'Subtítulo de sección',
     category: 'Bloques básicos',
     icon: <Heading3 className="h-4 w-4" />,
-    command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleHeading({ level: 3 }).run(),
+    command: ({ editor, range }) =>
+      editor.chain().focus().deleteRange(range).setNode('heading', { level: 3 }).run(),
   },
   {
     title: 'Lista con viñetas',
     description: 'Lista con guiones',
     category: 'Bloques básicos',
     icon: <List className="h-4 w-4" />,
-    command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleBulletList().run(),
+    command: ({ editor, range }) =>
+      editor.chain().focus().deleteRange(range).toggleList('bulletList', 'listItem').run(),
   },
   {
     title: 'Lista numerada',
     description: 'Lista ordenada',
     category: 'Bloques básicos',
     icon: <ListOrdered className="h-4 w-4" />,
-    command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleOrderedList().run(),
+    command: ({ editor, range }) =>
+      editor.chain().focus().deleteRange(range).toggleList('orderedList', 'listItem').run(),
   },
   {
     title: 'Cita',
     description: 'Cita destacada',
     category: 'Bloques básicos',
     icon: <Quote className="h-4 w-4" />,
-    command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleBlockquote().run(),
+    command: ({ editor, range }) =>
+      editor.chain().focus().deleteRange(range).toggleBlockquote().run(),
   },
   {
     title: 'Divisor',
     description: 'Separador horizontal',
     category: 'Bloques básicos',
     icon: <Minus className="h-4 w-4" />,
-    command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setHorizontalRule().run(),
+    command: ({ editor, range }) =>
+      editor.chain().focus().deleteRange(range).setHorizontalRule().run(),
+  },
+  {
+    title: 'Código en línea',
+    description: 'Aplicar formato inline code',
+    category: 'Bloques básicos',
+    icon: <TerminalSquare className="h-4 w-4" />,
+    command: ({ editor, range }) =>
+      editor.chain().focus().deleteRange(range).toggleMark('code').run(),
+  },
+  {
+    title: 'URL',
+    description: 'Insertar enlace a una URL',
+    category: 'Bloques básicos',
+    icon: <LinkIcon className="h-4 w-4" />,
+  },
+  {
+    title: 'Mención',
+    description: 'Insertar mención social (@usuario)',
+    category: 'Bloques básicos',
+    icon: <LinkIcon className="h-4 w-4" />,
+  },
+  {
+    title: 'Marcado',
+    description: 'Insertar @usuario o #etiqueta',
+    category: 'Bloques básicos',
+    icon: <LinkIcon className="h-4 w-4" />,
   },
   {
     title: 'Código',
@@ -90,20 +130,8 @@ export const slashCommandItems: SlashCommandItem[] = [
     category: 'Contenido multimedia',
     icon: <Code2 className="h-4 w-4" />,
     command: ({ editor, range }) => {
-      editor
-        .chain()
-        .focus()
-        .deleteRange(range)
-        .setCodeBlock({ language: 'powershell' })
-        .run();
+      editor.chain().focus().deleteRange(range).setNode('codeBlock', { language: 'powershell' }).run();
     },
-  },
-  {
-    title: 'Código en línea',
-    description: 'Formato `inline code`',
-    category: 'Bloques básicos',
-    icon: <TerminalSquare className="h-4 w-4" />,
-    command: ({ editor, range }) => editor.chain().focus().deleteRange(range).toggleCode().run(),
   },
   {
     title: 'Imagen',
@@ -117,10 +145,17 @@ export const slashCommandItems: SlashCommandItem[] = [
   },
   {
     title: 'Video / Archivo',
-    description: 'Insertar un archivo multimedia',
+    description: 'Insertar video desde URL',
+    category: 'Contenido multimedia',
+    icon: <PlayCircle className="h-4 w-4" />,
+    command: ({ editor, range }) => editor.chain().focus().deleteRange(range).run(),
+  },
+  {
+    title: 'Archivo multimedia',
+    description: 'Insertar archivo embebido',
     category: 'Contenido multimedia',
     icon: <FileCode className="h-4 w-4" />,
-    command: ({ editor, range }) => editor.chain().focus().deleteRange(range).setParagraph().run(),
+    command: ({ editor, range }) => editor.chain().focus().deleteRange(range).run(),
   },
 ];
 
@@ -131,6 +166,19 @@ interface SlashCommandListProps {
 
 export interface SlashCommandListRef {
   onKeyDown: (props: { event: KeyboardEvent }) => boolean;
+}
+
+function highlightMatch(text: string, query: string) {
+  const lower = text.toLowerCase();
+  const index = lower.indexOf(query.toLowerCase());
+  if (index === -1 || query.trim().length === 0) return text;
+  return (
+    <>
+      {text.slice(0, index)}
+      <span className="text-accent">{text.slice(index, index + query.length)}</span>
+      {text.slice(index + query.length)}
+    </>
+  );
 }
 
 export const SlashCommandList = forwardRef<SlashCommandListRef, SlashCommandListProps>(

@@ -1,4 +1,4 @@
-import { IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsDateString, IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
 import { PostStatus } from '@prisma/client';
 
 export class CreatePostDto {
@@ -24,4 +24,8 @@ export class CreatePostDto {
   @IsOptional()
   @IsString()
   coverImage?: string;
+
+  @IsOptional()
+  @IsDateString()
+  publishedAt?: string;
 }

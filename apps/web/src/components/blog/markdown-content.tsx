@@ -3,6 +3,7 @@ import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import { CodeBlock } from '@/components/blog/code-block';
 import { LightboxImage } from '@/components/blog/lightbox-image';
+import type { ComponentProps } from 'react';
 
 interface MarkdownContentProps {
   content: string;

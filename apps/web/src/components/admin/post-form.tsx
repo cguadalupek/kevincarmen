@@ -21,9 +21,12 @@ export function PostForm({ post }: PostFormProps) {
   const [excerpt, setExcerpt] = useState(post?.excerpt ?? '');
   const [content, setContent] = useState(post?.content ?? '');
   const [status, setStatus] = useState<ApiPost['status']>(post?.status ?? 'PUBLISHED');
-  const [coverImage, setCoverImage] = useState(post?.coverImage ?? '');
+const [coverImage, setCoverImage] = useState(post?.coverImage ?? '');
   const [coverUploading, setCoverUploading] = useState(false);
   const [autoSlug, setAutoSlug] = useState(!post);
+  const [publishedAt, setPublishedAt] = useState<string>(
+    post?.publishedAt ? new Date(post.publishedAt).toISOString().slice(0, 16) : new Date().toISOString().slice(0, 16),
+  );
   const [savedSlug, setSavedSlug] = useState<string | null>(null);
 
   function handleTitleChange(value: string) {
@@ -37,7 +40,15 @@ export function PostForm({ post }: PostFormProps) {
     setError('');
 
     try {
-      const data = { title, slug, excerpt, content, status, coverImage: coverImage || undefined };
+      const data = {
+        title,
+        slug,
+        excerpt,
+        content,
+        status,
+        coverImage: coverImage || undefined,
+        publishedAt: new Date(publishedAt).toISOString(),
+      };
       if (post) {
         await api.updatePost(post.id, data);
       } else {
@@ -178,6 +189,17 @@ export function PostForm({ post }: PostFormProps) {
               <option value="SCHEDULED">Programado</option>
               <option value="TRASHED">Papelera</option>
             </select>
+
+            <label htmlFor="publishedAt" className="mt-4 mb-2 block text-sm font-medium">
+              Fecha de publicación
+            </label>
+            <input
+              id="publishedAt"
+              type="datetime-local"
+              value={publishedAt}
+              onChange={(event) => setPublishedAt(event.target.value)}
+              className="w-full rounded-lg border border-border bg-muted/50 px-4 py-2.5 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+            />
 
             <div className="mt-6 flex flex-col gap-2">
               <Button type="submit" variant="accent" disabled={loading}>

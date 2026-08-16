@@ -84,7 +84,7 @@ export class PostsService {
     return post;
   }
 
-  async create(dto: CreatePostDto, authorId: string) {
+async create(dto: CreatePostDto, authorId: string) {
     const existing = await this.prisma.post.findUnique({ where: { slug: dto.slug } });
     if (existing) throw new ConflictException('El slug ya existe');
 
@@ -102,7 +102,11 @@ export class PostsService {
         status,
         readingTime,
         authorId,
-        publishedAt: status === PostStatus.PUBLISHED ? new Date() : null,
+        publishedAt: dto.publishedAt
+          ? new Date(dto.publishedAt)
+          : status === PostStatus.PUBLISHED
+            ? new Date()
+            : null,
       },
       include: this.postInclude,
     });
@@ -130,8 +134,7 @@ export class PostsService {
           ? { coverImage: this.normalizeStoredUrl(dto.coverImage) }
           : {}),
         readingTime,
-        publishedAt:
-          status === PostStatus.PUBLISHED && !post.publishedAt ? new Date() : post.publishedAt,
+        publishedAt: dto.publishedAt ? new Date(dto.publishedAt) : undefined,
       },
       include: this.postInclude,
     });

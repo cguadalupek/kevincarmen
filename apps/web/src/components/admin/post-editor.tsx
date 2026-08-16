@@ -39,12 +39,54 @@ async function insertImageFiles(editor: Editor, files: FileList | File[]) {
   }
 }
 
+interface PasteMenu {
+  kind: 'paste-url' | 'paste-video';
+  url: string;
+  embedUrl?: string;
+  source?: 'youtube' | 'tiktok' | 'twitter' | 'video';
+}
+
+function detectVideoEmbed(url: string): PasteMenu | null {
+  try {
+    const { hostname, pathname } = new URL(url);
+    if (/youtube\.com|youtu\.be/.test(hostname)) {
+      return { kind: 'paste-video', url, embedUrl: youtubeEmbed(url), source: 'youtube' };
+    }
+    if (/tiktok\.com/.test(hostname)) {
+      return { kind: 'paste-video', url, embedUrl: url, source: 'tiktok' };
+    }
+    if (/twitter\.com|x\.com/.test(hostname)) {
+      return { kind: 'paste-video', url, embedUrl: url, source: 'twitter' };
+    }
+    if (/\.(mp4|webm|ogg)$/i.test(pathname)) {
+      return { kind: 'paste-video', url, embedUrl: url, source: 'video' };
+    }
+  } catch {
+    // ignored
+  }
+  return null;
+}
+
+function youtubeEmbed(url: string) {
+  try {
+    const u = new URL(url);
+    let id = '';
+    if (u.hostname === 'youtu.be') id = u.pathname.slice(1);
+    if (u.hostname.includes('youtube.com')) id = u.searchParams.get('v') ?? u.pathname.split('/').pop() ?? '';
+    return id ? `https://www.youtube.com/embed/${id}` : url;
+  } catch {
+    return url;
+  }
+}
+
 export function PostEditor({ content, onChange }: PostEditorProps) {
   const editorRef = useRef<Editor | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const onChangeRef = useRef(onChange);
-  const [selectedImagePos, setSelectedImagePos] = useState<number | null>(null);
   onChangeRef.current = onChange;
+
+  const [selectedImagePos, setSelectedImagePos] = useState<number | null>(null);
+  const [pastePrompt, setPastePrompt] = useState<PasteMenu | null>(null);
 
   const handleImageInput = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const editor = editorRef.current;
@@ -86,35 +128,38 @@ export function PostEditor({ content, onChange }: PostEditorProps) {
       },
       handleTextInput: (view, from, _to, text) => {
         const currentEditor = editorRef.current;
-        if (text !== ' ' || !currentEditor || !isInlineCodeActive(currentEditor)) return false;
+        if (text !== ' ' || !currentEditor || !isCodeMarkActive(currentEditor)) return false;
         const previousCharacter = view.state.doc.textBetween(Math.max(0, from - 1), from);
         if (previousCharacter !== ' ') return false;
 
-        currentEditor.commands.unsetCode();
+        currentEditor.commands.unsetMark("code");
         currentEditor.commands.insertContent(' ');
         return true;
       },
       handleKeyDown: (_view, event) => {
         const currentEditor = editorRef.current;
-        if (event.key === ' ' && currentEditor && isInlineCodeActive(currentEditor)) {
+        if (!currentEditor) return false;
+
+        if (event.key === ' ' && isCodeMarkActive(currentEditor)) {
           const { $from } = currentEditor.state.selection;
           const previousCharacter = currentEditor.state.doc.textBetween($from.pos - 1, $from.pos);
           if (previousCharacter === ' ') {
-            currentEditor.commands.unsetCode();
-            return false;
+            currentEditor.commands.unsetMark("code");
+            return true;
           }
         }
 
         if (
           event.key === 'ArrowRight' &&
-          currentEditor &&
-          isInlineCodeActive(currentEditor) &&
+          isCodeMarkActive(currentEditor) &&
           currentEditor.state.selection.empty &&
           currentEditor.state.selection.$from.parentOffset ===
             currentEditor.state.selection.$from.parent.content.size
         ) {
-          currentEditor.commands.unsetCode();
+          currentEditor.commands.unsetMark("code");
+          return true;
         }
+
         return false;
       },
       handleDrop: (view, event) => {
@@ -133,6 +178,37 @@ export function PostEditor({ content, onChange }: PostEditorProps) {
       handlePaste: (_view, event) => {
         const editorInstance = editorRef.current;
         if (!editorInstance) return false;
+
+        const text = event.clipboardData?.getData('text/plain')?.trim();
+        if (text && /^https?:\/\//i.test(text)) {
+          const video = detectVideoEmbed(text);
+          if (video) {
+            event.preventDefault();
+            setPastePrompt(video as never);
+            return true;
+          }
+          const linkOrMentionOrTag = prompt(
+            `Pegaste: ${text}\n\n¿Cómo quieres insertarlo?\n1) URL\n2) Mención (@usuario)\n3) Marcado (etiqueta #)`,
+            '1',
+          );
+          if (!linkOrMentionOrTag) return false;
+          event.preventDefault();
+          const choice = linkOrMentionOrTag.trim();
+          if (choice === '1' || /^u(rl)?$/i.test(choice)) {
+            editorInstance
+              .chain()
+              .focus()
+              .insertContent(`[${text}](${text})`)
+              .run();
+          } else if (choice === '2' || /^men/i.test(choice)) {
+            const handle = text.split('/').pop() ?? text;
+            editorInstance.chain().focus().insertContent(`@${handle}`).run();
+          } else {
+            const tag = text.split('/').pop() ?? text;
+            editorInstance.chain().focus().insertContent(`#${tag}`).run();
+          }
+          return true;
+        }
 
         const items = event.clipboardData?.items;
         if (!items) return false;
@@ -184,13 +260,15 @@ export function PostEditor({ content, onChange }: PostEditorProps) {
     });
   }
 
-  useEffect(() => {
-    if (!editor) return;
-    const current = editor.storage.markdown.getMarkdown();
-    if (content !== current) {
-      editor.commands.setContent(content);
-    }
-  }, [content, editor]);
+function insertVideo(url?: string) {
+    if (!editor || !url) return;
+    editor.chain().focus().insertContent(`\n<video src="${url}" controls></video>\n`).run();
+    setPastePrompt(null);
+  }
+
+  function cancelVideoPrompt() {
+    setPastePrompt(null);
+  }
 
   if (!editor) return null;
 
@@ -206,9 +284,37 @@ export function PostEditor({ content, onChange }: PostEditorProps) {
         onChange={handleImageInput}
       />
 
+      {pastePrompt && 'kind' in pastePrompt && pastePrompt.kind === 'paste-video' && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/70 p-4">
+          <div className="w-full max-w-md rounded-xl border border-border bg-card p-6 shadow-2xl">
+            <h3 className="text-base font-semibold">Insertar video</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Detectamos el siguiente enlace: <span className="break-all text-accent">{pastePrompt.url}</span>
+            </p>
+            <div className="mt-4 flex gap-2">
+              <button
+                type="button"
+                onClick={() => insertVideo(pastePrompt.embedUrl)}
+                className="flex-1 rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent/90"
+              >
+                Insertar video
+              </button>
+              <button
+                type="button"
+                onClick={cancelVideoPrompt}
+                className="rounded-md border border-border px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <CodeBlockToolbar editor={editor} />
 
       <EditorContent editor={editor} />
+
       {selectedImagePos !== null && (
         <input
           type="text"
@@ -223,8 +329,9 @@ export function PostEditor({ content, onChange }: PostEditorProps) {
   );
 }
 
-function isInlineCodeActive(editor: Editor) {
+function isCodeMarkActive(editor: Editor) {
   const codeMark = editor.schema.marks.code;
   if (!codeMark) return false;
   return editor.state.selection.$from.marks().some((mark) => mark.type === codeMark);
 }
+
