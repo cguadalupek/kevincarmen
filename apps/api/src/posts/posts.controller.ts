@@ -5,6 +5,7 @@ import {
   Put,
   Delete,
   Param,
+  Query,
   Body,
   NotFoundException,
   UseGuards,
@@ -20,8 +21,16 @@ export class PostsController {
   constructor(private readonly postsService: PostsService) {}
 
   @Get()
-  findAll() {
-    return this.postsService.findAllPublished();
+  findAll(@Query('category') category?: string) {
+    return this.postsService.findAllPublished({ categorySlug: category });
+  }
+
+  @Get('videos')
+  findLatestVideos(@Query('limit') limit?: string) {
+    const parsed = limit ? Number.parseInt(limit, 10) : undefined;
+    return this.postsService.findLatestVideos(
+      Number.isFinite(parsed) ? Math.min(parsed ?? 6, 24) : 6,
+    );
   }
 
   @Get('admin/all')

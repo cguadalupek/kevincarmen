@@ -21,6 +21,15 @@ enum ProjectStatus {
   IN_PROGRESS
 }
 
+enum VideoType {
+  YOUTUBE
+  YOUTUBE_SHORT
+  TIKTOK
+  TWITTER
+  VIMEO
+  GENERIC
+}
+
 model User {
   id           String    @id @default(cuid())
   email        String    @unique
@@ -66,6 +75,8 @@ model Post {
   excerpt     String?
   content     String
   coverImage  String?    @map("cover_image")
+  videoUrl    String?    @map("video_url")
+  videoType   VideoType? @map("video_type")
   status      PostStatus @default(DRAFT)
   publishedAt DateTime?  @map("published_at")
   readingTime Int        @default(0) @map("reading_time")
@@ -79,6 +90,7 @@ model Post {
   updatedAt   DateTime   @updatedAt @map("updated_at")
 
   @@index([status, publishedAt])
+  @@index([categoryId])
   @@map("posts")
 }
 

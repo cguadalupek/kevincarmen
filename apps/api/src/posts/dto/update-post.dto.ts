@@ -1,5 +1,5 @@
 import { IsDateString, IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
-import { PostStatus } from '@prisma/client';
+import { PostStatus, VideoType } from '@prisma/client';
 
 export class UpdatePostDto {
   @IsOptional()
@@ -27,6 +27,18 @@ export class UpdatePostDto {
   @IsOptional()
   @IsString()
   coverImage?: string;
+
+  @IsOptional()
+  @IsString()
+  categoryId?: string;
+
+  @IsOptional()
+  @IsString()
+  videoUrl?: string;
+
+  @IsOptional()
+  @IsEnum(VideoType)
+  videoType?: VideoType;
 
   @IsOptional()
   @IsDateString()

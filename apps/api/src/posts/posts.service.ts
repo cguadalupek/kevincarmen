@@ -3,8 +3,9 @@ import {
   NotFoundException,
   ConflictException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
-import { PostStatus } from '@prisma/client';
+import { PostStatus, VideoType, type Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
@@ -47,15 +48,37 @@ export class PostsService {
     });
   }
 
+  private detectVideoType(url: string): VideoType | null {
+    try {
+      const { hostname, pathname } = new URL(url);
+      if (/youtube\.com\/shorts\/|youtube\.com\/embed\/.*shorts/.test(url)) {
+        return VideoType.YOUTUBE_SHORT;
+      }
+      if (/youtube\.com|youtu\.be/.test(hostname)) return VideoType.YOUTUBE;
+      if (/tiktok\.com/.test(hostname)) return VideoType.TIKTOK;
+      if (/twitter\.com|x\.com/.test(hostname)) return VideoType.TWITTER;
+      if (/vimeo\.com/.test(hostname)) return VideoType.VIMEO;
+      if (/\.(mp4|webm|ogg)$/i.test(pathname)) return VideoType.GENERIC;
+    } catch {
+      // ignore
+    }
+    return null;
+  }
+
   private postInclude = {
     author: { select: { id: true, name: true, avatar: true, bio: true } },
     category: true,
     tags: { include: { tag: true } },
   };
 
-  async findAllPublished() {
+  async findAllPublished(options: { categorySlug?: string } = {}) {
     return this.prisma.post.findMany({
-      where: { status: 'PUBLISHED' },
+      where: {
+        status: 'PUBLISHED',
+        ...(options.categorySlug
+          ? { category: { slug: options.categorySlug } }
+          : {}),
+      },
       include: this.postInclude,
       orderBy: { publishedAt: 'desc' },
     });
@@ -84,30 +107,54 @@ export class PostsService {
     return post;
   }
 
-async create(dto: CreatePostDto, authorId: string) {
+  async findLatestVideos(limit = 6) {
+    const posts = await this.prisma.post.findMany({
+      where: { status: 'PUBLISHED', videoUrl: { not: null } },
+      include: this.postInclude,
+      orderBy: { publishedAt: 'desc' },
+      take: limit,
+    });
+    return posts.filter((post) => Boolean(post.videoUrl));
+  }
+
+  async findAllCategories() {
+    return this.prisma.category.findMany({
+      orderBy: { name: 'asc' },
+    });
+  }
+
+  async create(dto: CreatePostDto, authorId: string) {
     const existing = await this.prisma.post.findUnique({ where: { slug: dto.slug } });
     if (existing) throw new ConflictException('El slug ya existe');
 
     const status = dto.status ?? PostStatus.DRAFT;
     const content = this.normalizeStoredContent(dto.content);
     const readingTime = Math.max(1, Math.ceil(content.split(/\s+/).length / 200));
+    const videoUrl = this.normalizeStoredUrl(dto.videoUrl) ?? null;
+    const detectedVideoType = dto.videoUrl ? this.detectVideoType(dto.videoUrl) : null;
+    const videoType = dto.videoType ?? detectedVideoType ?? null;
+
+    const data: Prisma.PostUncheckedCreateInput = {
+      title: dto.title,
+      slug: dto.slug,
+      excerpt: dto.excerpt,
+      content,
+      coverImage: this.normalizeStoredUrl(dto.coverImage),
+      videoUrl,
+      videoType,
+      status,
+      readingTime,
+      authorId,
+      categoryId: dto.categoryId || null,
+      publishedAt: dto.publishedAt
+        ? new Date(dto.publishedAt)
+        : status === PostStatus.PUBLISHED
+          ? new Date()
+          : null,
+    };
 
     return this.prisma.post.create({
-      data: {
-        title: dto.title,
-        slug: dto.slug,
-        excerpt: dto.excerpt,
-        content,
-        coverImage: this.normalizeStoredUrl(dto.coverImage),
-        status,
-        readingTime,
-        authorId,
-        publishedAt: dto.publishedAt
-          ? new Date(dto.publishedAt)
-          : status === PostStatus.PUBLISHED
-            ? new Date()
-            : null,
-      },
+      data,
       include: this.postInclude,
     });
   }
@@ -125,17 +172,27 @@ async create(dto: CreatePostDto, authorId: string) {
     const readingTime = Math.max(1, Math.ceil(content.split(/\s+/).length / 200));
     const status = dto.status ?? post.status;
 
+    const data: Prisma.PostUpdateInput = {
+      ...dto,
+      content,
+      ...(dto.coverImage !== undefined
+        ? { coverImage: this.normalizeStoredUrl(dto.coverImage) }
+        : {}),
+      ...(dto.videoUrl !== undefined
+        ? { videoUrl: this.normalizeStoredUrl(dto.videoUrl) }
+        : {}),
+      ...(dto.videoType !== undefined
+        ? { videoType: dto.videoType }
+        : dto.videoUrl !== undefined
+          ? { videoType: this.detectVideoType(dto.videoUrl) ?? undefined }
+          : {}),
+      readingTime,
+      publishedAt: dto.publishedAt ? new Date(dto.publishedAt) : undefined,
+    };
+
     return this.prisma.post.update({
       where: { id },
-      data: {
-        ...dto,
-        content,
-        ...(dto.coverImage !== undefined
-          ? { coverImage: this.normalizeStoredUrl(dto.coverImage) }
-          : {}),
-        readingTime,
-        publishedAt: dto.publishedAt ? new Date(dto.publishedAt) : undefined,
-      },
+      data,
       include: this.postInclude,
     });
   }
