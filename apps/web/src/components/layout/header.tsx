@@ -41,48 +41,59 @@ export function Header() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
-      <div className="section-container flex h-16 items-center justify-between">
-        <Link href="/" aria-label="Ir al inicio">
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <Link href="/" aria-label="Ir al inicio" className="flex items-center gap-2">
           <Logo size={36} />
         </Link>
 
         <nav
-          className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 lg:flex"
+          className="hidden flex-1 items-center justify-center gap-1 lg:flex"
           aria-label="Navegación principal"
         >
-          {siteConfig.nav.map((item) => (
-            <div key={item.href} className="group relative">
-              <Link
-                href={item.href}
-                className={cn(
-                  'rounded-md px-3 py-2 text-sm font-medium transition-colors',
-                  item.href === '/contacto'
-                    ? 'bg-accent text-accent-foreground shadow-sm hover:bg-accent/90'
-                    : pathname === item.href || (item.href === '/contenido' && pathname.startsWith('/blog'))
+          {siteConfig.nav
+            .filter((item) => item.href !== '/contacto')
+            .map((item) => (
+              <div key={item.href} className="group relative">
+                <Link
+                  href={item.href}
+                  className={cn(
+                    'rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                    pathname === item.href || (item.href === '/contenido' && pathname.startsWith('/blog'))
                       ? 'text-accent hover:text-accent'
                       : 'text-muted-foreground hover:text-accent',
-                )}
-              >
-                {item.label}
-              </Link>
-              {item.href === '/contenido' && (
-                <div className="invisible absolute left-0 top-full z-50 w-44 pt-2 opacity-0 transition group-hover:visible group-hover:opacity-100">
-                  <div className="rounded-lg border border-border bg-card p-1 shadow-xl">
-                    {contentNav.map((child) => (
-                      <Link
-                        key={child.href}
-                        href={child.href}
-                        className="block rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-accent"
-                      >
-                        {child.label}
-                      </Link>
-                    ))}
+                  )}
+                >
+                  {item.label}
+                </Link>
+                {item.href === '/contenido' && (
+                  <div className="invisible absolute left-1/2 top-full z-50 w-44 -translate-x-1/2 pt-2 opacity-0 transition group-hover:visible group-hover:opacity-100">
+                    <div className="rounded-lg border border-border bg-card p-1 shadow-xl">
+                      {contentNav.map((child) => (
+                        <Link
+                          key={child.href}
+                          href={child.href}
+                          className="block rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-accent"
+                        >
+                          {child.label}
+                        </Link>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
-          ))}
+                )}
+              </div>
+            ))}
         </nav>
+
+        <div className="hidden items-center gap-3 lg:flex">
+          <Button asChild variant="accent">
+            <Link
+              href="/contacto"
+              className="justify-center rounded-xl bg-accent px-4 py-2 text-sm font-medium text-accent-foreground shadow-sm transition-colors hover:bg-accent/90"
+            >
+              Contacto
+            </Link>
+          </Button>
+        </div>
 
         <button
           type="button"
@@ -103,7 +114,7 @@ export function Header() {
             exit={{ opacity: 0, height: 0 }}
             className="border-t border-border lg:hidden"
           >
-            <nav className="section-container flex flex-col gap-1 py-4" aria-label="Menú móvil">
+            <nav className="mx-auto flex max-w-7xl flex-col gap-1 px-4 py-4 sm:px-6 lg:px-8" aria-label="Menú móvil">
               {siteConfig.nav.map((item) => {
                 if (item.href === '/contenido') {
                   const Icon = mainIcons['/contenido'];
@@ -186,4 +197,20 @@ export function Header() {
       </AnimatePresence>
     </header>
   );
+}
+
+function Button({
+  children,
+  variant,
+  asChild,
+  className,
+}: {
+  children: React.ReactNode;
+  variant?: 'accent';
+  asChild?: boolean;
+  className?: string;
+}) {
+  void variant;
+  void asChild;
+  return <>{children}</>;
 }
