@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X } from 'lucide-react';
+import { BookOpen, FolderKanban, GraduationCap, Menu, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { contentNav, siteConfig } from '@kevincarmen/config';
 import { Logo } from '@/components/brand/logo';
@@ -12,6 +12,11 @@ import { cn } from '@/lib/utils';
 export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
+  const contentIcons = {
+    '/blog': BookOpen,
+    '/proyectos': FolderKanban,
+    '/cursos': GraduationCap,
+  } as const;
 
   return (
     <header className="sticky top-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
@@ -98,9 +103,13 @@ export function Header() {
                           key={child.href}
                           href={child.href}
                           onClick={() => setMobileOpen(false)}
-                          className="block rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted/50 hover:text-accent"
-                        >
-                          {child.label}
+                           className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted/50 hover:text-accent"
+                         >
+                           {(() => {
+                             const Icon = contentIcons[child.href as keyof typeof contentIcons];
+                             return Icon ? <Icon className="h-4 w-4" /> : null;
+                           })()}
+                           {child.label}
                         </Link>
                       ))}
                     </div>
