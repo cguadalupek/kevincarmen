@@ -7,9 +7,6 @@ CREATE TYPE "CourseDifficulty" AS ENUM ('BEGINNER', 'INTERMEDIATE', 'ADVANCED');
 -- CreateEnum
 CREATE TYPE "CourseStatus" AS ENUM ('COMING_SOON', 'AVAILABLE', 'IN_PROGRESS', 'ARCHIVED');
 
--- AlterEnum
-ALTER TYPE "VideoType" ADD VALUE 'ODYSEE';
-
 -- CreateTable
 CREATE TABLE "videos" (
     "id" TEXT NOT NULL,
@@ -18,12 +15,12 @@ CREATE TABLE "videos" (
     "videoType" "VideoType" NOT NULL DEFAULT 'YOUTUBE',
     "thumbnail" TEXT,
     "description" TEXT,
-    "publishedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "isShort" BOOLEAN NOT NULL DEFAULT false,
+    "published_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "is_short" BOOLEAN NOT NULL DEFAULT false,
     "featured" BOOLEAN NOT NULL DEFAULT false,
     "position" INTEGER NOT NULL DEFAULT 0,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "videos_pkey" PRIMARY KEY ("id")
 );
@@ -36,12 +33,12 @@ CREATE TABLE "courses" (
     "description" TEXT NOT NULL,
     "level" "CourseDifficulty" NOT NULL DEFAULT 'BEGINNER',
     "duration" TEXT NOT NULL,
-    "lessonsCount" INTEGER NOT NULL DEFAULT 0,
+    "lessons_count" INTEGER NOT NULL DEFAULT 0,
     "status" "CourseStatus" NOT NULL DEFAULT 'COMING_SOON',
-    "coverImage" TEXT,
+    "cover_image" TEXT,
     "position" INTEGER NOT NULL DEFAULT 0,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "courses_pkey" PRIMARY KEY ("id")
 );
@@ -57,8 +54,8 @@ CREATE TABLE "lab_services" (
     "status" "LabStatus" NOT NULL DEFAULT 'ONLINE',
     "url" TEXT,
     "position" INTEGER NOT NULL DEFAULT 0,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
 
     CONSTRAINT "lab_services_pkey" PRIMARY KEY ("id")
 );
