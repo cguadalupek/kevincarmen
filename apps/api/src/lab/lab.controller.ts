@@ -9,8 +9,8 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { LabService } from './lab.service';
-import { CreateLabServiceDto } from './dto/create-lab-service.dto';
-import { UpdateLabServiceDto } from './dto/update-lab-service.dto';
+import { CreateLabDto } from './dto/create-lab.dto';
+import { UpdateLabDto } from './dto/update-lab.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('lab')
@@ -34,15 +34,20 @@ export class LabController {
     return this.labService.findById(id);
   }
 
+  @Get(':slug')
+  findBySlug(@Param('slug') slug: string) {
+    return this.labService.findBySlug(slug);
+  }
+
   @Post()
   @UseGuards(JwtAuthGuard)
-  create(@Body() dto: CreateLabServiceDto) {
+  create(@Body() dto: CreateLabDto) {
     return this.labService.create(dto);
   }
 
   @Put(':id')
   @UseGuards(JwtAuthGuard)
-  update(@Param('id') id: string, @Body() dto: UpdateLabServiceDto) {
+  update(@Param('id') id: string, @Body() dto: UpdateLabDto) {
     return this.labService.update(id, dto);
   }
 

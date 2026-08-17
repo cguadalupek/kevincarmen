@@ -107,16 +107,26 @@ export interface ApiCourse {
   updatedAt: string;
 }
 
-export interface ApiLabService {
+export interface ApiLabExperiment {
   id: string;
-  name: string;
+  title: string;
   slug: string;
   description: string;
+  objective: string | null;
+  hypothesis: string | null;
+  environment: string | null;
+  procedure: string | null;
+  result: string | null;
+  conclusion: string | null;
   stack: string[];
-  icon: string | null;
-  status: 'ONLINE' | 'OFFLINE' | 'MAINTENANCE';
-  url: string | null;
-  position: number;
+  tags: string[];
+  status: 'IN_PROGRESS' | 'SUCCESS' | 'PARTIAL' | 'FAILED' | 'ABANDONED';
+  coverImage: string | null;
+  gallery: string[];
+  startedAt: string | null;
+  completedAt: string | null;
+  relatedPostId: string | null;
+  relatedProjectId: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -173,12 +183,12 @@ export const api = {
   deleteCourse: (id: string) =>
     apiFetch<{ success: boolean }>(`/courses/${id}`, { method: 'DELETE' }),
 
-  getLabServices: () => apiFetch<ApiLabService[]>('/lab/admin/all'),
-  createLabService: (data: Partial<ApiLabService>) =>
-    apiFetch<ApiLabService>('/lab', { method: 'POST', body: JSON.stringify(data) }),
-  updateLabService: (id: string, data: Partial<ApiLabService>) =>
-    apiFetch<ApiLabService>(`/lab/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  deleteLabService: (id: string) =>
+  getLabExperiments: () => apiFetch<ApiLabExperiment[]>('/lab/admin/all'),
+  createLabExperiment: (data: Partial<ApiLabExperiment>) =>
+    apiFetch<ApiLabExperiment>('/lab', { method: 'POST', body: JSON.stringify(data) }),
+  updateLabExperiment: (id: string, data: Partial<ApiLabExperiment>) =>
+    apiFetch<ApiLabExperiment>(`/lab/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteLabExperiment: (id: string) =>
     apiFetch<{ success: boolean }>(`/lab/${id}`, { method: 'DELETE' }),
 
   getTimelineEvents: () => apiFetch<ApiTimelineEvent[]>('/timeline/admin/all'),

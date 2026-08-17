@@ -5,8 +5,8 @@ import {
 } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateLabServiceDto } from './dto/create-lab-service.dto';
-import { UpdateLabServiceDto } from './dto/update-lab-service.dto';
+import { CreateLabDto } from './dto/create-lab.dto';
+import { UpdateLabDto } from './dto/update-lab.dto';
 
 function slugify(input: string) {
   return input
@@ -25,54 +25,80 @@ export class LabService {
   constructor(private prisma: PrismaService) {}
 
   async findAllAdmin() {
-    return this.prisma.labService.findMany({ orderBy: [{ position: 'asc' }, { createdAt: 'desc' }] });
+    return this.prisma.labExperiment.findMany({ orderBy: { createdAt: 'desc' } });
   }
 
   async findPublished() {
-    return this.prisma.labService.findMany({ orderBy: [{ position: 'asc' }, { createdAt: 'desc' }] });
+    return this.prisma.labExperiment.findMany({ orderBy: { createdAt: 'desc' } });
   }
 
   async findById(id: string) {
-    const item = await this.prisma.labService.findUnique({ where: { id } });
-    if (!item) throw new NotFoundException('Servicio de lab no encontrado');
+    const item = await this.prisma.labExperiment.findUnique({ where: { id } });
+    if (!item) throw new NotFoundException('Experimento no encontrado');
     return item;
   }
 
-  async create(dto: CreateLabServiceDto) {
-    const slug = dto.slug?.trim() ? slugify(dto.slug) : slugify(dto.name);
-    const existing = await this.prisma.labService.findUnique({ where: { slug } });
+  async findBySlug(slug: string) {
+    const item = await this.prisma.labExperiment.findUnique({ where: { slug } });
+    if (!item) throw new NotFoundException('Experimento no encontrado');
+    return item;
+  }
+
+  async create(dto: CreateLabDto) {
+    const slug = dto.slug?.trim() ? slugify(dto.slug) : slugify(dto.title);
+    const existing = await this.prisma.labExperiment.findUnique({ where: { slug } });
     if (existing) throw new ConflictException('El slug ya existe');
-    return this.prisma.labService.create({
+    return this.prisma.labExperiment.create({
       data: {
-        name: dto.name,
+        title: dto.title,
         slug,
         description: dto.description,
-        stack: dto.stack ?? [],
-        icon: dto.icon || null,
+        objective: dto.objective,
+        hypothesis: dto.hypothesis,
+        environment: dto.environment,
+        procedure: dto.procedure,
         status: dto.status,
-        url: dto.url || null,
-        position: dto.position ?? 0,
+        result: dto.result,
+        conclusion: dto.conclusion,
+        stack: dto.stack ?? [],
+        tags: dto.tags ?? [],
+        coverImage: dto.coverImage || null,
+        gallery: dto.gallery ?? [],
+        startedAt: dto.startedAt ? new Date(dto.startedAt) : null,
+        completedAt: dto.completedAt ? new Date(dto.completedAt) : null,
+        relatedPostId: dto.relatedPostId || null,
+        relatedProjectId: dto.relatedProjectId || null,
       },
     });
   }
 
-  async update(id: string, dto: UpdateLabServiceDto) {
+  async update(id: string, dto: UpdateLabDto) {
     await this.findById(id);
-    const data: Prisma.LabServiceUpdateInput = {};
-    if (dto.name !== undefined) data.name = dto.name;
+    const data: Prisma.LabExperimentUpdateInput = {};
+    if (dto.title !== undefined) data.title = dto.title;
     if (dto.slug !== undefined) data.slug = slugify(dto.slug);
     if (dto.description !== undefined) data.description = dto.description;
+    if (dto.objective !== undefined) data.objective = dto.objective || null;
+    if (dto.hypothesis !== undefined) data.hypothesis = dto.hypothesis || null;
+    if (dto.environment !== undefined) data.environment = dto.environment || null;
+    if (dto.procedure !== undefined) data.procedure = dto.procedure || null;
+    if (dto.result !== undefined) data.result = dto.result || null;
+    if (dto.conclusion !== undefined) data.conclusion = dto.conclusion || null;
     if (dto.stack !== undefined) data.stack = dto.stack;
-    if (dto.icon !== undefined) data.icon = dto.icon || null;
+    if (dto.tags !== undefined) data.tags = dto.tags;
     if (dto.status !== undefined) data.status = dto.status;
-    if (dto.url !== undefined) data.url = dto.url || null;
-    if (dto.position !== undefined) data.position = dto.position;
-    return this.prisma.labService.update({ where: { id }, data });
+    if (dto.coverImage !== undefined) data.coverImage = dto.coverImage || null;
+    if (dto.gallery !== undefined) data.gallery = dto.gallery;
+    if (dto.startedAt !== undefined) data.startedAt = dto.startedAt ? new Date(dto.startedAt) : null;
+    if (dto.completedAt !== undefined) data.completedAt = dto.completedAt ? new Date(dto.completedAt) : null;
+    if (dto.relatedPostId !== undefined) data.relatedPostId = dto.relatedPostId || null;
+    if (dto.relatedProjectId !== undefined) data.relatedProjectId = dto.relatedProjectId || null;
+    return this.prisma.labExperiment.update({ where: { id }, data });
   }
 
   async remove(id: string) {
     await this.findById(id);
-    await this.prisma.labService.delete({ where: { id } });
+    await this.prisma.labExperiment.delete({ where: { id } });
     return { success: true };
   }
 }

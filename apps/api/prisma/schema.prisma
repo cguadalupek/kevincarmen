@@ -44,10 +44,12 @@ enum CourseDifficulty {
   ADVANCED
 }
 
-enum LabStatus {
-  ONLINE
-  OFFLINE
-  MAINTENANCE
+enum ExperimentStatus {
+  IN_PROGRESS
+  SUCCESS
+  PARTIAL
+  FAILED
+  ABANDONED
 }
 
 enum TimelineEventType {
@@ -219,20 +221,35 @@ model Course {
   @@map("courses")
 }
 
-model LabService {
-  id          String    @id @default(cuid())
-  name        String
-  slug        String    @unique
-  description String
-  stack       String[]
-  icon        String?
-  status      LabStatus @default(ONLINE)
-  url         String?
-  position    Int       @default(0)
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
+model LabExperiment {
+  id              String           @id @default(cuid())
+  title           String           @default("")
+  slug            String           @unique
+  description     String
+  objective       String?
+  hypothesis      String?
+  environment     String?
+  procedure       String?
+  status          ExperimentStatus @default(IN_PROGRESS)
+  result          String?
+  conclusion      String?
+  stack           String[]
+  tags            String[]
+  coverImage      String?          @map("cover_image")
+  gallery         String[]
+  startedAt       DateTime?        @map("started_at")
+  completedAt     DateTime?        @map("completed_at")
+  relatedPostId   String?          @map("related_post_id")
+  relatedProjectId String?         @map("related_project_id")
+  // Legacy columns are retained during the data migration and are no longer exposed by the API.
+  name            String?
+  icon            String?
+  url             String?
+  position        Int              @default(0)
+  createdAt       DateTime         @default(now()) @map("created_at")
+  updatedAt       DateTime         @updatedAt @map("updated_at")
 
-  @@index([status, position])
+  @@index([status, createdAt])
   @@map("lab_services")
 }
 
