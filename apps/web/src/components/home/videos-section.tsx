@@ -69,7 +69,7 @@ export async function VideosSection() {
     <section className="py-20" id="videos">
       <div className="section-container">
         <FadeIn>
-          <h2 className="section-title">Último Video publicado</h2>
+          <h2 className="section-title">Último Video Publicado</h2>
           <p className="section-subtitle">
             Publicacion reciente.
           </p>
