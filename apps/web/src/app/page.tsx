@@ -6,13 +6,17 @@ import { VideosSection } from '@/components/home/videos-section';
 import { TimelineSection } from '@/components/home/timeline-section';
 import { ContactSection } from '@/components/home/contact-section';
 import { getPublishedPosts } from '@/lib/api/posts';
+import { getPublishedTimelineEvents } from '@/lib/api/timeline';
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
 export const revalidate = 0;
 
 export default async function HomePage() {
-  const posts = await getPublishedPosts();
+  const [posts, timeline] = await Promise.all([
+    getPublishedPosts(),
+    getPublishedTimelineEvents(),
+  ]);
 
   return (
     <>
@@ -21,7 +25,7 @@ export default async function HomePage() {
       <ProjectsSection />
       <ArticlesSection posts={posts} />
       <VideosSection />
-      <TimelineSection />
+      <TimelineSection events={timeline} />
       <ContactSection />
     </>
   );

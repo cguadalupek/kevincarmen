@@ -50,6 +50,13 @@ enum LabStatus {
   MAINTENANCE
 }
 
+enum TimelineEventType {
+  EDUCATION
+  WORK
+  PROJECT
+  ACHIEVEMENT
+}
+
 model User {
   id           String    @id @default(cuid())
   email        String    @unique
@@ -260,4 +267,18 @@ model Setting {
   value String
 
   @@map("settings")
+}
+
+model TimelineEvent {
+  id          String           @id @default(cuid())
+  year        String
+  title       String
+  description String
+  type        TimelineEventType @default(PROJECT)
+  position    Int              @default(0)
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @updatedAt @map("updated_at")
+
+  @@index([position, createdAt])
+  @@map("timeline_events")
 }

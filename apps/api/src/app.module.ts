@@ -11,6 +11,7 @@ import { VideosModule } from './videos/videos.module';
 import { CoursesModule } from './courses/courses.module';
 import { LabModule } from './lab/lab.module';
 import { SettingsModule } from './settings/settings.module';
+import { TimelineModule } from './timeline/timeline.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { SettingsModule } from './settings/settings.module';
     CoursesModule,
     LabModule,
     SettingsModule,
+    TimelineModule,
   ],
   controllers: [AppController],
   providers: [AppService],

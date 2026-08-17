@@ -11,6 +11,7 @@ import {
   GraduationCap,
   FlaskConical,
   Video,
+  Clock,
 } from 'lucide-react';
 import { Logo } from '@/components/brand/logo';
 import { clearToken } from '@/lib/api/client';
@@ -23,6 +24,7 @@ const navItems: { label: string; href: string; icon: typeof LayoutDashboard; dis
   { label: 'Proyectos', href: '/admin/projects', icon: FolderOpen },
   { label: 'Cursos', href: '/admin/courses', icon: GraduationCap },
   { label: 'Lab', href: '/admin/lab', icon: FlaskConical },
+  { label: 'Timeline', href: '/admin/timeline', icon: Clock },
   { label: 'Configuración', href: '/admin/settings', icon: Settings },
 ];
 

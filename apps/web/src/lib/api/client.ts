@@ -121,6 +121,17 @@ export interface ApiLabService {
   updatedAt: string;
 }
 
+export interface ApiTimelineEvent {
+  id: string;
+  year: string;
+  title: string;
+  description: string;
+  type: 'EDUCATION' | 'WORK' | 'PROJECT' | 'ACHIEVEMENT';
+  position: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const api = {
   login: (email: string, password: string) =>
     apiFetch<{ accessToken: string; user: AuthUser }>('/auth/login', {
@@ -169,6 +180,14 @@ export const api = {
     apiFetch<ApiLabService>(`/lab/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteLabService: (id: string) =>
     apiFetch<{ success: boolean }>(`/lab/${id}`, { method: 'DELETE' }),
+
+  getTimelineEvents: () => apiFetch<ApiTimelineEvent[]>('/timeline/admin/all'),
+  createTimelineEvent: (data: Partial<ApiTimelineEvent>) =>
+    apiFetch<ApiTimelineEvent>('/timeline', { method: 'POST', body: JSON.stringify(data) }),
+  updateTimelineEvent: (id: string, data: Partial<ApiTimelineEvent>) =>
+    apiFetch<ApiTimelineEvent>(`/timeline/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteTimelineEvent: (id: string) =>
+    apiFetch<{ success: boolean }>(`/timeline/${id}`, { method: 'DELETE' }),
 
   getSettings: () => apiFetch<Record<string, string>>('/settings'),
   saveSettings: (settings: Record<string, string>) =>

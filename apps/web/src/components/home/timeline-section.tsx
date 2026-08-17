@@ -1,17 +1,19 @@
 'use client';
 
-import { timeline } from '@/lib/data/mock';
 import { FadeIn, StaggerContainer, StaggerItem } from '@/components/motion/fade-in';
 import { cn } from '@/lib/utils';
+import type { PublicTimelineEvent, TimelineEventType } from '@/lib/api/timeline';
 
-const typeColors = {
-  education: 'border-accent/50 bg-accent/5',
-  work: 'border-primary/50 bg-primary/5',
-  project: 'border-accent/50 bg-accent/5',
-  achievement: 'border-muted-foreground/30 bg-muted/30',
+const typeColors: Record<TimelineEventType, string> = {
+  EDUCATION: 'border-accent/50 bg-accent/5',
+  WORK: 'border-primary/50 bg-primary/5',
+  PROJECT: 'border-accent/50 bg-accent/5',
+  ACHIEVEMENT: 'border-muted-foreground/30 bg-muted/30',
 };
 
-export function TimelineSection() {
+export function TimelineSection({ events }: { events: PublicTimelineEvent[] }) {
+  if (!events.length) return null;
+
   return (
     <section className="py-20" id="timeline">
       <div className="section-container">
@@ -27,7 +29,7 @@ export function TimelineSection() {
           />
 
           <StaggerContainer className="space-y-8">
-            {timeline.map((event, index) => (
+            {events.map((event, index) => (
               <StaggerItem key={event.id}>
                 <div
                   className={cn(
