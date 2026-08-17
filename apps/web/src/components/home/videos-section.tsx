@@ -69,9 +69,9 @@ export async function VideosSection() {
     <section className="py-20" id="videos">
       <div className="section-container">
         <FadeIn>
-          <h2 className="section-title">Últimos videos</h2>
+          <h2 className="section-title">Último Video publicado</h2>
           <p className="section-subtitle">
-            Tutoriales y shorts recientes directamente desde el CMS, organizados por tipo.
+            Publicacion reciente.
           </p>
         </FadeIn>
 

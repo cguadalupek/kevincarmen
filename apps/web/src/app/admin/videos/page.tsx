@@ -141,7 +141,7 @@ export default function AdminVideosPage() {
             </Link>
             <h1 className="mt-2 text-2xl font-bold">Videos del inicio</h1>
             <p className="text-sm text-muted-foreground">
-              Aparecen en la sección "Últimos videos" del home y pueden retirarse cuando quieras.
+              Aparecen en la sección «Últimos videos» del home y pueden retirarse cuando quieras.
             </p>
           </div>
           <Button variant="accent" onClick={openCreate} disabled={!!editing}>
