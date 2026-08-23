@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Pencil, Plus, Save, Trash2, X } from 'lucide-react';
 import { AdminAuthGuard } from '@/components/admin/auth-guard';
@@ -41,6 +41,8 @@ export default function AdminCoursesPage() {
   const [error, setError] = useState('');
   const [editing, setEditing] = useState<Partial<ApiCourse> | null>(null);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   function load() {
     setLoading(true);
@@ -83,6 +85,13 @@ export default function AdminCoursesPage() {
     } finally {
       setSaving(false);
     }
+  }
+
+  async function uploadCover(file: File) {
+    setUploading(true); setError('');
+    try { const result = await api.uploadImage(file); setEditing((current) => current ? { ...current, coverImage: result.url } : current); }
+    catch (err) { setError(err instanceof Error ? err.message : 'Error al subir la portada'); }
+    finally { setUploading(false); }
   }
 
   async function handleDelete(course: ApiCourse) {
@@ -229,12 +238,12 @@ export default function AdminCoursesPage() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="mb-1 block text-sm font-medium">Portada (URL)</label>
-                <input
-                  value={editing.coverImage ?? ''}
-                  onChange={(e) => setEditing({ ...editing, coverImage: e.target.value })}
-                  className="w-full rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm focus:border-accent focus:outline-none"
-                />
+                <label className="mb-1 block text-sm font-medium">Portada</label>
+                <div className="flex gap-2">
+                  <input value={editing.coverImage ?? ''} onChange={(e) => setEditing({ ...editing, coverImage: e.target.value })} placeholder="URL o sube una imagen" className="w-full rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm focus:border-accent focus:outline-none" />
+                  <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading} className="rounded-lg border border-border px-3 text-sm hover:border-accent">{uploading ? '...' : 'Subir'}</button>
+                </div>
+                <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && uploadCover(e.target.files[0])} />
               </div>
               <div>
                 <label className="mb-1 block text-sm font-medium">Posición</label>

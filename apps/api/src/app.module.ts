@@ -12,6 +12,7 @@ import { CoursesModule } from './courses/courses.module';
 import { LabModule } from './lab/lab.module';
 import { SettingsModule } from './settings/settings.module';
 import { TimelineModule } from './timeline/timeline.module';
+import { ProjectsModule } from './projects/projects.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { TimelineModule } from './timeline/timeline.module';
     LabModule,
     SettingsModule,
     TimelineModule,
+    ProjectsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -131,6 +131,23 @@ export interface ApiLabExperiment {
   updatedAt: string;
 }
 
+export interface ApiProject {
+  id: string;
+  title: string;
+  slug: string;
+  description: string;
+  longDescription: string | null;
+  technologies: string[];
+  repository: string | null;
+  demo: string | null;
+  status: 'ACTIVE' | 'COMPLETED' | 'ARCHIVED' | 'IN_PROGRESS';
+  featured: boolean;
+  coverImage: string | null;
+  publishedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface ApiTimelineEvent {
   id: string;
   year: string;
@@ -191,6 +208,10 @@ export const api = {
   deleteLabExperiment: (id: string) =>
     apiFetch<{ success: boolean }>(`/lab/${id}`, { method: 'DELETE' }),
 
+  getProjects: () => apiFetch<ApiProject[]>('/projects/admin/all'),
+  createProject: (data: Partial<ApiProject>) => apiFetch<ApiProject>('/projects', { method: 'POST', body: JSON.stringify(data) }),
+  updateProject: (id: string, data: Partial<ApiProject>) => apiFetch<ApiProject>(`/projects/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteProject: (id: string) => apiFetch<{ success: boolean }>(`/projects/${id}`, { method: 'DELETE' }),
   getTimelineEvents: () => apiFetch<ApiTimelineEvent[]>('/timeline/admin/all'),
   createTimelineEvent: (data: Partial<ApiTimelineEvent>) =>
     apiFetch<ApiTimelineEvent>('/timeline', { method: 'POST', body: JSON.stringify(data) }),
