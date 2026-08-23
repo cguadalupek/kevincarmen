@@ -38,7 +38,26 @@ export default function AdminLabPage() {
     setSaving(true);
     setError('');
     const list = (value: string) => value.split(',').map((item) => item.trim()).filter(Boolean);
-    const payload: Partial<ApiLabExperiment> = { ...editing, title: editing.title?.trim(), slug: editing.slug?.trim() || undefined, description: editing.description?.trim(), stack: list(stackInput), tags: list(tagsInput), coverImage: editing.coverImage?.trim() || undefined, startedAt: editing.startedAt?.trim() || undefined, completedAt: editing.completedAt?.trim() || undefined };
+    const payload = {
+      title: editing.title?.trim() ?? '',
+      slug: editing.slug?.trim() || undefined,
+      description: editing.description?.trim() ?? '',
+      objective: editing.objective?.trim() || undefined,
+      hypothesis: editing.hypothesis?.trim() || undefined,
+      environment: editing.environment?.trim() || undefined,
+      procedure: editing.procedure?.trim() || undefined,
+      status: editing.status,
+      result: editing.result?.trim() || undefined,
+      conclusion: editing.conclusion?.trim() || undefined,
+      stack: list(stackInput),
+      tags: list(tagsInput),
+      coverImage: editing.coverImage?.trim() || undefined,
+      gallery: editing.gallery ?? [],
+      startedAt: editing.startedAt?.trim() || undefined,
+      completedAt: editing.completedAt?.trim() || undefined,
+      relatedPostId: editing.relatedPostId || undefined,
+      relatedProjectId: editing.relatedProjectId || undefined,
+    };
     try { if (editing.id) await api.updateLabExperiment(editing.id, payload); else await api.createLabExperiment(payload); setEditing(null); load(); } catch (e) { setError(e instanceof Error ? e.message : 'Error al guardar'); } finally { setSaving(false); }
   }
   async function remove(item: ApiLabExperiment) { if (!window.confirm(`¿Eliminar el experimento "${item.title || 'sin título'}"?`)) return; try { await api.deleteLabExperiment(item.id); load(); } catch (e) { setError(e instanceof Error ? e.message : 'Error al eliminar'); } }

@@ -56,10 +56,16 @@ export function BlogExplorer({ posts, categories, selectedSlug }: BlogExplorerPr
 
   const [currentPage, setCurrentPage] = useState(1);
   const postsPerPage = 15;
-  const totalPages = Math.ceil(filteredPosts.length / postsPerPage);
+  const featuredPost = filteredPosts[0] ?? null;
+  const regularPosts = filteredPosts.slice(1);
+  const totalPages = Math.ceil(regularPosts.length / postsPerPage);
   const paginatedPosts = useMemo(() => {
-    return filteredPosts.slice((currentPage - 1) * postsPerPage, currentPage * postsPerPage);
-  }, [filteredPosts, currentPage]);
+    return regularPosts.slice((currentPage - 1) * postsPerPage, currentPage * postsPerPage);
+  }, [regularPosts, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [debouncedQuery, selectedSlug]);
 
   const showDropdown = debouncedQuery.trim().length >= 2;
 
@@ -159,97 +165,80 @@ export function BlogExplorer({ posts, categories, selectedSlug }: BlogExplorerPr
                 onClick={() => setQuery('')}
                 className="mt-4 text-sm font-medium text-accent hover:underline"
               >
-                {query && selectedSlug ? 'Limpiar búsqueda y filtros' : 'Limpiar búsqueda'}
+                Limpiar búsqueda y filtros
               </button>
             )}
           </div>
         ) : (
           <div className="mt-12">
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {paginatedPosts.map((post) => (
-                <FadeIn key={post.id}>
-                  <Link href={`/blog/${post.slug}`} className="group block">
-                    <article className="glass-card flex flex-col gap-6 p-5 transition-shadow hover:shadow-lg hover:shadow-accent/5 md:flex-row md:p-6">
-                      <div className="flex min-w-0 flex-1 flex-col">
-                        <div className="mb-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                          {post.publishedAt && (
-                            <time dateTime={post.publishedAt}>{formatDate(post.publishedAt)}</time>
-                          )}
-                          <span className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {post.readingTime} min lectura
-                          </span>
-                        </div>
-
-                        <div className="mb-3 flex flex-wrap gap-2">
-                          {post.category && (
-                            <span className="rounded-full bg-accent/10 px-2.5 py-1 text-xs font-medium text-accent">
-                              {post.category.name}
-                            </span>
-                          )}
-                          {post.tags.map(({ tag }) => (
-                            <span key={tag.id} className="rounded-full bg-muted px-2.5 py-1 text-xs text-muted-foreground">
-                              {tag.name}
-                            </span>
-                          ))}
-                        </div>
-
-                        <h2 className="text-xl font-semibold transition-colors group-hover:text-accent">
-                          {post.title}
-                        </h2>
-                        {post.excerpt && (
-                          <p className="mt-2 text-muted-foreground">{post.excerpt}</p>
+            {featuredPost && (
+              <section aria-labelledby="featured-post-title" className="mb-14">
+                <p className="mb-4 font-mono text-xs uppercase tracking-[0.2em] text-accent">Destacado</p>
+                <Link href={`/blog/${featuredPost.slug}`} className="group block">
+                  <article className="glass-card overflow-hidden transition-shadow hover:shadow-lg hover:shadow-accent/5">
+                    <div className="grid md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+                      <div className="relative aspect-video min-h-56 overflow-hidden border-b border-border md:aspect-auto md:min-h-72 md:border-b-0 md:border-r">
+                        {featuredPost.coverImage ? (
+                          <Image src={featuredPost.coverImage} alt={`Portada de ${featuredPost.title}`} fill sizes="(max-width: 768px) 100vw, 55vw" className="object-cover transition-transform duration-300 group-hover:scale-105" unoptimized />
+                        ) : (
+                          <div className="flex h-full items-center justify-center bg-muted/40 text-sm text-muted-foreground">Sin miniatura</div>
                         )}
-                        <span className="mt-5 text-sm font-medium text-accent transition-colors group-hover:text-accent/80">
-                          Leer artículo →
-                        </span>
                       </div>
-
-                      {post.coverImage ? (
-                        <div className="relative order-first aspect-video w-full shrink-0 overflow-hidden rounded-lg border border-border md:order-last md:aspect-[4/3] md:w-64">
-                          <Image
-                            src={post.coverImage}
-                            alt={`Portada de ${post.title}`}
-                            fill
-                            sizes="(max-width: 768px) 100vw, 256px"
-                            className="object-cover transition-transform duration-300 group-hover:scale-105"
-                            unoptimized
-                          />
+                      <div className="flex flex-col justify-center p-6 md:p-8">
+                        <div className="mb-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                          {featuredPost.category && <span className="rounded-full bg-accent/10 px-2.5 py-1 font-medium text-accent">{featuredPost.category.name}</span>}
+                          {featuredPost.publishedAt && <time dateTime={featuredPost.publishedAt}>{formatDate(featuredPost.publishedAt)}</time>}
+                          <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{featuredPost.readingTime} min lectura</span>
                         </div>
-                      ) : null}
-                    </article>
-                  </Link>
-                </FadeIn>
-              ))}
-            </div>
+                        <h2 id="featured-post-title" className="text-2xl font-semibold transition-colors group-hover:text-accent md:text-3xl">{featuredPost.title}</h2>
+                        {featuredPost.excerpt && <p className="mt-3 text-muted-foreground">{featuredPost.excerpt}</p>}
+                        <span className="mt-5 text-sm font-medium text-accent">Leer artículo →</span>
+                      </div>
+                    </div>
+                  </article>
+                </Link>
+              </section>
+            )}
 
-            {/* Pagination controls */}
+            {regularPosts.length > 0 && (
+              <section aria-labelledby="latest-posts-title">
+                <h2 id="latest-posts-title" className="mb-5 text-sm font-medium uppercase tracking-[0.18em] text-muted-foreground">Últimos artículos</h2>
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                  {paginatedPosts.map((post) => (
+                    <FadeIn key={post.id}>
+                      <Link href={`/blog/${post.slug}`} className="group block h-full">
+                        <article className="glass-card flex h-full flex-col overflow-hidden transition-shadow hover:shadow-lg hover:shadow-accent/5">
+                          <div className="relative aspect-video w-full shrink-0 overflow-hidden border-b border-border bg-muted/40">
+                            {post.coverImage ? (
+                              <Image src={post.coverImage} alt={`Portada de ${post.title}`} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover transition-transform duration-300 group-hover:scale-105" unoptimized />
+                            ) : <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Sin miniatura</div>}
+                          </div>
+                          <div className="flex flex-1 flex-col p-5">
+                            <div className="mb-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+                              {post.publishedAt && <time dateTime={post.publishedAt}>{formatDate(post.publishedAt)}</time>}
+                              <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{post.readingTime} min</span>
+                            </div>
+                            <div className="mb-3 flex flex-wrap gap-2">{post.category && <span className="rounded-full bg-accent/10 px-2.5 py-1 text-xs font-medium text-accent">{post.category.name}</span>}</div>
+                            <h3 className="text-xl font-semibold transition-colors group-hover:text-accent">{post.title}</h3>
+                            {post.excerpt && <p className="mt-2 line-clamp-3 text-muted-foreground">{post.excerpt}</p>}
+                            <span className="mt-auto pt-5 text-sm font-medium text-accent">Leer artículo →</span>
+                          </div>
+                        </article>
+                      </Link>
+                    </FadeIn>
+                  ))}
+                </div>
+              </section>
+            )}
+
             {totalPages > 1 && (
-              <div className="mt-6 flex justify-center space-x-2">
+              <nav aria-label="Paginación de artículos" className="mt-8 flex justify-center gap-2">
                 {[...Array(totalPages)].map((_, i) => {
                   const pageNumber = i + 1;
-                  return (
-                    <button
-                      key={pageNumber}
-                      onClick={() => setCurrentPage(pageNumber)}
-                      disabled={currentPage === pageNumber}
-                      className={`px-3 py-2 rounded-md text-sm font-medium ${currentPage === pageNumber
-                        ? 'bg-accent text-white'
-                        : 'bg-muted/40 text-muted-foreground hover:bg-muted/60'}`}
-                    >
-                      {pageNumber}
-                    </button>
-                  );
+                  return <button key={pageNumber} type="button" onClick={() => setCurrentPage(pageNumber)} disabled={currentPage === pageNumber} aria-current={currentPage === pageNumber ? 'page' : undefined} className={`rounded-md px-3 py-2 text-sm font-medium ${currentPage === pageNumber ? 'bg-accent text-white' : 'bg-muted/40 text-muted-foreground hover:bg-muted/60'}`}>{pageNumber}</button>;
                 })}
-                {/* Next button */}
-                <button
-                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                  disabled={currentPage === totalPages}
-                  className="px-3 py-2 rounded-md text-sm font-medium bg-muted/40 text-muted-foreground hover:bg-muted/60"
-                >
-                  →
-                </button>
-              </div>
+                <button type="button" onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages} aria-label="Siguiente página" className="rounded-md bg-muted/40 px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted/60">→</button>
+              </nav>
             )}
           </div>
         )}

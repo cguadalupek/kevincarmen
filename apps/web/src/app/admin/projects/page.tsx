@@ -18,7 +18,34 @@ export default function AdminProjectsPage() {
   useEffect(() => { load(); }, []);
   function edit(item: ApiProject) { setEditing({ ...item }); setTechInput(item.technologies.join(', ')); }
   async function uploadCover(file: File) { setUploading(true); setError(''); try { const result = await api.uploadImage(file); setEditing((current) => current ? { ...current, coverImage: result.url } : current); } catch (e) { setError(e instanceof Error ? e.message : 'Error al subir portada'); } finally { setUploading(false); } }
-  async function submit(e: React.FormEvent) { e.preventDefault(); if (!editing) return; setSaving(true); setError(''); const technologies = techInput.split(',').map((x) => x.trim()).filter(Boolean); const payload = { ...editing, title: editing.title?.trim(), slug: editing.slug?.trim() || undefined, description: editing.description?.trim(), technologies, repository: editing.repository?.trim() || undefined, demo: editing.demo?.trim() || undefined, coverImage: editing.coverImage?.trim() || undefined }; try { if (editing.id) await api.updateProject(editing.id, payload); else await api.createProject(payload); setEditing(null); load(); } catch (e) { setError(e instanceof Error ? e.message : 'Error al guardar'); } finally { setSaving(false); } }
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editing) return;
+    setSaving(true);
+    setError('');
+    const payload = {
+      title: editing.title?.trim() ?? '',
+      slug: editing.slug?.trim() || undefined,
+      description: editing.description?.trim() ?? '',
+      longDescription: editing.longDescription?.trim() || undefined,
+      technologies: techInput.split(',').map((x) => x.trim()).filter(Boolean),
+      repository: editing.repository?.trim() || undefined,
+      demo: editing.demo?.trim() || undefined,
+      status: editing.status,
+      featured: Boolean(editing.featured),
+      coverImage: editing.coverImage?.trim() || undefined,
+    };
+    try {
+      if (editing.id) await api.updateProject(editing.id, payload);
+      else await api.createProject(payload);
+      setEditing(null);
+      load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al guardar');
+    } finally {
+      setSaving(false);
+    }
+  }
   async function remove(item: ApiProject) { if (!window.confirm(`¿Eliminar el proyecto "${item.title}"?`)) return; try { await api.deleteProject(item.id); load(); } catch (e) { setError(e instanceof Error ? e.message : 'Error al eliminar'); } }
   return <AdminAuthGuard><AdminSidebar /><main className="flex-1 overflow-auto p-8"><div className="mb-6 flex items-center justify-between"><div><Link href="/admin" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-accent"><ArrowLeft className="h-4 w-4" /> Dashboard</Link><h1 className="mt-2 text-2xl font-bold">Proyectos</h1><p className="text-sm text-muted-foreground">Publica proyectos con su descripción, tecnologías y enlaces.</p></div><Button variant="accent" onClick={() => setEditing(emptyProject())} disabled={!!editing}><Plus className="h-4 w-4" /> Nuevo proyecto</Button></div>
     {error && <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">{error}</div>}

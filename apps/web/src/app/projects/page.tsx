@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { featuredProjects } from '@/lib/data/mock';
+import { getPublishedProjects } from '@/lib/api/projects';
 import { FolderKanban } from 'lucide-react';
 import { PortfolioCard } from '@/components/portfolio-card';
 import { FadeIn, StaggerContainer, StaggerItem } from '@/components/motion/fade-in';
@@ -10,7 +10,9 @@ export const metadata: Metadata = {
   alternates: { canonical: '/proyectos' },
 };
 
-export default function ProjectsPage() {
+export default async function ProjectsPage() {
+  const projects = await getPublishedProjects();
+
   return (
     <div className="py-16">
       <div className="section-container">
@@ -22,31 +24,36 @@ export default function ProjectsPage() {
           </p>
         </FadeIn>
 
-        <StaggerContainer className="mt-12 grid gap-6 md:grid-cols-2">
-          {featuredProjects.map((project) => (
-            <StaggerItem key={project.id}>
-              <PortfolioCard
-                href={`/proyectos/${slugifyTitle(project.title)}`}
-                title={project.title}
-                description={project.description}
-                status={project.status}
-                stack={project.technologies}
-                repository={project.repository}
-                demo={project.demo}
-              />
-            </StaggerItem>
-          ))}
-        </StaggerContainer>
+        {projects.length > 0 ? (
+          <StaggerContainer className="mt-12 grid gap-6 md:grid-cols-2">
+            {projects.map((project) => (
+              <StaggerItem key={project.id}>
+                <PortfolioCard
+                  href={`/proyectos/${project.slug}`}
+                  title={project.title}
+                  description={project.description}
+                  status={mapProjectStatus(project.status)}
+                  stack={project.technologies}
+                  repository={project.repository ?? undefined}
+                  demo={project.demo ?? undefined}
+                  coverImage={project.coverImage ?? undefined}
+                />
+              </StaggerItem>
+            ))}
+          </StaggerContainer>
+        ) : (
+          <div className="mt-12 rounded-xl border border-border bg-card/40 p-10 text-center text-muted-foreground">Aún no hay proyectos publicados.</div>
+        )}
       </div>
     </div>
   );
 }
 
-function slugifyTitle(title: string) {
-  return title
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+function mapProjectStatus(status: 'ACTIVE' | 'COMPLETED' | 'ARCHIVED' | 'IN_PROGRESS') {
+  return {
+    ACTIVE: 'active',
+    COMPLETED: 'completed',
+    ARCHIVED: 'archived',
+    IN_PROGRESS: 'in-progress',
+  }[status] as 'active' | 'completed' | 'archived' | 'in-progress';
 }
