@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { featuredProjects } from '@/lib/data/mock';
+import { FolderKanban } from 'lucide-react';
 import { PortfolioCard } from '@/components/portfolio-card';
 import { FadeIn, StaggerContainer, StaggerItem } from '@/components/motion/fade-in';
 
@@ -14,7 +15,8 @@ export default function ProjectsPage() {
     <div className="py-16">
       <div className="section-container">
         <FadeIn>
-          <h1 className="section-title">Portfolio</h1>
+          <div className="flex items-center gap-3 text-accent"><FolderKanban className="h-6 w-6" /><span className="font-mono text-sm">/ proyectos</span></div>
+          <h1 className="section-title mt-3">Portfolio</h1>
           <p className="section-subtitle">
             Proyectos de software, infraestructura y herramientas open source.
           </p>

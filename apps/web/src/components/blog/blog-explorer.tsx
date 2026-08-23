@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Clock, Search, X } from 'lucide-react';
+import { BookOpen, Clock, Search, X } from 'lucide-react';
 import { formatDate } from '@kevincarmen/utils';
 import type { PublicPost } from '@/lib/api/posts';
 import { FadeIn } from '@/components/motion/fade-in';
@@ -44,8 +44,9 @@ export function BlogExplorer({ posts, categories, selectedSlug }: BlogExplorerPr
 
   return (
     <>
-      <div className="section-container mx-auto">
-        <h1 className="section-title">Blog</h1>
+      <div className="section-container mx-auto py-16">
+        <div className="flex items-center gap-3 text-accent"><BookOpen className="h-6 w-6" /><span className="font-mono text-sm">/ artículos</span></div>
+        <h1 className="section-title mt-3">Blog</h1>
         <p className="section-subtitle">
           Tutoriales, reflexiones y documentación técnica organizados por categoría.
         </p>

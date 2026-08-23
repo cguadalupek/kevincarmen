@@ -51,6 +51,9 @@ export class LabService {
     return this.prisma.labExperiment.create({
       data: {
         title: dto.title,
+        // Compatibilidad con la columna legacy que sigue siendo NOT NULL
+        // en instalaciones que aún no han compactado lab_services.
+        name: dto.title,
         slug,
         description: dto.description,
         objective: dto.objective,
@@ -75,7 +78,11 @@ export class LabService {
   async update(id: string, dto: UpdateLabDto) {
     await this.findById(id);
     const data: Prisma.LabExperimentUpdateInput = {};
-    if (dto.title !== undefined) data.title = dto.title;
+    if (dto.title !== undefined) {
+      data.title = dto.title;
+      // Mantener sincronizado el campo legacy mientras exista en la tabla.
+      data.name = dto.title;
+    }
     if (dto.slug !== undefined) data.slug = slugify(dto.slug);
     if (dto.description !== undefined) data.description = dto.description;
     if (dto.objective !== undefined) data.objective = dto.objective || null;

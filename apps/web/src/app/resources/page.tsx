@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { Download, FileCode, FileSpreadsheet, FileText, Container } from 'lucide-react';
+import { Download, FileCode, FileSpreadsheet, FileText, Container, FolderArchive } from 'lucide-react';
 import { FadeIn, StaggerContainer, StaggerItem } from '@/components/motion/fade-in';
 
 export const metadata: Metadata = {
@@ -48,7 +48,8 @@ export default function ResourcesPage() {
     <div className="py-16">
       <div className="section-container">
         <FadeIn>
-          <h1 className="section-title">Recursos</h1>
+          <div className="flex items-center gap-3 text-accent"><FolderArchive className="h-6 w-6" /><span className="font-mono text-sm">/ recursos</span></div>
+          <h1 className="section-title mt-3">Recursos</h1>
           <p className="section-subtitle">
             Descargas gratuitas: scripts, plantillas, Docker Compose y más.
           </p>

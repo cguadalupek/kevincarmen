@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { BookOpen, FileText, FolderKanban, GraduationCap, Server } from 'lucide-react';
+import { BookOpen, FileText, FolderKanban, GraduationCap, Server, Youtube } from 'lucide-react';
 import { contentNav } from '@kevincarmen/config';
+import { getLatestVideos } from '@/lib/api/posts';
+import { YoutubeGrid } from '@/components/content/youtube-grid';
 
 export const metadata: Metadata = {
   title: 'Contenido',
@@ -32,7 +34,12 @@ const sectionMeta: Record<string, { icon: typeof BookOpen; description: string }
   },
 };
 
-export default function ContentPage() {
+export const dynamic = 'force-dynamic';
+
+export default async function ContentPage() {
+  const youtubeVideos = (await getLatestVideos(500)).filter(
+    (video) => video.videoType === 'YOUTUBE' || video.videoType === 'YOUTUBE_SHORT',
+  );
   const sections = contentNav
     .map((item) => ({ item, meta: sectionMeta[item.href] }))
     .filter(
@@ -65,6 +72,13 @@ export default function ContentPage() {
             );
           })}
         </div>
+        <div className="mt-16 flex items-center gap-3 text-accent">
+          <Youtube className="h-6 w-6" />
+          <span className="font-mono text-sm">/ videos de youtube</span>
+        </div>
+        <h2 className="mt-3 text-2xl font-bold">Videos publicados</h2>
+        <p className="mt-2 text-muted-foreground">Todos mis videos de YouTube, ordenados por publicación.</p>
+        <YoutubeGrid videos={youtubeVideos} />
       </div>
     </div>
   );

@@ -22,7 +22,7 @@ export class VideosController {
   findPublished(@Query('limit') limit?: string) {
     const parsed = limit ? Number.parseInt(limit, 10) : undefined;
     return this.videosService.findPublished(
-      Number.isFinite(parsed) ? Math.min(parsed ?? 24, 48) : 24,
+      Number.isFinite(parsed) ? Math.min(parsed ?? 24, 500) : 24,
     );
   }
 

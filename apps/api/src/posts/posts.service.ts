@@ -3,7 +3,6 @@ import {
   NotFoundException,
   ConflictException,
   ForbiddenException,
-  BadRequestException,
 } from '@nestjs/common';
 import { PostStatus, VideoType, type Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -174,8 +173,6 @@ export class PostsService {
 
     const content = this.normalizeStoredContent(dto.content ?? post.content);
     const readingTime = Math.max(1, Math.ceil(content.split(/\s+/).length / 200));
-    const status = dto.status ?? post.status;
-
     const data: Prisma.PostUpdateInput = {
       ...dto,
       content,

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { BookOpen, Clock, Signal } from 'lucide-react';
+import { BookOpen, Clock, GraduationCap, Signal } from 'lucide-react';
 import { getPublishedCourses } from '@/lib/api/posts';
 import { FadeIn, StaggerContainer, StaggerItem } from '@/components/motion/fade-in';
 import { cn } from '@/lib/utils';
@@ -30,7 +30,8 @@ export default async function CoursesPage() {
     <div className="py-16">
       <div className="section-container">
         <FadeIn>
-          <h1 className="section-title">Cursos</h1>
+          <div className="flex items-center gap-3 text-accent"><GraduationCap className="h-6 w-6" /><span className="font-mono text-sm">/ formación</span></div>
+          <h1 className="section-title mt-3">Cursos</h1>
           <p className="section-subtitle">
             Formación estructurada en desarrollo, infraestructura y DevOps. Pagos próximamente.
           </p>
