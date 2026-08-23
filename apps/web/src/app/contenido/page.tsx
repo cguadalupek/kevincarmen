@@ -37,9 +37,7 @@ const sectionMeta: Record<string, { icon: typeof BookOpen; description: string }
 export const dynamic = 'force-dynamic';
 
 export default async function ContentPage() {
-  const youtubeVideos = (await getLatestVideos(500)).filter(
-    (video) => video.videoType === 'YOUTUBE' || video.videoType === 'YOUTUBE_SHORT',
-  );
+  const youtubeVideos = await getLatestVideos(500);
   const sections = contentNav
     .map((item) => ({ item, meta: sectionMeta[item.href] }))
     .filter(

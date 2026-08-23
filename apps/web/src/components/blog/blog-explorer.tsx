@@ -55,9 +55,13 @@ export function BlogExplorer({ posts, categories, selectedSlug }: BlogExplorerPr
   });
 
   const [currentPage, setCurrentPage] = useState(1);
-  const postsPerPage = 15;
-  const featuredPost = filteredPosts[0] ?? null;
-  const regularPosts = filteredPosts.slice(1);
+  const postsPerPage = 6;
+  const featuredPost = filteredPosts
+    .filter((post) => post.featured)
+    .sort((a, b) => new Date(b.publishedAt ?? b.updatedAt).getTime() - new Date(a.publishedAt ?? a.updatedAt).getTime())[0] ?? null;
+  const regularPosts = featuredPost
+    ? filteredPosts.filter((post) => post.id !== featuredPost.id)
+    : filteredPosts;
   const totalPages = Math.ceil(regularPosts.length / postsPerPage);
   const paginatedPosts = useMemo(() => {
     return regularPosts.slice((currentPage - 1) * postsPerPage, currentPage * postsPerPage);
@@ -186,7 +190,7 @@ export function BlogExplorer({ posts, categories, selectedSlug }: BlogExplorerPr
                       </div>
                       <div className="flex flex-col justify-center p-6 md:p-8">
                         <div className="mb-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                          {featuredPost.category && <span className="rounded-full bg-accent/10 px-2.5 py-1 font-medium text-accent">{featuredPost.category.name}</span>}
+                          {featuredPost.category && <CategoryBadge category={featuredPost.category.slug} label={featuredPost.category.name} />}
                           {featuredPost.publishedAt && <time dateTime={featuredPost.publishedAt}>{formatDate(featuredPost.publishedAt)}</time>}
                           <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{featuredPost.readingTime} min lectura</span>
                         </div>
@@ -218,7 +222,7 @@ export function BlogExplorer({ posts, categories, selectedSlug }: BlogExplorerPr
                               {post.publishedAt && <time dateTime={post.publishedAt}>{formatDate(post.publishedAt)}</time>}
                               <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{post.readingTime} min</span>
                             </div>
-                            <div className="mb-3 flex flex-wrap gap-2">{post.category && <span className="rounded-full bg-accent/10 px-2.5 py-1 text-xs font-medium text-accent">{post.category.name}</span>}</div>
+                            <div className="mb-3 flex flex-wrap gap-2">{post.category && <CategoryBadge category={post.category.slug} label={post.category.name} />}</div>
                             <h3 className="text-xl font-semibold transition-colors group-hover:text-accent">{post.title}</h3>
                             {post.excerpt && <p className="mt-2 line-clamp-3 text-muted-foreground">{post.excerpt}</p>}
                             <span className="mt-auto pt-5 text-sm font-medium text-accent">Leer artículo →</span>
@@ -232,12 +236,13 @@ export function BlogExplorer({ posts, categories, selectedSlug }: BlogExplorerPr
             )}
 
             {totalPages > 1 && (
-              <nav aria-label="Paginación de artículos" className="mt-8 flex justify-center gap-2">
+              <nav aria-label="Paginación de artículos" className="mt-10 flex items-center justify-center gap-2 pb-8">
+                <button type="button" onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))} disabled={currentPage === 1} aria-label="Página anterior" className="rounded-md bg-muted/40 px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted/60 disabled:cursor-not-allowed disabled:opacity-40">←</button>
                 {[...Array(totalPages)].map((_, i) => {
                   const pageNumber = i + 1;
                   return <button key={pageNumber} type="button" onClick={() => setCurrentPage(pageNumber)} disabled={currentPage === pageNumber} aria-current={currentPage === pageNumber ? 'page' : undefined} className={`rounded-md px-3 py-2 text-sm font-medium ${currentPage === pageNumber ? 'bg-accent text-white' : 'bg-muted/40 text-muted-foreground hover:bg-muted/60'}`}>{pageNumber}</button>;
                 })}
-                <button type="button" onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages} aria-label="Siguiente página" className="rounded-md bg-muted/40 px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted/60">→</button>
+                <button type="button" onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages} aria-label="Siguiente página" className="rounded-md bg-muted/40 px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted/60 disabled:cursor-not-allowed disabled:opacity-40">→</button>
               </nav>
             )}
           </div>
@@ -245,6 +250,19 @@ export function BlogExplorer({ posts, categories, selectedSlug }: BlogExplorerPr
       </div>
     </>
   );
+}
+
+const CATEGORY_COLORS: Record<string, string> = {
+  desarrollo: 'border-emerald-400/50 bg-emerald-400/10 text-emerald-300',
+  hardware: 'border-amber-400/50 bg-amber-400/10 text-amber-300',
+  ia: 'border-violet-400/50 bg-violet-400/10 text-violet-300',
+  homelab: 'border-cyan-400/50 bg-cyan-400/10 text-cyan-300',
+  redes: 'border-blue-400/50 bg-blue-400/10 text-blue-300',
+  'soporte-ti': 'border-rose-400/50 bg-rose-400/10 text-rose-300',
+};
+
+function CategoryBadge({ category, label }: { category: string; label: string }) {
+  return <span className={`rounded-full border px-2.5 py-1 text-xs font-medium ${CATEGORY_COLORS[category] ?? 'border-accent/50 bg-accent/10 text-accent'}`}>{label}</span>;
 }
 
 function CategoryPill({

@@ -6,11 +6,13 @@ import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import ImageResize from 'tiptap-extension-resize-image';
+import Underline from '@tiptap/extension-underline';
 import { Markdown } from 'tiptap-markdown';
 import { common, createLowlight } from 'lowlight';
 import { api } from '@/lib/api/client';
 import { SlashCommand } from './editor/slash-command';
 import { CodeBlockToolbar } from './editor/code-block-toolbar';
+import { FormattingToolbar } from './editor/formatting-toolbar';
 import { Iframe } from './editor/iframe-node';
 
 const lowlight = createLowlight(common);
@@ -64,6 +66,7 @@ export function PostEditor({ content, onChange, onVideoPaste }: PostEditorProps)
       StarterKit.configure({
         codeBlock: false,
       }),
+      Underline,
       CodeBlockLowlight.configure({
         lowlight,
         defaultLanguage: 'powershell',
@@ -227,6 +230,7 @@ if (text && /^https?:\/\//i.test(text)) {
         onChange={handleImageInput}
       />
 
+      <FormattingToolbar editor={editor} />
       <CodeBlockToolbar editor={editor} />
 
       <EditorContent editor={editor} />

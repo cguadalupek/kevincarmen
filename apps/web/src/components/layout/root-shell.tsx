@@ -18,7 +18,7 @@ export function RootShell({ children }: { children: React.ReactNode }) {
     <div className="relative flex min-h-screen flex-col">
       <UniverseBackground />
       <Header />
-      <main className="relative z-10 flex-1">{children}</main>
+      <main className="relative z-10 flex-1 pb-16">{children}</main>
       <Footer />
       <script
         type="application/ld+json"

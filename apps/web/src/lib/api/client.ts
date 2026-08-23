@@ -57,6 +57,7 @@ export interface ApiPost {
   excerpt: string | null;
   content: string;
   coverImage: string | null;
+  featured: boolean;
   videoUrl: string | null;
   videoType: VideoTypeValue | null;
   externalLinkLabel: string | null;

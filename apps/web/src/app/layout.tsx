@@ -56,7 +56,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es" className="dark">
+    <html lang="es" className="dark" data-scroll-behavior="smooth">
       <body className={`${inter.variable} ${jetbrains.variable} min-h-screen`}>
         <RootShell>{children}</RootShell>
       </body>

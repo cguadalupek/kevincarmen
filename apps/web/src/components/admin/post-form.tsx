@@ -51,6 +51,7 @@ export function PostForm({ post }: PostFormProps) {
   const [excerpt, setExcerpt] = useState(post?.excerpt ?? '');
   const [content, setContent] = useState(post?.content ?? '');
   const [status, setStatus] = useState<ApiPost['status']>(post?.status ?? 'PUBLISHED');
+  const [featured, setFeatured] = useState(post?.featured ?? false);
   const [coverImage, setCoverImage] = useState(post?.coverImage ?? '');
   const [coverUploading, setCoverUploading] = useState(false);
   const [autoSlug, setAutoSlug] = useState(!post);
@@ -99,6 +100,7 @@ export function PostForm({ post }: PostFormProps) {
         excerpt,
         content,
         status,
+        featured,
         coverImage: coverImage || undefined,
         videoUrl: videoUrl.trim(),
         videoType: videoType ?? undefined,
@@ -245,6 +247,11 @@ export function PostForm({ post }: PostFormProps) {
               <option value="SCHEDULED">Programado</option>
               <option value="TRASHED">Papelera</option>
             </select>
+            <label className="mt-4 flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={featured} onChange={(event) => setFeatured(event.target.checked)} className="h-4 w-4 rounded border-border bg-muted/50" />
+              <span>Habilitar artículo destacado</span>
+            </label>
+            <p className="mt-1 text-xs text-muted-foreground">Solo un artículo debería estar destacado; el más reciente marcado aparecerá antes del grid.</p>
 
             <label htmlFor="publishedAt" className="mt-4 mb-2 block text-sm font-medium">
               Fecha de publicación

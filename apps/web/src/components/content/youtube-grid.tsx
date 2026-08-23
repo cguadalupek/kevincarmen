@@ -5,7 +5,7 @@ import { ArrowUpRight, ChevronRight, Play, Youtube } from 'lucide-react';
 import { formatDate } from '@kevincarmen/utils';
 import type { PublicVideo } from '@/lib/api/posts';
 
-const PAGE_SIZE = 18; // 3 columnas x 6 filas en escritorio
+const PAGE_SIZE = 6; // 3 columnas x 2 filas en escritorio
 
 function youtubeId(url: string) {
   try {
@@ -35,7 +35,7 @@ export function YoutubeGrid({ videos }: { videos: PublicVideo[] }) {
   if (videos.length === 0) {
     return (
       <div className="mt-10 rounded-xl border border-border bg-card/40 p-10 text-center text-muted-foreground">
-        Aún no hay videos de YouTube publicados.
+        Aún no hay videos publicados.
       </div>
     );
   }
@@ -56,7 +56,7 @@ export function YoutubeGrid({ videos }: { videos: PublicVideo[] }) {
                   <div className="absolute inset-0 flex items-center justify-center bg-black/20 transition group-hover:bg-black/40">
                     <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-black shadow-lg"><Play className="h-5 w-5 fill-current" /></span>
                   </div>
-                  <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-red-600/90 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-white"><Youtube className="h-3 w-3" /> YouTube</span>
+                  <span className="absolute left-2 top-2 inline-flex items-center gap-1 rounded-full bg-red-600/90 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-white"><Youtube className="h-3 w-3" /> {video.videoType.replace('_', ' ')}</span>
                 </div>
                 <div className="p-4">
                   <h3 className="line-clamp-2 font-medium transition-colors group-hover:text-accent">{video.title}</h3>

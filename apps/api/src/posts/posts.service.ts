@@ -146,6 +146,7 @@ export class PostsService {
         ? this.normalizeStoredUrl(dto.externalLinkUrl)
         : null,
       status,
+      featured: dto.featured ?? false,
       readingTime,
       authorId,
       categoryId: dto.categoryId || null,

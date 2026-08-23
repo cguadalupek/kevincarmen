@@ -109,6 +109,7 @@ model Post {
   externalLinkLabel String? @map("external_link_label")
   externalLinkUrl   String? @map("external_link_url")
   status      PostStatus @default(DRAFT)
+  featured    Boolean    @default(false)
   publishedAt DateTime?  @map("published_at")
   readingTime Int        @default(0) @map("reading_time")
   authorId    String     @map("author_id")

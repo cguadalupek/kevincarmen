@@ -15,6 +15,7 @@ import {
   Menu,
   Server,
   UserRound,
+  Video,
   X,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -32,6 +33,7 @@ export function Header() {
     '/cursos': GraduationCap,
     '/recursos': FileText,
     '/lab': Server,
+    '/videos': Video,
   } as const;
   const mainIcons = {
     '/': Home,
@@ -163,6 +165,13 @@ export function Header() {
                                   {child.label}
                                 </Link>
                               ))}
+                              <Link
+                                href="/videos"
+                                onClick={() => setMobileOpen(false)}
+                                className="flex min-h-11 items-center gap-2 rounded-md px-3 py-3 text-sm text-muted-foreground hover:bg-muted/50 hover:text-accent"
+                              >
+                                <Video className="h-4 w-4" /> Videos
+                              </Link>
                             </div>
                           </motion.div>
                         )}
