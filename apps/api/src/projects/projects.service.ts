@@ -14,6 +14,7 @@ export class ProjectsService {
   async findBySlug(slug: string) { const project = await this.prisma.project.findUnique({ where: { slug } }); if (!project || project.status === 'ARCHIVED') throw new NotFoundException('Proyecto no encontrado'); return project; }
   async create(dto: CreateProjectDto) {
     const slug = slugify(dto.slug);
+    if (!slug) throw new ConflictException('El slug no puede estar vacío');
     if (await this.prisma.project.findUnique({ where: { slug } })) throw new ConflictException('El slug ya existe');
     return this.prisma.project.create({ data: {
       title: dto.title, slug, description: dto.description, status: dto.status, coverImage: dto.coverImage,
@@ -30,7 +31,13 @@ export class ProjectsService {
     await this.findById(id);
     const data: Prisma.ProjectUpdateInput = {};
     if (dto.title !== undefined) data.title = dto.title;
-    if (dto.slug !== undefined) data.slug = slugify(dto.slug);
+    if (dto.slug !== undefined) {
+      const slug = slugify(dto.slug);
+      if (!slug) throw new ConflictException('El slug no puede estar vacío');
+      const existing = await this.prisma.project.findUnique({ where: { slug } });
+      if (existing && existing.id !== id) throw new ConflictException('El slug ya existe');
+      data.slug = slug;
+    }
     if (dto.description !== undefined) data.description = dto.description;
     if (dto.status !== undefined) { data.status = dto.status; data.publishedAt = dto.status === 'ARCHIVED' ? null : new Date(); }
     if (dto.coverImage !== undefined) data.coverImage = dto.coverImage || null;

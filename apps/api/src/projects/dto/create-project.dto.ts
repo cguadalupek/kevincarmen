@@ -1,12 +1,12 @@
-import { IsArray, IsBoolean, IsEnum, IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
+import { IsArray, IsBoolean, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 import { ProjectStatus } from '@prisma/client';
 
 export class CreateProjectDto {
-  @IsString() @MaxLength(160) title!: string;
-  @IsString() @MaxLength(160) slug!: string;
-  @IsString() description!: string;
+  @IsString() @IsNotEmpty() @MaxLength(160) title!: string;
+  @IsString() @IsNotEmpty() @MaxLength(160) slug!: string;
+  @IsString() @IsNotEmpty() description!: string;
   @IsEnum(ProjectStatus) status!: ProjectStatus;
-  @IsString() coverImage!: string;
+  @IsString() @IsNotEmpty() coverImage!: string;
   @IsOptional() @IsString() longDescription?: string;
   @IsOptional() @IsArray() @IsString({ each: true }) technologies?: string[];
   @IsOptional() @IsString() category?: string;
