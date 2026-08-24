@@ -2,25 +2,33 @@
 
 import Link from 'next/link';
 import { ArrowUpRight, ExternalLink, Github } from 'lucide-react';
-import { featuredProjects } from '@/lib/data/mock';
+import type { PublicProject } from '@/lib/api/projects';
 import { FadeIn, StaggerContainer, StaggerItem } from '@/components/motion/fade-in';
 import { cn } from '@/lib/utils';
 
+
+
+interface ProjectsSectionProps {
+  projects: PublicProject[];
+}
+
 const statusLabels = {
-  active: 'Activo',
-  completed: 'Completado',
-  archived: 'Archivado',
-  'in-progress': 'En desarrollo',
-};
+  ACTIVE: 'Activo',
+  COMPLETED: 'Completado',
+  ARCHIVED: 'Archivado',
+  IN_PROGRESS: 'En desarrollo',
+} as const;
 
 const statusColors = {
-  active: 'bg-accent/10 text-accent',
-  completed: 'bg-primary/20 text-primary-foreground',
-  archived: 'bg-muted text-muted-foreground',
-  'in-progress': 'bg-accent/10 text-accent',
-};
+  ACTIVE: 'bg-accent/10 text-accent',
+  COMPLETED: 'bg-primary/20 text-primary-foreground',
+  ARCHIVED: 'bg-muted text-muted-foreground',
+  IN_PROGRESS: 'bg-accent/10 text-accent',
+} as const;
 
-export function ProjectsSection() {
+export function ProjectsSection({ projects }: ProjectsSectionProps) {
+  const featuredProjects = projects.filter((project) => project.featured);
+
   return (
     <section className="py-20" id="proyectos">
       <div className="section-container">
