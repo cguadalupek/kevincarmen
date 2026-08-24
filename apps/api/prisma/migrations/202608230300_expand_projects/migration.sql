@@ -1,0 +1,15 @@
+ALTER TABLE "projects"
+  ADD COLUMN "category" TEXT,
+  ADD COLUMN "tags" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+  ADD COLUMN "project_year" INTEGER,
+  ADD COLUMN "documentation" TEXT,
+  ADD COLUMN "problem" TEXT,
+  ADD COLUMN "solution" TEXT,
+  ADD COLUMN "role" TEXT,
+  ADD COLUMN "architecture" TEXT,
+  ADD COLUMN "architecture_image" TEXT,
+  ADD COLUMN "technical_decisions" JSONB NOT NULL DEFAULT '[]'::jsonb,
+  ADD COLUMN "challenges" JSONB NOT NULL DEFAULT '[]'::jsonb,
+  ADD COLUMN "results" TEXT,
+  ADD COLUMN "learnings" TEXT,
+  ADD COLUMN "gallery" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[];

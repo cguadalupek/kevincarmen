@@ -171,15 +171,29 @@ model Project {
   id              String        @id @default(cuid())
   title           String
   slug            String        @unique
-  description     String
-  longDescription String?       @map("long_description")
-  technologies    String[]
-  repository      String?
-  demo            String?
-  status          ProjectStatus @default(IN_PROGRESS)
-  featured        Boolean       @default(false)
-  coverImage      String?       @map("cover_image")
-  publishedAt     DateTime?     @map("published_at")
+  description       String
+  longDescription   String?       @map("long_description")
+  technologies      String[]
+  category          String?
+  tags              String[]
+  projectYear       Int?          @map("project_year")
+  repository        String?
+  demo              String?
+  documentation     String?
+  status            ProjectStatus @default(IN_PROGRESS)
+  featured          Boolean       @default(false)
+  coverImage        String?       @map("cover_image")
+  problem           String?
+  solution          String?
+  role              String?
+  architecture      String?
+  architectureImage String?       @map("architecture_image")
+  technicalDecisions Json         @default("[]") @map("technical_decisions")
+  challenges        Json         @default("[]")
+  results           String?
+  learnings         String?
+  gallery           String[]
+  publishedAt       DateTime?     @map("published_at")
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @updatedAt @map("updated_at")
 
