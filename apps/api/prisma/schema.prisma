@@ -136,13 +136,15 @@ model Post {
 }
 
 /// Categoría principal (nivel 1). Es una TABLA y no un enum porque se crea y edita
-/// desde el CMS: los valores no pueden ser fijos.
+/// desde el CMS: los valores no pueden ser fijos. `color` es la clave de la paleta
+/// del frontend (emerald, cyan, amber, ...) elegida por el usuario al crearla.
 model MainCategory {
   id            String        @id @default(cuid())
   slug          String        @unique
   name          String
   description   String?
   position      Int           @default(0)
+  color         String        @default("emerald")
   posts         Post[]
   subcategories Subcategory[]
 

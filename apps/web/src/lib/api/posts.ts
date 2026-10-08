@@ -38,6 +38,7 @@ export interface PublicMainCategory {
   name: string;
   description: string | null;
   position: number;
+  color: string;
 }
 export interface PublicSubcategory {
   id: string;

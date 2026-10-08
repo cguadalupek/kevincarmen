@@ -16,6 +16,7 @@ const MAIN_CATEGORIES = [
     name: 'Software & Dev',
     description: 'Desarrollo de software, código, arquitectura y proyectos.',
     position: 1,
+    color: 'emerald',
   },
   {
     id: 'maincatinfrahomelab000001',
@@ -23,6 +24,7 @@ const MAIN_CATEGORIES = [
     name: 'Infra & Homelab',
     description: 'Servidores, contenedores, despliegues, redes y seguridad.',
     position: 2,
+    color: 'cyan',
   },
   {
     id: 'maincatithardware00000001',
@@ -30,6 +32,7 @@ const MAIN_CATEGORIES = [
     name: 'IT & Hardware',
     description: 'Equipos, ensamblaje, mantenimiento y cableado.',
     position: 3,
+    color: 'amber',
   },
   {
     id: 'maincatiatech000000000001',
@@ -37,6 +40,7 @@ const MAIN_CATEGORIES = [
     name: 'IA & Tech',
     description: 'IA local, herramientas de IA y experimentos.',
     position: 4,
+    color: 'violet',
   },
 ] as const;
 
@@ -185,7 +189,12 @@ async function main() {
   for (const main of MAIN_CATEGORIES) {
     await prisma.mainCategory.upsert({
       where: { slug: main.slug },
-      update: { name: main.name, description: main.description, position: main.position },
+      update: {
+        name: main.name,
+        description: main.description,
+        position: main.position,
+        color: main.color,
+      },
       create: main,
     });
   }

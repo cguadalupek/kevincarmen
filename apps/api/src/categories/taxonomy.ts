@@ -7,11 +7,30 @@
  * la taxonomía antigua (plana) a la nueva, para no romper enlaces ya publicados.
  */
 
+/**
+ * Claves de color válidas para una categoría. Deben coincidir con la paleta del
+ * frontend (`CATEGORY_COLORS` en apps/web/src/lib/categories.ts).
+ */
+export const CATEGORY_COLOR_KEYS = [
+  'emerald',
+  'cyan',
+  'amber',
+  'violet',
+  'blue',
+  'rose',
+  'green',
+  'teal',
+  'orange',
+  'fuchsia',
+] as const;
+
 export interface MainCategorySeed {
   slug: string;
   name: string;
   description: string;
   position: number;
+  /** Clave de la paleta del frontend (emerald, cyan, amber, ...). */
+  color: string;
 }
 
 export const DEFAULT_CATEGORIES: MainCategorySeed[] = [
@@ -20,24 +39,28 @@ export const DEFAULT_CATEGORIES: MainCategorySeed[] = [
     name: 'Software & Dev',
     description: 'Desarrollo de software, código, arquitectura y proyectos.',
     position: 1,
+    color: 'emerald',
   },
   {
     slug: 'INFRA_HOMELAB',
     name: 'Infra & Homelab',
     description: 'Servidores, contenedores, despliegues, redes y seguridad.',
     position: 2,
+    color: 'cyan',
   },
   {
     slug: 'IT_HARDWARE',
     name: 'IT & Hardware',
     description: 'Equipos, ensamblaje, mantenimiento y cableado.',
     position: 3,
+    color: 'amber',
   },
   {
     slug: 'IA_TECH',
     name: 'IA & Tech',
     description: 'IA local, herramientas de IA y experimentos.',
     position: 4,
+    color: 'violet',
   },
 ];
 

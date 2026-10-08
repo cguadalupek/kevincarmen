@@ -68,6 +68,7 @@ export interface ApiPost {
     name: string;
     description: string | null;
     position: number;
+    color: string;
   };
   subCategoryId: string | null;
   subCategory: {
@@ -211,16 +212,28 @@ export const api = {
         label: string;
         description: string | null;
         position: number;
+        color: string;
         subcategories: ApiSubcategory[];
       }[]
     >('/categories').catch(() => []),
 
   // ── CRUD de categorías y subcategorías (admin) ──
-  createCategory: (data: { name: string; slug: string; description?: string; position?: number }) =>
-    apiFetch('/categories', { method: 'POST', body: JSON.stringify(data) }),
+  createCategory: (data: {
+    name: string;
+    slug: string;
+    description?: string;
+    position?: number;
+    color?: string;
+  }) => apiFetch('/categories', { method: 'POST', body: JSON.stringify(data) }),
   updateCategory: (
     id: string,
-    data: Partial<{ name: string; slug: string; description?: string; position?: number }>,
+    data: Partial<{
+      name: string;
+      slug: string;
+      description?: string;
+      position?: number;
+      color?: string;
+    }>,
   ) => apiFetch(`/categories/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteCategory: (id: string) =>
     apiFetch<{ success: boolean }>(`/categories/${id}`, { method: 'DELETE' }),

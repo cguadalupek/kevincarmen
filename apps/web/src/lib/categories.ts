@@ -1,50 +1,75 @@
 /**
  * Presentación de las categorías en el frontend.
  *
- * Las categorías se crean y editan desde el CMS, así que no hay un conjunto fijo
- * de slugs ni de etiquetas: las etiquetas vienen del API (en el payload del post
- * y en `GET /categories`). Aquí solo viven (a) el color del badge, que es ESTABLE
- * por slug para que una categoría siempre tenga el mismo color, y (b) el mapeo de
- * los slugs de la taxonomía antigua por compatibilidad de URLs.
+ * Las categorías se crean y editan desde el CMS: las etiquetas vienen del API.
+ * Aquí viven (a) la PALETA de colores entre la que el usuario elige al crear una
+ * categoría (`color` guardado en la BD es la clave de esta paleta), y (b) el
+ * mapeo de los slugs de la taxonomía antigua por compatibilidad de URLs.
  */
 export type MainCategoryValue = string;
 
-const FALLBACK_COLOR = 'border-accent/50 bg-accent/10 text-accent';
+export interface CategoryColorOption {
+  key: string;
+  label: string;
+  /** Cadenas literales a propósito: Tailwind solo genera las clases que encuentra escritas. */
+  classes: string;
+}
 
-/** Cadenas literales a propósito: Tailwind solo genera las clases que encuentra escritas. */
-const PALETTE = [
-  'border-emerald-400/50 bg-emerald-400/10 text-emerald-300',
-  'border-cyan-400/50 bg-cyan-400/10 text-cyan-300',
-  'border-amber-400/50 bg-amber-400/10 text-amber-300',
-  'border-violet-400/50 bg-violet-400/10 text-violet-300',
-  'border-blue-400/50 bg-blue-400/10 text-blue-300',
-  'border-rose-400/50 bg-rose-400/10 text-rose-300',
-  'border-green-400/50 bg-green-400/10 text-green-300',
-  'border-teal-400/50 bg-teal-400/10 text-teal-300',
-  'border-orange-400/50 bg-orange-400/10 text-orange-300',
-  'border-fuchsia-400/50 bg-fuchsia-400/10 text-fuchsia-300',
+/** Paleta completa de colores de categoría. La clave es lo que se guarda en la BD. */
+export const CATEGORY_COLORS: CategoryColorOption[] = [
+  {
+    key: 'emerald',
+    label: 'Esmeralda',
+    classes: 'border-emerald-400/50 bg-emerald-400/10 text-emerald-300',
+  },
+  { key: 'cyan', label: 'Cian', classes: 'border-cyan-400/50 bg-cyan-400/10 text-cyan-300' },
+  { key: 'amber', label: 'Ámbar', classes: 'border-amber-400/50 bg-amber-400/10 text-amber-300' },
+  {
+    key: 'violet',
+    label: 'Violeta',
+    classes: 'border-violet-400/50 bg-violet-400/10 text-violet-300',
+  },
+  { key: 'blue', label: 'Azul', classes: 'border-blue-400/50 bg-blue-400/10 text-blue-300' },
+  { key: 'rose', label: 'Rosa', classes: 'border-rose-400/50 bg-rose-400/10 text-rose-300' },
+  { key: 'green', label: 'Verde', classes: 'border-green-400/50 bg-green-400/10 text-green-300' },
+  {
+    key: 'teal',
+    label: 'Verde azulado',
+    classes: 'border-teal-400/50 bg-teal-400/10 text-teal-300',
+  },
+  {
+    key: 'orange',
+    label: 'Naranja',
+    classes: 'border-orange-400/50 bg-orange-400/10 text-orange-300',
+  },
+  {
+    key: 'fuchsia',
+    label: 'Fucsia',
+    classes: 'border-fuchsia-400/50 bg-fuchsia-400/10 text-fuchsia-300',
+  },
 ];
 
-/** Las 4 categorías por defecto conservan su color original. */
-const DEFAULT_COLOR: Record<string, string> = {
-  SOFTWARE_DEV: PALETTE[0],
-  INFRA_HOMELAB: PALETTE[1],
-  IT_HARDWARE: PALETTE[2],
-  IA_TECH: PALETTE[3],
-};
+const FALLBACK_COLOR = 'border-accent/50 bg-accent/10 text-accent';
+
+const COLOR_BY_KEY = new Map(CATEGORY_COLORS.map((c) => [c.key, c.classes]));
+
+/** Clases del badge para una clave de color de la paleta. */
+export function categoryColorClass(color?: string | null): string {
+  if (!color) return FALLBACK_COLOR;
+  return COLOR_BY_KEY.get(color) ?? FALLBACK_COLOR;
+}
 
 /**
- * Color del badge para un slug de categoría. Estable: el mismo slug siempre da el
- * mismo color; las categorías creadas por el usuario se reparten la paleta.
+ * Respaldo por slug (cuando la categoría no trae color). Estable: el mismo slug
+ * siempre da el mismo color.
  */
 export function categoryColor(slug: string): string {
   if (!slug) return FALLBACK_COLOR;
-  const fixed = DEFAULT_COLOR[slug];
-  if (fixed) return fixed;
 
+  const classes = CATEGORY_COLORS.map((c) => c.classes);
   let hash = 0;
   for (let i = 0; i < slug.length; i++) hash = (hash * 31 + slug.charCodeAt(i)) >>> 0;
-  return PALETTE[hash % PALETTE.length];
+  return classes[hash % classes.length];
 }
 
 /**

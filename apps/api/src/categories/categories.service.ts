@@ -26,6 +26,8 @@ export interface MainCategoryView {
   label: string;
   description: string | null;
   position: number;
+  /** Clave de color de la paleta (elegida al crear la categoría). */
+  color: string;
   subcategories: SubcategoryView[];
 }
 
@@ -60,6 +62,7 @@ export class CategoriesService {
       label: main.name,
       description: main.description,
       position: main.position,
+      color: main.color,
       subcategories: subsByMain.get(main.id) ?? [],
     }));
   }

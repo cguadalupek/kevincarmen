@@ -49,6 +49,7 @@ export function ArticlesSection({ posts }: ArticlesSectionProps) {
                           <CategoryBadge
                             categorySlug={post.mainCategory.slug}
                             categoryLabel={post.mainCategory.name}
+                            color={post.mainCategory.color}
                             subcategory={post.subCategory?.name}
                           />
                         </div>

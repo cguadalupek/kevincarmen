@@ -7,7 +7,7 @@ import { AdminSidebar } from '@/components/admin/sidebar';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api/client';
 import type { ApiSubcategory, CategoryTreeNode } from '@/lib/api/categories';
-import { categoryColor } from '@/lib/categories';
+import { CATEGORY_COLORS, categoryColorClass } from '@/lib/categories';
 
 const FIELD =
   'w-full rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent disabled:opacity-50';
@@ -26,9 +26,11 @@ interface CategoryFormState {
   name: string;
   slug: string;
   description: string;
+  /** Clave de la paleta (emerald, cyan, ...). */
+  color: string;
 }
 
-const EMPTY_FORM: CategoryFormState = { name: '', slug: '', description: '' };
+const EMPTY_FORM: CategoryFormState = { name: '', slug: '', description: '', color: 'emerald' };
 
 export default function AdminCategoriesPage() {
   const [tree, setTree] = useState<CategoryTreeNode[]>([]);
@@ -39,9 +41,12 @@ export default function AdminCategoriesPage() {
   const [mainForm, setMainForm] = useState<CategoryFormState>(EMPTY_FORM);
   const [editingMain, setEditingMain] = useState<CategoryTreeNode | null>(null);
 
-  // Formulario de subcategoría: null = cerrado; mainId = crear; {mainId, sub} = editar.
   const [subTarget, setSubTarget] = useState<{ mainId: string; sub?: ApiSubcategory } | null>(null);
-  const [subForm, setSubForm] = useState<CategoryFormState>(EMPTY_FORM);
+  const [subForm, setSubForm] = useState<Omit<CategoryFormState, 'color'>>({
+    name: '',
+    slug: '',
+    description: '',
+  });
 
   const load = useCallback(() => {
     setBusy(true);
@@ -60,7 +65,7 @@ export default function AdminCategoriesPage() {
     setError('');
     setShowNewMain(true);
     setEditingMain(null);
-    setMainForm(EMPTY_FORM);
+    setMainForm({ ...EMPTY_FORM });
   }
 
   function openEditMain(node: CategoryTreeNode) {
@@ -71,6 +76,7 @@ export default function AdminCategoriesPage() {
       name: node.label,
       slug: node.value,
       description: node.description ?? '',
+      color: node.color || 'emerald',
     });
   }
 
@@ -87,6 +93,7 @@ export default function AdminCategoriesPage() {
         name: mainForm.name.trim(),
         slug: mainForm.slug.trim(),
         description: mainForm.description.trim() || undefined,
+        color: mainForm.color || 'emerald',
       };
       if (editingMain) await api.updateCategory(editingMain.id, payload);
       else await api.createCategory(payload);
@@ -116,7 +123,7 @@ export default function AdminCategoriesPage() {
   function openNewSub(mainId: string) {
     setError('');
     setSubTarget({ mainId });
-    setSubForm(EMPTY_FORM);
+    setSubForm({ name: '', slug: '', description: '' });
   }
 
   function openEditSub(mainId: string, sub: ApiSubcategory) {
@@ -243,6 +250,28 @@ export default function AdminCategoriesPage() {
                 className={`${FIELD} resize-none`}
               />
             </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium">Color del badge</label>
+              <div className="flex flex-wrap gap-2">
+                {CATEGORY_COLORS.map((option) => {
+                  const selected = mainForm.color === option.key;
+                  return (
+                    <button
+                      key={option.key}
+                      type="button"
+                      onClick={() => setMainForm({ ...mainForm, color: option.key })}
+                      aria-pressed={selected}
+                      className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-transform ${
+                        option.classes
+                      } ${selected ? 'scale-105 ring-2 ring-accent ring-offset-2 ring-offset-background' : 'opacity-70 hover:opacity-100'}`}
+                    >
+                      {selected ? '✓ ' : ''}
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
             <div className="flex justify-end gap-2">
               <Button
                 type="button"
@@ -273,7 +302,7 @@ export default function AdminCategoriesPage() {
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-3">
                     <span
-                      className={`rounded-full border px-2.5 py-1 text-xs font-medium ${categoryColor(node.value)}`}
+                      className={`rounded-full border px-2.5 py-1 text-xs font-medium ${categoryColorClass(node.color)}`}
                     >
                       {node.label}
                     </span>
@@ -425,8 +454,7 @@ export default function AdminCategoriesPage() {
               artículos cambien de categoría (evita borrados accidentales con contenido).
             </li>
             <li>
-              El color del badge es estable por slug: la misma categoría siempre tiene el mismo
-              color aunque edites su nombre.
+              El color que elijas es el del badge en el blog; lo puedes cambiar cuando quieras.
             </li>
             <li>
               Los enlaces con los slugs antiguos (

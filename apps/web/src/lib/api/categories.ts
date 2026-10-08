@@ -19,6 +19,8 @@ export interface CategoryTreeNode {
   label: string;
   description: string | null;
   position: number;
+  /** Clave de color de la paleta (emerald, cyan, ...). */
+  color: string;
   subcategories: ApiSubcategory[];
 }
 

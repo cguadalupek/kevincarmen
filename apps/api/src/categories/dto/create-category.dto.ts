@@ -1,4 +1,5 @@
 import {
+  IsIn,
   IsInt,
   IsOptional,
   IsString,
@@ -8,6 +9,7 @@ import {
   Min,
   MinLength,
 } from 'class-validator';
+import { CATEGORY_COLOR_KEYS } from '../taxonomy';
 
 export class CreateCategoryDto {
   @IsString()
@@ -33,4 +35,11 @@ export class CreateCategoryDto {
   @Min(0)
   @Max(1000)
   position?: number;
+
+  /** Clave de la paleta (emerald, cyan, ...). Si no viene, la BD usa 'emerald'. */
+  @IsOptional()
+  @IsIn(CATEGORY_COLOR_KEYS, {
+    message: `color debe ser uno de: ${CATEGORY_COLOR_KEYS.join(', ')}`,
+  })
+  color?: string;
 }

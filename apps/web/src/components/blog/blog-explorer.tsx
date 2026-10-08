@@ -235,6 +235,7 @@ export function BlogExplorer({
                           <CategoryBadge
                             categorySlug={featuredPost.mainCategory.slug}
                             categoryLabel={featuredPost.mainCategory.name}
+                            color={featuredPost.mainCategory.color}
                             subcategory={featuredPost.subCategory?.name}
                           />
                           {featuredPost.publishedAt && (
@@ -311,6 +312,7 @@ export function BlogExplorer({
                               <CategoryBadge
                                 categorySlug={post.mainCategory.slug}
                                 categoryLabel={post.mainCategory.name}
+                                color={post.mainCategory.color}
                                 subcategory={post.subCategory?.name}
                               />
                             </div>

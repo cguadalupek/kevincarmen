@@ -107,6 +107,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             <CategoryBadge
               categorySlug={post.mainCategory.slug}
               categoryLabel={post.mainCategory.name}
+              color={post.mainCategory.color}
               subcategory={post.subCategory?.name}
             />
           </div>
