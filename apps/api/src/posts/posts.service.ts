@@ -5,22 +5,17 @@ import {
   ConflictException,
   ForbiddenException,
 } from '@nestjs/common';
-import {
-  MainCategory,
-  PostStatus,
-  VideoType,
-  type Prisma,
-} from '@prisma/client';
+import { PostStatus, VideoType, type Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CategoriesService } from '../categories/categories.service';
-import { resolveMainCategoryParam } from '../categories/taxonomy';
+import { normalizeCategorySlug } from '../categories/taxonomy';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 
 export interface FindPublishedOptions {
-  /** Valor del enum (`INFRA_HOMELAB`) o slug antiguo (`infraestructura`). */
+  /** Slug de la categoría principal (nuevo) o slug de la taxonomía antigua. */
   categorySlug?: string;
-  /** Slug de la subcategoría (`servidores-homelab`). */
+  /** Slug de la subcategoría. */
   subCategorySlug?: string;
 }
 
@@ -84,38 +79,47 @@ export class PostsService {
 
   private postInclude = {
     author: { select: { id: true, name: true, avatar: true, bio: true } },
-    // `category` se mantiene mientras dure la migración; la API nueva usa
-    // `mainCategory` + `subCategory`.
-    category: true,
+    mainCategory: true,
     subCategory: true,
     tags: { include: { tag: true } },
   };
 
-  /**
-   * Resuelve el filtro de categoría del listado público.
-   *
-   * Devuelve `null` cuando el valor recibido no es ni un valor del enum ni un slug
-   * antiguo conocido: en ese caso el listado debe quedar vacío (un filtro
-   * inválido no es lo mismo que "sin filtro").
-   */
-  private resolveCategoryFilter(value?: string): MainCategory | null | undefined {
-    if (!value) return undefined;
+  private async assertMainExists(mainCategoryId: string) {
+    const main = await this.prisma.mainCategory.findUnique({
+      where: { id: mainCategoryId },
+      select: { id: true },
+    });
+    if (!main) {
+      throw new BadRequestException('La categoría principal indicada no existe');
+    }
+  }
 
-    const resolved = resolveMainCategoryParam(value);
-    return resolved ?? null;
+  private async assertSubCategoryBelongs(subCategoryId: string, mainCategoryId: string) {
+    const match = await this.categories.findMatching(subCategoryId, mainCategoryId);
+    if (!match) {
+      throw new BadRequestException(
+        'La subcategoría seleccionada no pertenece a la categoría principal.',
+      );
+    }
+    return match;
   }
 
   async findAllPublished(options: FindPublishedOptions = {}) {
-    const mainCategory = this.resolveCategoryFilter(options.categorySlug);
-    if (mainCategory === null) return [];
+    // Resuelve el filtro de categoría (acepta slug nuevo o antiguo) a un id.
+    // Un valor desconocido devuelve lista vacía, no "todos".
+    let mainCategoryId: string | undefined;
+    if (options.categorySlug) {
+      const slug = normalizeCategorySlug(options.categorySlug);
+      if (!slug) return [];
+      mainCategoryId = (await this.categories.findMainIdBySlug(slug)) ?? undefined;
+      if (!mainCategoryId) return [];
+    }
 
     return this.prisma.post.findMany({
       where: {
         status: 'PUBLISHED',
-        ...(mainCategory ? { mainCategory } : {}),
-        ...(options.subCategorySlug
-          ? { subCategory: { slug: options.subCategorySlug } }
-          : {}),
+        ...(mainCategoryId ? { mainCategoryId } : {}),
+        ...(options.subCategorySlug ? { subCategory: { slug: options.subCategorySlug } } : {}),
       },
       include: this.postInclude,
       orderBy: { publishedAt: 'desc' },
@@ -155,35 +159,13 @@ export class PostsService {
     return posts.filter((post) => Boolean(post.videoUrl));
   }
 
-  /** @deprecated La taxonomía plana se reemplazó por `GET /categories`. */
-  async findAllCategories() {
-    return this.categories.findTree();
-  }
-
-  /**
-   * Valida que la subcategoría exista dentro de la categoría principal indicada.
-   * La FK compuesta también lo impide, pero así el CMS recibe un 400 legible en
-   * vez de un error de integridad de Prisma.
-   */
-  private async assertSubCategoryBelongs(
-    subCategoryId: string,
-    mainCategory: MainCategory,
-  ) {
-    const match = await this.categories.findMatching(subCategoryId, mainCategory);
-    if (!match) {
-      throw new BadRequestException(
-        'La subcategoría seleccionada no pertenece a la categoría principal.',
-      );
-    }
-    return match;
-  }
-
   async create(dto: CreatePostDto, authorId: string) {
     const existing = await this.prisma.post.findUnique({ where: { slug: dto.slug } });
     if (existing) throw new ConflictException('El slug ya existe');
 
+    await this.assertMainExists(dto.mainCategoryId);
     const subCategoryId = dto.subCategoryId
-      ? (await this.assertSubCategoryBelongs(dto.subCategoryId, dto.mainCategory)).id
+      ? (await this.assertSubCategoryBelongs(dto.subCategoryId, dto.mainCategoryId)).id
       : null;
 
     const status = dto.status ?? PostStatus.DRAFT;
@@ -209,9 +191,8 @@ export class PostsService {
       featured: dto.featured ?? false,
       readingTime,
       authorId,
-      mainCategory: dto.mainCategory,
+      mainCategoryId: dto.mainCategoryId,
       subCategoryId,
-      categoryId: dto.categoryId || null,
       publishedAt: dto.publishedAt
         ? new Date(dto.publishedAt)
         : status === PostStatus.PUBLISHED
@@ -234,23 +215,23 @@ export class PostsService {
       if (existing) throw new ConflictException('El slug ya existe');
     }
 
-    const mainCategory = dto.mainCategory ?? post.mainCategory;
+    const mainCategoryId = dto.mainCategoryId ?? post.mainCategoryId;
+    if (dto.mainCategoryId) await this.assertMainExists(dto.mainCategoryId);
 
     // `undefined` = no tocar; `null` = quitar; string = asignar (validada).
     let subCategoryId: string | null | undefined;
     if (dto.subCategoryId === null) {
       subCategoryId = null;
     } else if (dto.subCategoryId) {
-      subCategoryId = (
-        await this.assertSubCategoryBelongs(dto.subCategoryId, mainCategory)
-      ).id;
-    } else if (dto.mainCategory && dto.mainCategory !== post.mainCategory && post.subCategoryId) {
+      subCategoryId = (await this.assertSubCategoryBelongs(dto.subCategoryId, mainCategoryId)).id;
+    } else if (
+      dto.mainCategoryId &&
+      dto.mainCategoryId !== post.mainCategoryId &&
+      post.subCategoryId
+    ) {
       // Cambió la principal sin tocar la subcategoría: si la anterior ya no
-      // pertenece a la nueva, se avisa en vez de borrarla en silencio.
-      const stillValid = await this.categories.findMatching(
-        post.subCategoryId,
-        dto.mainCategory,
-      );
+      // pertenece, se avisa en vez de borrarla en silencio.
+      const stillValid = await this.categories.findMatching(post.subCategoryId, dto.mainCategoryId);
       if (!stillValid) {
         throw new BadRequestException(
           'La subcategoría actual no pertenece a la nueva categoría principal. ' +
@@ -264,7 +245,7 @@ export class PostsService {
     const readingTime = Math.max(1, Math.ceil(content.split(/\s+/).length / 200));
     const data: Prisma.PostUncheckedUpdateInput = {
       ...dto,
-      mainCategory,
+      mainCategoryId,
       subCategoryId,
       content,
       ...(dto.coverImage !== undefined

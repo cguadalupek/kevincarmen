@@ -35,13 +35,7 @@ async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> 
 }
 
 export type VideoTypeValue =
-  | 'YOUTUBE'
-  | 'YOUTUBE_SHORT'
-  | 'TIKTOK'
-  | 'TWITTER'
-  | 'VIMEO'
-  | 'ODYSEE'
-  | 'GENERIC';
+  'YOUTUBE' | 'YOUTUBE_SHORT' | 'TIKTOK' | 'TWITTER' | 'VIMEO' | 'ODYSEE' | 'GENERIC';
 
 export interface AuthUser {
   id: string;
@@ -66,8 +60,15 @@ export interface ApiPost {
   readingTime: number;
   publishedAt: string | null;
   updatedAt: string;
-  /** Categoría principal: obligatoria. */
-  mainCategory: 'SOFTWARE_DEV' | 'INFRA_HOMELAB' | 'IT_HARDWARE' | 'IA_TECH';
+  /** Id de la categoría principal (obligatorio). */
+  mainCategoryId: string;
+  mainCategory: {
+    id: string;
+    slug: string;
+    name: string;
+    description: string | null;
+    position: number;
+  };
   subCategoryId: string | null;
   subCategory: {
     id: string;
@@ -76,10 +77,6 @@ export interface ApiPost {
     description: string | null;
     position: number;
   } | null;
-  /** @deprecated Taxonomía plana anterior; se mantiene durante la migración. */
-  categoryId: string | null;
-  /** @deprecated */
-  category: { id: string; slug: string; name: string } | null;
   author: { id: string; name: string };
 }
 
@@ -204,20 +201,60 @@ export const api = {
   updatePost: (id: string, data: Partial<ApiPost>) =>
     apiFetch<ApiPost>(`/posts/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
 
-  deletePost: (id: string) =>
-    apiFetch<{ success: boolean }>(`/posts/${id}`, { method: 'DELETE' }),
+  deletePost: (id: string) => apiFetch<{ success: boolean }>(`/posts/${id}`, { method: 'DELETE' }),
 
   getCategoryTree: () =>
-    apiFetch<{
-      value: 'SOFTWARE_DEV' | 'INFRA_HOMELAB' | 'IT_HARDWARE' | 'IA_TECH';
-      label: string;
-      description: string;
-      position: number;
-      subcategories: ApiSubcategory[];
-    }[]>('/categories').catch(() => []),
+    apiFetch<
+      {
+        id: string;
+        value: string;
+        label: string;
+        description: string | null;
+        position: number;
+        subcategories: ApiSubcategory[];
+      }[]
+    >('/categories').catch(() => []),
 
-  getLatestVideos: () =>
-    apiFetch<ApiVideo[]>('/videos').catch(() => []),
+  // ── CRUD de categorías y subcategorías (admin) ──
+  createCategory: (data: { name: string; slug: string; description?: string; position?: number }) =>
+    apiFetch('/categories', { method: 'POST', body: JSON.stringify(data) }),
+  updateCategory: (
+    id: string,
+    data: Partial<{ name: string; slug: string; description?: string; position?: number }>,
+  ) => apiFetch(`/categories/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteCategory: (id: string) =>
+    apiFetch<{ success: boolean }>(`/categories/${id}`, { method: 'DELETE' }),
+  createSubcategory: (data: {
+    mainCategoryId: string;
+    name: string;
+    slug: string;
+    description?: string;
+    position?: number;
+  }) =>
+    apiFetch('/categories/subcategories', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  updateSubcategory: (
+    id: string,
+    data: Partial<{
+      mainCategoryId: string;
+      name: string;
+      slug: string;
+      description?: string;
+      position?: number;
+    }>,
+  ) =>
+    apiFetch(`/categories/subcategories/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  deleteSubcategory: (id: string) =>
+    apiFetch<{ success: boolean }>(`/categories/subcategories/${id}`, {
+      method: 'DELETE',
+    }),
+
+  getLatestVideos: () => apiFetch<ApiVideo[]>('/videos').catch(() => []),
 
   getVideos: () => apiFetch<ApiVideo[]>('/videos/admin/all'),
   createVideo: (data: Partial<ApiVideo>) =>
@@ -244,9 +281,12 @@ export const api = {
     apiFetch<{ success: boolean }>(`/lab/${id}`, { method: 'DELETE' }),
 
   getProjects: () => apiFetch<ApiProject[]>('/projects/admin/all'),
-  createProject: (data: Partial<ApiProject>) => apiFetch<ApiProject>('/projects', { method: 'POST', body: JSON.stringify(data) }),
-  updateProject: (id: string, data: Partial<ApiProject>) => apiFetch<ApiProject>(`/projects/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  deleteProject: (id: string) => apiFetch<{ success: boolean }>(`/projects/${id}`, { method: 'DELETE' }),
+  createProject: (data: Partial<ApiProject>) =>
+    apiFetch<ApiProject>('/projects', { method: 'POST', body: JSON.stringify(data) }),
+  updateProject: (id: string, data: Partial<ApiProject>) =>
+    apiFetch<ApiProject>(`/projects/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteProject: (id: string) =>
+    apiFetch<{ success: boolean }>(`/projects/${id}`, { method: 'DELETE' }),
   getTimelineEvents: () => apiFetch<ApiTimelineEvent[]>('/timeline/admin/all'),
   createTimelineEvent: (data: Partial<ApiTimelineEvent>) =>
     apiFetch<ApiTimelineEvent>('/timeline', { method: 'POST', body: JSON.stringify(data) }),

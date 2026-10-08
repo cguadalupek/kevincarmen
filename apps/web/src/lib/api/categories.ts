@@ -10,11 +10,14 @@ export interface ApiSubcategory {
   position: number;
 }
 
-/** Un nodo del árbol que devuelve `GET /categories`. */
+/** Un nodo del árbol que devuelve `GET /categories`. `value` = slug (va en la URL). */
 export interface CategoryTreeNode {
-  value: MainCategoryValue;
+  /** Id de la categoría principal (para el payload del CMS). */
+  id: string;
+  /** Slug de la categoría principal (lo que viaja en ?category=). */
+  value: string;
   label: string;
-  description: string;
+  description: string | null;
   position: number;
   subcategories: ApiSubcategory[];
 }
@@ -29,15 +32,11 @@ async function fetchJson(url: string) {
 }
 
 /**
- * Árbol de categorías principales → subcategorías.
+ * Árbol de categorías principales → subcategorías. Como las categorías se crean
+ * desde el CMS, esto refleja siempre el estado actual.
  *
- * Sirve tanto en componentes de servidor (la página del blog) como en el cliente
- * (el formulario del CMS): con `API_INTERNAL_URL` resuelve server-side dentro de
- * la red de Docker y con la ruta relativa `/api/v1` funciona desde el navegador
- * a través de nginx.
- *
- * Devuelve `[]` si el API no responde, nunca lanza: el listado público debe
- * seguir renderizando aunque falle la taxonomía.
+ * Sirve tanto en componentes de servidor (blog) como en el cliente (formulario y
+ * admin). Devuelve `[]` si el API no responde, nunca lanza.
  */
 export async function getCategoryTree(): Promise<CategoryTreeNode[]> {
   try {
@@ -53,11 +52,11 @@ export function flattenSubcategories(tree: CategoryTreeNode[]): ApiSubcategory[]
   return tree.flatMap((node) => node.subcategories);
 }
 
-/** Subcategorías de una principal concreta. */
+/** Subcategorías de una categoría principal concreta (por su id). */
 export function subcategoriesOf(
   tree: CategoryTreeNode[],
-  mainCategory: MainCategoryValue | null | undefined,
+  mainCategoryId: string | null | undefined,
 ): ApiSubcategory[] {
-  if (!mainCategory) return [];
-  return tree.find((node) => node.value === mainCategory)?.subcategories ?? [];
+  if (!mainCategoryId) return [];
+  return tree.find((node) => node.id === mainCategoryId)?.subcategories ?? [];
 }

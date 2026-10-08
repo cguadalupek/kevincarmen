@@ -105,14 +105,13 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
               {post.readingTime} min lectura
             </span>
             <CategoryBadge
-              category={post.mainCategory}
+              categorySlug={post.mainCategory.slug}
+              categoryLabel={post.mainCategory.name}
               subcategory={post.subCategory?.name}
             />
           </div>
           <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{post.title}</h1>
-          {post.excerpt && (
-            <p className="mt-4 text-lg text-muted-foreground">{post.excerpt}</p>
-          )}
+          {post.excerpt && <p className="mt-4 text-lg text-muted-foreground">{post.excerpt}</p>}
         </header>
 
         {post.coverImage && (

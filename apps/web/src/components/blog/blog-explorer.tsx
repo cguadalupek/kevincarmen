@@ -7,14 +7,14 @@ import { BookOpen, Clock, Search, X } from 'lucide-react';
 import { formatDate } from '@kevincarmen/utils';
 import type { MainCategoryValue, PublicPost } from '@/lib/api/posts';
 import type { CategoryTreeNode } from '@/lib/api/categories';
-import { LEGACY_CATEGORY_SLUG_MAP, categoryLabel } from '@/lib/categories';
+import { LEGACY_CATEGORY_SLUG_MAP } from '@/lib/categories';
 import { FadeIn } from '@/components/motion/fade-in';
 import { CategoryBadge } from '@/components/blog/category-badge';
 
 interface BlogExplorerProps {
   posts: PublicPost[];
   categoryTree: CategoryTreeNode[];
-  /** Valor del enum o slug de la taxonomía antigua, tal cual llega en la URL. */
+  /** Slug de la categoría (o slug de la taxonomía antigua), tal cual en la URL. */
   selectedCategory: string | null;
   /** Slug de la subcategoría. */
   selectedSubcategory: string | null;
@@ -35,21 +35,18 @@ export function BlogExplorer({
 
   /**
    * El enlace entrante puede traer un slug antiguo (`?categoria=hardware`), así
-   * que se normaliza al valor del enum para saber qué pill marcar como activa.
+   * que se normaliza al slug nuevo (a un nodo del árbol) para saber qué pill marcar.
    */
-  const activeCategory = useMemo<MainCategoryValue | null>(() => {
+  const activeNode = useMemo<CategoryTreeNode | null>(() => {
     if (!selectedCategory) return null;
 
-    const known = categoryTree.find((node) => node.value === selectedCategory);
-    if (known) return known.value;
+    const direct = categoryTree.find((node) => node.value === selectedCategory);
+    if (direct) return direct;
 
-    return LEGACY_CATEGORY_SLUG_MAP[selectedCategory.toLowerCase()] ?? null;
+    const mapped = LEGACY_CATEGORY_SLUG_MAP[selectedCategory.toLowerCase()];
+    if (!mapped) return null;
+    return categoryTree.find((node) => node.value === mapped) ?? null;
   }, [selectedCategory, categoryTree]);
-
-  const activeNode = useMemo(
-    () => categoryTree.find((node) => node.value === activeCategory) ?? null,
-    [categoryTree, activeCategory],
-  );
 
   const filteredPosts = useMemo(() => {
     const normalizedQuery = normalizeSearch(debouncedQuery);
@@ -64,9 +61,14 @@ export function BlogExplorer({
 
   const [currentPage, setCurrentPage] = useState(1);
   const postsPerPage = 6;
-  const featuredPost = filteredPosts
-    .filter((post) => post.featured)
-    .sort((a, b) => new Date(b.publishedAt ?? b.updatedAt).getTime() - new Date(a.publishedAt ?? a.updatedAt).getTime())[0] ?? null;
+  const featuredPost =
+    filteredPosts
+      .filter((post) => post.featured)
+      .sort(
+        (a, b) =>
+          new Date(b.publishedAt ?? b.updatedAt).getTime() -
+          new Date(a.publishedAt ?? a.updatedAt).getTime(),
+      )[0] ?? null;
   const regularPosts = featuredPost
     ? filteredPosts.filter((post) => post.id !== featuredPost.id)
     : filteredPosts;
@@ -84,19 +86,22 @@ export function BlogExplorer({
   return (
     <>
       <div className="section-container mx-auto py-16">
-        <div className="flex items-center gap-3 text-accent"><BookOpen className="h-6 w-6" /><span className="font-mono text-sm">/ artículos</span></div>
+        <div className="flex items-center gap-3 text-accent">
+          <BookOpen className="h-6 w-6" />
+          <span className="font-mono text-sm">/ artículos</span>
+        </div>
         <h1 className="section-title mt-3">Blog</h1>
         <p className="section-subtitle">
           Tutoriales, reflexiones y documentación técnica organizados por categoría y subcategoría.
         </p>
 
         <nav aria-label="Categorías principales" className="mt-8 flex flex-wrap gap-2">
-          <CategoryPill label="Todos" isActive={!activeCategory} href="/blog" />
+          <CategoryPill label="Todos" isActive={!activeNode} href="/blog" />
           {categoryTree.map((category) => (
             <CategoryPill
-              key={category.value}
+              key={category.id}
               label={category.label}
-              isActive={activeCategory === category.value}
+              isActive={activeNode?.value === category.value}
               href={`/blog?categoria=${encodeURIComponent(category.value)}`}
             />
           ))}
@@ -190,7 +195,7 @@ export function BlogExplorer({
                   }.`
                 : 'No se encontraron artículos que coincidan con tu búsqueda.'}
             </p>
-            {(query || activeCategory) && (
+            {(query || activeNode) && (
               <Link
                 href="/blog"
                 className="mt-4 inline-block text-sm font-medium text-accent hover:underline"
@@ -203,26 +208,57 @@ export function BlogExplorer({
           <div className="mt-12">
             {featuredPost && (
               <section aria-labelledby="featured-post-title" className="mb-14">
-                <p className="mb-4 font-mono text-xs uppercase tracking-[0.2em] text-accent">Destacado</p>
+                <p className="mb-4 font-mono text-xs uppercase tracking-[0.2em] text-accent">
+                  Destacado
+                </p>
                 <Link href={`/blog/${featuredPost.slug}`} className="group block">
                   <article className="glass-card overflow-hidden transition-shadow hover:shadow-lg hover:shadow-accent/5">
                     <div className="grid md:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
                       <div className="relative aspect-video min-h-56 overflow-hidden border-b border-border md:aspect-auto md:min-h-72 md:border-b-0 md:border-r">
                         {featuredPost.coverImage ? (
-                          <Image src={featuredPost.coverImage} alt={`Portada de ${featuredPost.title}`} fill sizes="(max-width: 768px) 100vw, 55vw" className="object-cover transition-transform duration-300 group-hover:scale-105" unoptimized />
+                          <Image
+                            src={featuredPost.coverImage}
+                            alt={`Portada de ${featuredPost.title}`}
+                            fill
+                            sizes="(max-width: 768px) 100vw, 55vw"
+                            className="object-cover transition-transform duration-300 group-hover:scale-105"
+                            unoptimized
+                          />
                         ) : (
-                          <div className="flex h-full items-center justify-center bg-muted/40 text-sm text-muted-foreground">Sin miniatura</div>
+                          <div className="flex h-full items-center justify-center bg-muted/40 text-sm text-muted-foreground">
+                            Sin miniatura
+                          </div>
                         )}
                       </div>
                       <div className="flex flex-col justify-center p-6 md:p-8">
                         <div className="mb-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                          <CategoryBadge category={featuredPost.mainCategory} subcategory={featuredPost.subCategory?.name} />
-                          {featuredPost.publishedAt && <time dateTime={featuredPost.publishedAt}>{formatDate(featuredPost.publishedAt)}</time>}
-                          <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{featuredPost.readingTime} min lectura</span>
+                          <CategoryBadge
+                            categorySlug={featuredPost.mainCategory.slug}
+                            categoryLabel={featuredPost.mainCategory.name}
+                            subcategory={featuredPost.subCategory?.name}
+                          />
+                          {featuredPost.publishedAt && (
+                            <time dateTime={featuredPost.publishedAt}>
+                              {formatDate(featuredPost.publishedAt)}
+                            </time>
+                          )}
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {featuredPost.readingTime} min lectura
+                          </span>
                         </div>
-                        <h2 id="featured-post-title" className="text-2xl font-semibold transition-colors group-hover:text-accent md:text-3xl">{featuredPost.title}</h2>
-                        {featuredPost.excerpt && <p className="mt-3 text-muted-foreground">{featuredPost.excerpt}</p>}
-                        <span className="mt-5 text-sm font-medium text-accent">Leer artículo →</span>
+                        <h2
+                          id="featured-post-title"
+                          className="text-2xl font-semibold transition-colors group-hover:text-accent md:text-3xl"
+                        >
+                          {featuredPost.title}
+                        </h2>
+                        {featuredPost.excerpt && (
+                          <p className="mt-3 text-muted-foreground">{featuredPost.excerpt}</p>
+                        )}
+                        <span className="mt-5 text-sm font-medium text-accent">
+                          Leer artículo →
+                        </span>
                       </div>
                     </div>
                   </article>
@@ -232,7 +268,12 @@ export function BlogExplorer({
 
             {regularPosts.length > 0 && (
               <section aria-labelledby="latest-posts-title">
-                <h2 id="latest-posts-title" className="mb-5 text-sm font-medium uppercase tracking-[0.18em] text-muted-foreground">Últimos artículos</h2>
+                <h2
+                  id="latest-posts-title"
+                  className="mb-5 text-sm font-medium uppercase tracking-[0.18em] text-muted-foreground"
+                >
+                  Últimos artículos
+                </h2>
                 <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                   {paginatedPosts.map((post) => (
                     <FadeIn key={post.id}>
@@ -240,20 +281,50 @@ export function BlogExplorer({
                         <article className="glass-card flex h-full flex-col overflow-hidden transition-shadow hover:shadow-lg hover:shadow-accent/5">
                           <div className="relative aspect-video w-full shrink-0 overflow-hidden border-b border-border bg-muted/40">
                             {post.coverImage ? (
-                              <Image src={post.coverImage} alt={`Portada de ${post.title}`} fill sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw" className="object-cover transition-transform duration-300 group-hover:scale-105" unoptimized />
-                            ) : <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Sin miniatura</div>}
+                              <Image
+                                src={post.coverImage}
+                                alt={`Portada de ${post.title}`}
+                                fill
+                                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                                className="object-cover transition-transform duration-300 group-hover:scale-105"
+                                unoptimized
+                              />
+                            ) : (
+                              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+                                Sin miniatura
+                              </div>
+                            )}
                           </div>
                           <div className="flex flex-1 flex-col p-5">
                             <div className="mb-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
-                              {post.publishedAt && <time dateTime={post.publishedAt}>{formatDate(post.publishedAt)}</time>}
-                              <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{post.readingTime} min</span>
+                              {post.publishedAt && (
+                                <time dateTime={post.publishedAt}>
+                                  {formatDate(post.publishedAt)}
+                                </time>
+                              )}
+                              <span className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {post.readingTime} min
+                              </span>
                             </div>
                             <div className="mb-3 flex flex-wrap gap-2">
-                              <CategoryBadge category={post.mainCategory} subcategory={post.subCategory?.name} />
+                              <CategoryBadge
+                                categorySlug={post.mainCategory.slug}
+                                categoryLabel={post.mainCategory.name}
+                                subcategory={post.subCategory?.name}
+                              />
                             </div>
-                            <h3 className="text-xl font-semibold transition-colors group-hover:text-accent">{post.title}</h3>
-                            {post.excerpt && <p className="mt-2 line-clamp-3 text-muted-foreground">{post.excerpt}</p>}
-                            <span className="mt-auto pt-5 text-sm font-medium text-accent">Leer artículo →</span>
+                            <h3 className="text-xl font-semibold transition-colors group-hover:text-accent">
+                              {post.title}
+                            </h3>
+                            {post.excerpt && (
+                              <p className="mt-2 line-clamp-3 text-muted-foreground">
+                                {post.excerpt}
+                              </p>
+                            )}
+                            <span className="mt-auto pt-5 text-sm font-medium text-accent">
+                              Leer artículo →
+                            </span>
                           </div>
                         </article>
                       </Link>
@@ -264,13 +335,43 @@ export function BlogExplorer({
             )}
 
             {totalPages > 1 && (
-              <nav aria-label="Paginación de artículos" className="mt-10 flex items-center justify-center gap-2 pb-8">
-                <button type="button" onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))} disabled={currentPage === 1} aria-label="Página anterior" className="rounded-md bg-muted/40 px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted/60 disabled:cursor-not-allowed disabled:opacity-40">←</button>
+              <nav
+                aria-label="Paginación de artículos"
+                className="mt-10 flex items-center justify-center gap-2 pb-8"
+              >
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  aria-label="Página anterior"
+                  className="rounded-md bg-muted/40 px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted/60 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  ←
+                </button>
                 {[...Array(totalPages)].map((_, i) => {
                   const pageNumber = i + 1;
-                  return <button key={pageNumber} type="button" onClick={() => setCurrentPage(pageNumber)} disabled={currentPage === pageNumber} aria-current={currentPage === pageNumber ? 'page' : undefined} className={`rounded-md px-3 py-2 text-sm font-medium ${currentPage === pageNumber ? 'bg-accent text-white' : 'bg-muted/40 text-muted-foreground hover:bg-muted/60'}`}>{pageNumber}</button>;
+                  return (
+                    <button
+                      key={pageNumber}
+                      type="button"
+                      onClick={() => setCurrentPage(pageNumber)}
+                      disabled={currentPage === pageNumber}
+                      aria-current={currentPage === pageNumber ? 'page' : undefined}
+                      className={`rounded-md px-3 py-2 text-sm font-medium ${currentPage === pageNumber ? 'bg-accent text-white' : 'bg-muted/40 text-muted-foreground hover:bg-muted/60'}`}
+                    >
+                      {pageNumber}
+                    </button>
+                  );
                 })}
-                <button type="button" onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))} disabled={currentPage === totalPages} aria-label="Siguiente página" className="rounded-md bg-muted/40 px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted/60 disabled:cursor-not-allowed disabled:opacity-40">→</button>
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages}
+                  aria-label="Siguiente página"
+                  className="rounded-md bg-muted/40 px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted/60 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  →
+                </button>
               </nav>
             )}
           </div>
@@ -341,7 +442,7 @@ function scoreMatch(post: PublicPost, query: string) {
   // La taxonomía también entra en la búsqueda: buscar "homelab" o "docker"
   // encuentra los artículos aunque la palabra no esté en el título.
   const taxonomy = normalizeSearch(
-    `${categoryLabel(post.mainCategory)} ${post.subCategory?.name ?? ''} ${
+    `${post.mainCategory.name} ${post.mainCategory.slug} ${post.subCategory?.name ?? ''} ${
       post.subCategory?.slug ?? ''
     }`,
   );

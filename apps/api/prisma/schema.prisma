@@ -14,17 +14,6 @@ enum PostStatus {
   TRASHED
 }
 
-// Taxonomía de primer nivel del blog. Son 4 y son fijas: viven en la BD como
-// enum para que `posts.main_category` no pueda contener basura y para poder
-// filtrar el listado por índice sin join. Si algún día necesitas crearlas desde
-// el CMS, esto tiene que pasar a tabla.
-enum MainCategory {
-  SOFTWARE_DEV   // Software & Dev
-  INFRA_HOMELAB  // Infra & Homelab
-  IT_HARDWARE    // IT & Hardware
-  IA_TECH        // IA & Tech
-}
-
 enum ProjectStatus {
   ACTIVE
   COMPLETED
@@ -125,55 +114,58 @@ model Post {
   readingTime Int        @default(0) @map("reading_time")
   authorId    String     @map("author_id")
   author      User       @relation(fields: [authorId], references: [id])
-  // Taxonomía de dos niveles.
-  // `mainCategory` es obligatorio. `subCategoryId` es opcional, pero si viene tiene
-  // que pertenecer a `mainCategory`: la FK compuesta de abajo lo garantiza en el
-  // motor, no en el código. Si subCategoryId es NULL, Postgres no evalúa la FK.
-  mainCategory  MainCategory @map("main_category")
-  subCategoryId String?      @map("sub_category_id")
-  subCategory   Subcategory? @relation(fields: [subCategoryId, mainCategory], references: [id, mainCategory], onDelete: Restrict)
 
-  // LEGACY: la clasificación plana anterior, retenida durante la migración. Ya no
-  // la expone la API y se elimina cuando la taxonomía nueva esté validada en prod.
-  categoryId  String?    @map("category_id")
-  category    Category?  @relation(fields: [categoryId], references: [id])
+  // Taxonomía de dos niveles, EDITABLE desde el CMS.
+  // `mainCategoryId` es obligatorio y apunta a `main_categories` (se crean y
+  // editan desde /admin/categorias). `subCategoryId` es opcional; que la
+  // subcategoría pertenezca a la categoría principal lo garantiza un trigger en
+  // Postgres (ver migración) además de la validación en el service.
+  mainCategoryId String       @map("main_category_id")
+  mainCategory   MainCategory @relation(fields: [mainCategoryId], references: [id], onDelete: Restrict)
+  subCategoryId  String?      @map("sub_category_id")
+  subCategory    Subcategory? @relation(fields: [subCategoryId], references: [id], onDelete: Restrict)
+
   tags        PostTag[]
   comments    Comment[]
   createdAt   DateTime   @default(now()) @map("created_at")
   updatedAt   DateTime   @updatedAt @map("updated_at")
 
   @@index([status, publishedAt])
-  @@index([categoryId])
-  @@index([mainCategory, subCategoryId])
+  @@index([mainCategoryId, subCategoryId])
   @@map("posts")
 }
 
-model Category {
-  id          String  @id @default(cuid())
-  name        String  @unique
-  slug        String  @unique
-  description String?
-  posts       Post[]
+/// Categoría principal (nivel 1). Es una TABLA y no un enum porque se crea y edita
+/// desde el CMS: los valores no pueden ser fijos.
+model MainCategory {
+  id            String        @id @default(cuid())
+  slug          String        @unique
+  name          String
+  description   String?
+  position      Int           @default(0)
+  posts         Post[]
+  subcategories Subcategory[]
 
-  @@map("categories")
+  @@index([position])
+  @@map("main_categories")
 }
 
 /// Subcategoría de segundo nivel. Pertenece SIEMPRE a una categoría principal
-/// concreta: (mainCategory, slug) es único, y la FK compuesta desde Post impide
-/// guardar un post cuya subcategoría no sea de su propia categoría principal.
+/// concreta: (mainCategoryId, slug) es único. El trigger `enforce_post_subcategory_parent`
+/// impide asignarla a un post cuya categoría principal sea otra.
 model Subcategory {
-  id           String       @id @default(cuid())
-  slug         String
-  name         String
-  description  String?
-  mainCategory MainCategory @map("main_category")
-  position     Int          @default(0)
-  posts        Post[]
+  id             String       @id @default(cuid())
+  slug           String
+  name           String
+  description    String?
+  position       Int          @default(0)
+  mainCategoryId String       @map("main_category_id")
+  mainCategory   MainCategory @relation(fields: [mainCategoryId], references: [id], onDelete: Restrict)
+  posts          Post[]
 
-  @@unique([mainCategory, slug])
-  /// Necesario para que Post pueda referenciar (id, mainCategory) como FK compuesta.
-  @@unique([id, mainCategory])
-  @@index([mainCategory, position])
+  @@unique([mainCategoryId, slug])
+  @@index([mainCategoryId, position])
+  @@index([slug])
   @@map("subcategories")
 }
 

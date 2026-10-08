@@ -20,10 +20,7 @@ export function ArticlesSection({ posts }: ArticlesSectionProps) {
               Reflexiones, tutoriales y documentación sobre desarrollo e infraestructura.
             </p>
           </div>
-          <Link
-            href="/blog"
-            className="hidden items-center gap-1 text-sm text-accent sm:flex"
-          >
+          <Link href="/blog" className="hidden items-center gap-1 text-sm text-accent sm:flex">
             Ver blog
             <ArrowUpRight className="h-4 w-4" />
           </Link>
@@ -31,9 +28,7 @@ export function ArticlesSection({ posts }: ArticlesSectionProps) {
 
         {posts.length === 0 ? (
           <FadeIn className="mt-12">
-            <p className="text-center text-muted-foreground">
-              Próximamente nuevos artículos.
-            </p>
+            <p className="text-center text-muted-foreground">Próximamente nuevos artículos.</p>
           </FadeIn>
         ) : (
           <StaggerContainer className="mt-12 space-y-4">
@@ -52,7 +47,8 @@ export function ArticlesSection({ posts }: ArticlesSectionProps) {
                             {post.readingTime} min
                           </span>
                           <CategoryBadge
-                            category={post.mainCategory}
+                            categorySlug={post.mainCategory.slug}
+                            categoryLabel={post.mainCategory.name}
                             subcategory={post.subCategory?.name}
                           />
                         </div>

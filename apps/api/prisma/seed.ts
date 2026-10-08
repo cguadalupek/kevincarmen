@@ -1,46 +1,149 @@
-import { MainCategory, PrismaClient } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
-const BLOG_CATEGORIES = [
-  { slug: 'desarrollo', name: 'Desarrollo', description: 'Desarrollo de software, código y arquitectura.' },
-  { slug: 'infraestructura', name: 'Infraestructura', description: 'Proxmox, servidores, redes y operaciones.' },
-  { slug: 'redes', name: 'Redes', description: 'Conectividad, ruteo, firewall y servicios.' },
-  { slug: 'hardware', name: 'Hardware', description: 'Equipos, componentes y rendimiento.' },
-  { slug: 'ia', name: 'IA', description: 'Modelos, agentes y aplicaciones de IA.' },
-  { slug: 'soporte-ti', name: 'Soporte TI', description: 'Buenas prácticas y guías de soporte.' },
-];
-
 /**
- * Taxonomía de dos niveles: 4 categorías principales (enum `MainCategory`) y 12
- * subcategorías (tabla `subcategories`).
- *
- * Los ids son explícitos y tienen que coincidir con los de la migración
- * `20261008000627_add_main_and_subcategories`, que es la que siembra estos mismos
- * registros en producción (el seed no se ejecuta en el despliegue: el contenedor
- * solo corre `prisma migrate deploy`).
+ * Taxonomía EDITABLE desde el CMS: categorías principales (tabla `main_categories`)
+ * y subcategorías (tabla `subcategories`). Los ids son explícitos y coinciden con
+ * la migración `20261008120000_main_categories_editable`, que es la que siembra
+ * producción (el seed no se ejecuta en el deploy: el contenedor corre `prisma migrate deploy`).
  */
+const MAIN_CATEGORIES = [
+  {
+    id: 'maincatsoftwaredev000001',
+    slug: 'SOFTWARE_DEV',
+    name: 'Software & Dev',
+    description: 'Desarrollo de software, código, arquitectura y proyectos.',
+    position: 1,
+  },
+  {
+    id: 'maincatinfrahomelab000001',
+    slug: 'INFRA_HOMELAB',
+    name: 'Infra & Homelab',
+    description: 'Servidores, contenedores, despliegues, redes y seguridad.',
+    position: 2,
+  },
+  {
+    id: 'maincatithardware00000001',
+    slug: 'IT_HARDWARE',
+    name: 'IT & Hardware',
+    description: 'Equipos, ensamblaje, mantenimiento y cableado.',
+    position: 3,
+  },
+  {
+    id: 'maincatiatech000000000001',
+    slug: 'IA_TECH',
+    name: 'IA & Tech',
+    description: 'IA local, herramientas de IA y experimentos.',
+    position: 4,
+  },
+] as const;
+
 const SUBCATEGORIES: {
   id: string;
   slug: string;
   name: string;
   description: string;
-  mainCategory: MainCategory;
+  mainCategoryId: string;
   position: number;
 }[] = [
-  { id: 'subsoftwaredev00000001', slug: 'desarrollo-web-apps', name: 'Desarrollo Web & Apps', description: 'Frontend, backend, APIs y aplicaciones completas.', mainCategory: 'SOFTWARE_DEV', position: 1 },
-  { id: 'subsoftwaredev00000002', slug: 'proyectos-showcases', name: 'Proyectos & Showcases', description: 'Casos de estudio y presentación de proyectos.', mainCategory: 'SOFTWARE_DEV', position: 2 },
-  { id: 'subsoftwaredev00000003', slug: 'snippets-guias', name: 'Snippets & Guías', description: 'Fragmentos de código, recetas y guías cortas.', mainCategory: 'SOFTWARE_DEV', position: 3 },
-  { id: 'subinfrahomelab00000001', slug: 'servidores-homelab', name: 'Servidores & Homelab', description: 'Proxmox, virtualización, NAS y servicios autohospedados.', mainCategory: 'INFRA_HOMELAB', position: 1 },
-  { id: 'subinfrahomelab00000002', slug: 'docker-despliegues', name: 'Docker & Despliegues', description: 'Contenedores, Compose, CI/CD y puesta en producción.', mainCategory: 'INFRA_HOMELAB', position: 2 },
-  { id: 'subinfrahomelab00000003', slug: 'redes-seguridad', name: 'Redes & Seguridad', description: 'Conectividad, ruteo, firewall, VPN y hardening.', mainCategory: 'INFRA_HOMELAB', position: 3 },
-  { id: 'subithardware000000001', slug: 'hardware-ensamblaje', name: 'Hardware & Ensamblaje', description: 'Equipos, componentes, builds y rendimiento.', mainCategory: 'IT_HARDWARE', position: 1 },
-  { id: 'subithardware000000002', slug: 'soporte-mantenimiento', name: 'Soporte & Mantenimiento', description: 'Diagnóstico, reparación y mantenimiento de equipos.', mainCategory: 'IT_HARDWARE', position: 2 },
-  { id: 'subithardware000000003', slug: 'cableado-redes-fisicas', name: 'Cableado & Redes Físicas', description: 'Cableado estructurado, racks y montaje físico.', mainCategory: 'IT_HARDWARE', position: 3 },
-  { id: 'subiatech00000000000001', slug: 'ia-local-selfhosted', name: 'IA Local & Self-Hosted', description: 'Modelos ejecutados en tu propio hardware.', mainCategory: 'IA_TECH', position: 1 },
-  { id: 'subiatech00000000000002', slug: 'ai-tooling-workflow', name: 'AI Tooling & Workflow', description: 'Herramientas de IA y cómo integrarlas en el flujo diario.', mainCategory: 'IA_TECH', position: 2 },
-  { id: 'subiatech00000000000003', slug: 'experimentos-fisica-tech', name: 'Experimentos & Física/Tech', description: 'Pruebas, experimentos y exploraciones técnicas.', mainCategory: 'IA_TECH', position: 3 },
+  {
+    id: 'subsoftwaredev00000001',
+    slug: 'desarrollo-web-apps',
+    name: 'Desarrollo Web & Apps',
+    description: 'Frontend, backend, APIs y aplicaciones completas.',
+    mainCategoryId: 'maincatsoftwaredev000001',
+    position: 1,
+  },
+  {
+    id: 'subsoftwaredev00000002',
+    slug: 'proyectos-showcases',
+    name: 'Proyectos & Showcases',
+    description: 'Casos de estudio y presentación de proyectos.',
+    mainCategoryId: 'maincatsoftwaredev000001',
+    position: 2,
+  },
+  {
+    id: 'subsoftwaredev00000003',
+    slug: 'snippets-guias',
+    name: 'Snippets & Guías',
+    description: 'Fragmentos de código, recetas y guías cortas.',
+    mainCategoryId: 'maincatsoftwaredev000001',
+    position: 3,
+  },
+  {
+    id: 'subinfrahomelab00000001',
+    slug: 'servidores-homelab',
+    name: 'Servidores & Homelab',
+    description: 'Proxmox, virtualización, NAS y servicios autohospedados.',
+    mainCategoryId: 'maincatinfrahomelab000001',
+    position: 1,
+  },
+  {
+    id: 'subinfrahomelab00000002',
+    slug: 'docker-despliegues',
+    name: 'Docker & Despliegues',
+    description: 'Contenedores, Compose, CI/CD y puesta en producción.',
+    mainCategoryId: 'maincatinfrahomelab000001',
+    position: 2,
+  },
+  {
+    id: 'subinfrahomelab00000003',
+    slug: 'redes-seguridad',
+    name: 'Redes & Seguridad',
+    description: 'Conectividad, ruteo, firewall, VPN y hardening.',
+    mainCategoryId: 'maincatinfrahomelab000001',
+    position: 3,
+  },
+  {
+    id: 'subithardware000000001',
+    slug: 'hardware-ensamblaje',
+    name: 'Hardware & Ensamblaje',
+    description: 'Equipos, componentes, builds y rendimiento.',
+    mainCategoryId: 'maincatithardware00000001',
+    position: 1,
+  },
+  {
+    id: 'subithardware000000002',
+    slug: 'soporte-mantenimiento',
+    name: 'Soporte & Mantenimiento',
+    description: 'Diagnóstico, reparación y mantenimiento de equipos.',
+    mainCategoryId: 'maincatithardware00000001',
+    position: 2,
+  },
+  {
+    id: 'subithardware000000003',
+    slug: 'cableado-redes-fisicas',
+    name: 'Cableado & Redes Físicas',
+    description: 'Cableado estructurado, racks y montaje físico.',
+    mainCategoryId: 'maincatithardware00000001',
+    position: 3,
+  },
+  {
+    id: 'subiatech00000000000001',
+    slug: 'ia-local-selfhosted',
+    name: 'IA Local & Self-Hosted',
+    description: 'Modelos ejecutados en tu propio hardware.',
+    mainCategoryId: 'maincatiatech000000000001',
+    position: 1,
+  },
+  {
+    id: 'subiatech00000000000002',
+    slug: 'ai-tooling-workflow',
+    name: 'AI Tooling & Workflow',
+    description: 'Herramientas de IA y cómo integrarlas en el flujo diario.',
+    mainCategoryId: 'maincatiatech000000000001',
+    position: 2,
+  },
+  {
+    id: 'subiatech00000000000003',
+    slug: 'experimentos-fisica-tech',
+    name: 'Experimentos & Física/Tech',
+    description: 'Pruebas, experimentos y exploraciones técnicas.',
+    mainCategoryId: 'maincatiatech000000000001',
+    position: 3,
+  },
 ];
 
 async function main() {
@@ -55,15 +158,13 @@ async function main() {
           { action: 'manage', resource: 'posts' },
           { action: 'manage', resource: 'pages' },
           { action: 'manage', resource: 'media' },
+          { action: 'manage', resource: 'categories' },
         ],
       },
     },
   });
 
-  const passwordHash = await bcrypt.hash(
-    process.env.ADMIN_PASSWORD ?? 'Admin123!',
-    10,
-  );
+  const passwordHash = await bcrypt.hash(process.env.ADMIN_PASSWORD ?? 'Admin123!', 10);
 
   await prisma.user.upsert({
     where: { email: 'admin@kevincarmen.xyz' },
@@ -76,43 +177,37 @@ async function main() {
     },
   });
 
-  const adminUser = await prisma.user.findUniqueOrThrow({ where: { email: 'admin@kevincarmen.xyz' } });
+  const adminUser = await prisma.user.findUniqueOrThrow({
+    where: { email: 'admin@kevincarmen.xyz' },
+  });
 
-  for (const cat of BLOG_CATEGORIES) {
-    await prisma.category.upsert({
-      where: { slug: cat.slug },
-      update: { name: cat.name, description: cat.description },
-      create: cat,
+  // Categorías principales: upsert por slug (volver a correr el seed no duplica).
+  for (const main of MAIN_CATEGORIES) {
+    await prisma.mainCategory.upsert({
+      where: { slug: main.slug },
+      update: { name: main.name, description: main.description, position: main.position },
+      create: main,
     });
   }
 
-  // Subcategorías de la taxonomía nueva. El upsert usa la clave compuesta
-  // (mainCategory, slug), así que volver a correr el seed no duplica nada.
+  // Subcategorías: upsert por clave compuesta (mainCategoryId, slug).
   for (const sub of SUBCATEGORIES) {
     await prisma.subcategory.upsert({
       where: {
-        mainCategory_slug: { mainCategory: sub.mainCategory, slug: sub.slug },
+        mainCategoryId_slug: { mainCategoryId: sub.mainCategoryId, slug: sub.slug },
       },
-      update: {
-        name: sub.name,
-        description: sub.description,
-        position: sub.position,
-      },
+      update: { name: sub.name, description: sub.description, position: sub.position },
       create: sub,
     });
   }
 
   /** Id de una subcategoría por (categoría principal, slug). */
-  const subId = async (mainCategory: MainCategory, slug: string) =>
+  const subId = async (mainCategoryId: string, slug: string) =>
     (
       await prisma.subcategory.findUniqueOrThrow({
-        where: { mainCategory_slug: { mainCategory, slug } },
+        where: { mainCategoryId_slug: { mainCategoryId, slug } },
       })
     ).id;
-
-  const desarrollo = await prisma.category.findUniqueOrThrow({ where: { slug: 'desarrollo' } });
-  const soporte = await prisma.category.findUniqueOrThrow({ where: { slug: 'soporte-ti' } });
-  const red = await prisma.category.findUniqueOrThrow({ where: { slug: 'redes' } });
 
   const woMicDate = new Date(Date.UTC(2026, 7, 15, 14, 0, 0));
   const proxmoxDate = new Date(Date.UTC(2026, 7, 10, 11, 0, 0));
@@ -135,7 +230,8 @@ async function main() {
       publishedAt: woMicDate,
       readingTime: 4,
       authorId: adminUser.id,
-      categoryId: soporte.id,
+      mainCategoryId: 'maincatithardware00000001',
+      subCategoryId: await subId('maincatithardware00000001', 'soporte-mantenimiento'),
     },
   });
 
@@ -145,7 +241,8 @@ async function main() {
     create: {
       title: 'Configura VLANs desde tu celular',
       slug: 'short-configura-vlans-con-tu-celular',
-      excerpt: 'Un Short con tres opciones de configuración rápida para segmentar tu red con un smartphone.',
+      excerpt:
+        'Un Short con tres opciones de configuración rápida para segmentar tu red con un smartphone.',
       content:
         '# Short VLANs desde el celular\n\nDemostración de cómo etiquetar puertos usando la app oficial de tu switch.',
       coverImage: '/uploads/posts/faf6fb22-ed0f-4bf5-9e4c-47affcee3468.png',
@@ -155,7 +252,8 @@ async function main() {
       publishedAt: new Date(woMicDate.getTime() + 86400000),
       readingTime: 1,
       authorId: adminUser.id,
-      categoryId: red.id,
+      mainCategoryId: 'maincatinfrahomelab000001',
+      subCategoryId: await subId('maincatinfrahomelab000001', 'redes-seguridad'),
     },
   });
 
@@ -174,7 +272,8 @@ async function main() {
       publishedAt: proxmoxDate,
       readingTime: 9,
       authorId: adminUser.id,
-      categoryId: desarrollo.id,
+      mainCategoryId: 'maincatinfrahomelab000001',
+      subCategoryId: await subId('maincatinfrahomelab000001', 'servidores-homelab'),
     },
   });
 
@@ -191,7 +290,8 @@ async function main() {
       publishedAt: networkingDate,
       readingTime: 5,
       authorId: adminUser.id,
-      categoryId: red.id,
+      mainCategoryId: 'maincatinfrahomelab000001',
+      subCategoryId: await subId('maincatinfrahomelab000001', 'redes-seguridad'),
     },
   });
 

@@ -26,16 +26,13 @@ export class PostsController {
 
   /**
    * GET /posts                                  → publicados
-   * GET /posts?category=INFRA_HOMELAB           → filtra por categoría principal
+   * GET /posts?category=mi-categoria            → filtra por slug de principal
    * GET /posts?category=infraestructura         → acepta también el slug antiguo
-   * GET /posts?subcategory=servidores-homelab   → filtra por subcategoría
+   * GET /posts?subcategory=servidores-homelab   → filtra por slug de subcategoría
    * GET /posts?category=...&subcategory=...     → ambos
    */
   @Get()
-  findAll(
-    @Query('category') category?: string,
-    @Query('subcategory') subcategory?: string,
-  ) {
+  findAll(@Query('category') category?: string, @Query('subcategory') subcategory?: string) {
     return this.postsService.findAllPublished({
       categorySlug: category,
       subCategorySlug: subcategory,

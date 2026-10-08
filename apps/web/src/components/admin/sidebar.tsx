@@ -12,14 +12,21 @@ import {
   FlaskConical,
   Video,
   Clock,
+  Tags,
 } from 'lucide-react';
 import { Logo } from '@/components/brand/logo';
 import { clearToken } from '@/lib/api/client';
 import { cn } from '@/lib/utils';
 
-const navItems: { label: string; href: string; icon: typeof LayoutDashboard; disabled?: boolean }[] = [
+const navItems: {
+  label: string;
+  href: string;
+  icon: typeof LayoutDashboard;
+  disabled?: boolean;
+}[] = [
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
   { label: 'Artículos', href: '/admin/posts', icon: FileText },
+  { label: 'Categorías', href: '/admin/categorias', icon: Tags },
   { label: 'Videos', href: '/admin/videos', icon: Video },
   { label: 'Proyectos', href: '/admin/projects', icon: FolderOpen },
   { label: 'Cursos', href: '/admin/courses', icon: GraduationCap },

@@ -1,62 +1,52 @@
-import { MainCategory } from '@prisma/client';
+/**
+ * Datos semilla y mapeos de la taxonomía de categorías.
+ *
+ * Las categorías ahora son una TABLA editable desde el CMS (`main_categories`);
+ * aquí solo viven: (a) las 4 categorías por defecto con las que se siembra una BD
+ * nueva (también van en la migración inicial), y (b) la traducción de los slugs de
+ * la taxonomía antigua (plana) a la nueva, para no romper enlaces ya publicados.
+ */
 
-export interface MainCategoryMeta {
-  value: MainCategory;
-  label: string;
+export interface MainCategorySeed {
+  slug: string;
+  name: string;
   description: string;
   position: number;
 }
 
-/**
- * Etiquetas, descripciones y orden de las 4 categorías principales.
- *
- * Esta lista tiene que seguir en sincronía con el enum `MainCategory` del
- * schema.prisma. Si agregas un valor al enum, agrégalo también aquí y en
- * `apps/web/src/lib/categories.ts` (el frontend necesita además los colores de
- * los badges). Son tres sitios porque el monorepo no tiene un paquete compartido
- * compilable —`@kevincarmen/types` se publica como fuente TypeScript y NestJS,
- * que no bundlea, no puede importarlo en runtime—.
- */
-export const MAIN_CATEGORY_META: Record<MainCategory, MainCategoryMeta> = {
-  SOFTWARE_DEV: {
-    value: 'SOFTWARE_DEV',
-    label: 'Software & Dev',
-    description: 'Desarrollo de software, arquitectura, proyectos y guías de código.',
+export const DEFAULT_CATEGORIES: MainCategorySeed[] = [
+  {
+    slug: 'SOFTWARE_DEV',
+    name: 'Software & Dev',
+    description: 'Desarrollo de software, código, arquitectura y proyectos.',
     position: 1,
   },
-  INFRA_HOMELAB: {
-    value: 'INFRA_HOMELAB',
-    label: 'Infra & Homelab',
+  {
+    slug: 'INFRA_HOMELAB',
+    name: 'Infra & Homelab',
     description: 'Servidores, contenedores, despliegues, redes y seguridad.',
     position: 2,
   },
-  IT_HARDWARE: {
-    value: 'IT_HARDWARE',
-    label: 'IT & Hardware',
+  {
+    slug: 'IT_HARDWARE',
+    name: 'IT & Hardware',
     description: 'Equipos, ensamblaje, mantenimiento y cableado.',
     position: 3,
   },
-  IA_TECH: {
-    value: 'IA_TECH',
-    label: 'IA & Tech',
-    description: 'IA local, herramientas, automatización y experimentos.',
+  {
+    slug: 'IA_TECH',
+    name: 'IA & Tech',
+    description: 'IA local, herramientas de IA y experimentos.',
     position: 4,
   },
-};
-
-/** Las 4 categorías principales en su orden de presentación. */
-export const MAIN_CATEGORY_ORDER: MainCategoryMeta[] = Object.values(
-  MAIN_CATEGORY_META,
-).sort((a, b) => a.position - b.position);
+];
 
 /**
- * Taxonomía plana anterior → categoría principal nueva.
- *
- * Sirve para dos cosas: migrar filas que ya existan con esos slugs y, sobre todo,
- * que los enlaces ya publicados (`/blog?categoria=redes`) sigan resolviendo a algo
- * en lugar de devolver una lista vacía después del cambio.
+ * Slug de la taxonomía plana anterior → slug de la categoría nueva.
+ * El frontend clásico usaba `?category=<slug>` con estos valores; el filtro del
+ * listado sigue aceptándolos aunque en la BD ya no existan.
  */
-export const LEGACY_CATEGORY_SLUG_MAP: Record<string, MainCategory> = {
+export const LEGACY_CATEGORY_SLUG_MAP: Record<string, string> = {
   desarrollo: 'SOFTWARE_DEV',
   infraestructura: 'INFRA_HOMELAB',
   homelab: 'INFRA_HOMELAB',
@@ -66,24 +56,17 @@ export const LEGACY_CATEGORY_SLUG_MAP: Record<string, MainCategory> = {
   ia: 'IA_TECH',
 };
 
-export function isMainCategory(value: string): value is MainCategory {
-  return Object.prototype.hasOwnProperty.call(MAIN_CATEGORY_META, value);
-}
-
 /**
- * Normaliza el query param `category`: acepta tanto el valor del enum
- * (`INFRA_HOMELAB`) como un slug antiguo (`infraestructura`, `redes`, ...).
- * Devuelve `undefined` si no reconoce el valor, para que el listado ignore el
- * filtro en lugar de romper.
+ * Normaliza un valor del query param `category` a un slug de categoría nueva:
+ * deja pasar el slug tal cual (incluye categorías creadas por el usuario) y
+ * traduce los slugs antiguos. Devuelve `undefined` si el valor no es reconocido
+ * (filtro inválido → el listado debe quedar vacío, no "todo").
  */
-export function resolveMainCategoryParam(
-  value?: string | null,
-): MainCategory | undefined {
+export function normalizeCategorySlug(value?: string | null): string | undefined {
   if (!value) return undefined;
 
   const normalized = value.trim();
   if (!normalized) return undefined;
-  if (isMainCategory(normalized)) return normalized;
 
-  return LEGACY_CATEGORY_SLUG_MAP[normalized.toLowerCase()];
+  return LEGACY_CATEGORY_SLUG_MAP[normalized.toLowerCase()] ?? normalized;
 }

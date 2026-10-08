@@ -1,24 +1,32 @@
-import { categoryColor, categoryLabel } from '@/lib/categories';
-import type { MainCategoryValue } from '@/lib/categories';
+import { categoryColor } from '@/lib/categories';
 
 interface CategoryBadgeProps {
-  category: MainCategoryValue;
-  /** Fuerza a mostrar la subcategoría junto a la principal (útil en el artículo). */
+  /** Slug de la categoría principal (define el color, estable por slug). */
+  categorySlug: string;
+  /** Nombre legible. Si no viene se muestra el slug. */
+  categoryLabel?: string;
+  /** Nombre de la subcategoría, opcional, renderizada en formato más tenue. */
   subcategory?: string | null;
   className?: string;
 }
 
 /**
- * Badge de categoría principal, con la subcategoría opcional en formato más tenue.
- * Lo usan tanto el listado público como el encabezado del artículo.
+ * Badge de categoría principal + subcategoría opcional. Lo usan el listado del
+ * blog, el encabezado del artículo y la home. El color viene del slug y no del
+ * nombre, así las categorías creadas por el usuario tienen un color estable.
  */
-export function CategoryBadge({ category, subcategory, className = '' }: CategoryBadgeProps) {
+export function CategoryBadge({
+  categorySlug,
+  categoryLabel,
+  subcategory,
+  className = '',
+}: CategoryBadgeProps) {
   return (
     <span className={`inline-flex flex-wrap items-center gap-1 ${className}`}>
       <span
-        className={`rounded-full border px-2.5 py-1 text-xs font-medium ${categoryColor(category)}`}
+        className={`rounded-full border px-2.5 py-1 text-xs font-medium ${categoryColor(categorySlug)}`}
       >
-        {categoryLabel(category)}
+        {categoryLabel ?? categorySlug}
       </span>
       {subcategory && (
         <span className="rounded-full border border-border bg-muted/40 px-2.5 py-1 text-xs text-muted-foreground">

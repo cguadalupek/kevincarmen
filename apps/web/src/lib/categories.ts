@@ -1,59 +1,55 @@
 /**
- * Valores válidos de `Post.mainCategory`. Duplica el enum `MainCategory` de
- * Prisma — el backend es la única autoridad de los valores; este tipo solo
- * permite compilar sin depender del paquete compartido. Se re-exporta desde
- * lib/api/categories.ts y lib/api/posts.ts.
- */
-export type MainCategoryValue = 'SOFTWARE_DEV' | 'INFRA_HOMELAB' | 'IT_HARDWARE' | 'IA_TECH';
-
-/**
- * Etiquetas, orden y colores de las 4 categorías principales.
+ * Presentación de las categorías en el frontend.
  *
- * Tiene que seguir en sincronía con el enum `MainCategory` de Prisma y con
- * `apps/api/src/categories/taxonomy.ts`, que es quien sirve las etiquetas en
- * `GET /categories`. Aquí se repiten porque un badge tiene que pintarse aunque
- * la llamada al API falle.
+ * Las categorías se crean y editan desde el CMS, así que no hay un conjunto fijo
+ * de slugs ni de etiquetas: las etiquetas vienen del API (en el payload del post
+ * y en `GET /categories`). Aquí solo viven (a) el color del badge, que es ESTABLE
+ * por slug para que una categoría siempre tenga el mismo color, y (b) el mapeo de
+ * los slugs de la taxonomía antigua por compatibilidad de URLs.
  */
-export const MAIN_CATEGORY_ORDER: MainCategoryValue[] = [
-  'SOFTWARE_DEV',
-  'INFRA_HOMELAB',
-  'IT_HARDWARE',
-  'IA_TECH',
-];
-
-export const MAIN_CATEGORY_LABELS: Record<MainCategoryValue, string> = {
-  SOFTWARE_DEV: 'Software & Dev',
-  INFRA_HOMELAB: 'Infra & Homelab',
-  IT_HARDWARE: 'IT & Hardware',
-  IA_TECH: 'IA & Tech',
-};
-
-/**
- * Clases de Tailwind por categoría. Son cadenas estáticas a propósito: Tailwind
- * solo genera las clases que encuentra escritas en el código, por eso no se
- * construyen concatenando el nombre del color.
- */
-export const MAIN_CATEGORY_COLORS: Record<MainCategoryValue, string> = {
-  SOFTWARE_DEV: 'border-emerald-400/50 bg-emerald-400/10 text-emerald-300',
-  INFRA_HOMELAB: 'border-cyan-400/50 bg-cyan-400/10 text-cyan-300',
-  IT_HARDWARE: 'border-amber-400/50 bg-amber-400/10 text-amber-300',
-  IA_TECH: 'border-violet-400/50 bg-violet-400/10 text-violet-300',
-};
+export type MainCategoryValue = string;
 
 const FALLBACK_COLOR = 'border-accent/50 bg-accent/10 text-accent';
 
-export function categoryLabel(value: MainCategoryValue): string {
-  return MAIN_CATEGORY_LABELS[value] ?? value;
-}
+/** Cadenas literales a propósito: Tailwind solo genera las clases que encuentra escritas. */
+const PALETTE = [
+  'border-emerald-400/50 bg-emerald-400/10 text-emerald-300',
+  'border-cyan-400/50 bg-cyan-400/10 text-cyan-300',
+  'border-amber-400/50 bg-amber-400/10 text-amber-300',
+  'border-violet-400/50 bg-violet-400/10 text-violet-300',
+  'border-blue-400/50 bg-blue-400/10 text-blue-300',
+  'border-rose-400/50 bg-rose-400/10 text-rose-300',
+  'border-green-400/50 bg-green-400/10 text-green-300',
+  'border-teal-400/50 bg-teal-400/10 text-teal-300',
+  'border-orange-400/50 bg-orange-400/10 text-orange-300',
+  'border-fuchsia-400/50 bg-fuchsia-400/10 text-fuchsia-300',
+];
 
-export function categoryColor(value: MainCategoryValue): string {
-  return MAIN_CATEGORY_COLORS[value] ?? FALLBACK_COLOR;
+/** Las 4 categorías por defecto conservan su color original. */
+const DEFAULT_COLOR: Record<string, string> = {
+  SOFTWARE_DEV: PALETTE[0],
+  INFRA_HOMELAB: PALETTE[1],
+  IT_HARDWARE: PALETTE[2],
+  IA_TECH: PALETTE[3],
+};
+
+/**
+ * Color del badge para un slug de categoría. Estable: el mismo slug siempre da el
+ * mismo color; las categorías creadas por el usuario se reparten la paleta.
+ */
+export function categoryColor(slug: string): string {
+  if (!slug) return FALLBACK_COLOR;
+  const fixed = DEFAULT_COLOR[slug];
+  if (fixed) return fixed;
+
+  let hash = 0;
+  for (let i = 0; i < slug.length; i++) hash = (hash * 31 + slug.charCodeAt(i)) >>> 0;
+  return PALETTE[hash % PALETTE.length];
 }
 
 /**
- * `?categoria=` sigue aceptando los slugs de la taxonomía plana anterior para no
- * romper los enlaces ya publicados; esta tabla replica la del API
- * (`LEGACY_CATEGORY_SLUG_MAP`).
+ * Slug de la taxonomía plana anterior → slug de la categoría nueva.
+ * Replica `LEGACY_CATEGORY_SLUG_MAP` del API para parsear las URLs del blog.
  */
 export const LEGACY_CATEGORY_SLUG_MAP: Record<string, MainCategoryValue> = {
   desarrollo: 'SOFTWARE_DEV',

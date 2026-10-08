@@ -8,11 +8,7 @@ import { slugify } from '@kevincarmen/utils';
 import { Button } from '@/components/ui/button';
 import { PostEditor } from '@/components/admin/post-editor';
 import { api, type ApiPost, type VideoTypeValue } from '@/lib/api/client';
-import {
-  getCategoryTree,
-  subcategoriesOf,
-  type CategoryTreeNode,
-} from '@/lib/api/categories';
+import { getCategoryTree, subcategoriesOf, type CategoryTreeNode } from '@/lib/api/categories';
 
 interface PostFormProps {
   post?: ApiPost;
@@ -66,15 +62,11 @@ export function PostForm({ post }: PostFormProps) {
       ? new Date(post.publishedAt).toISOString().slice(0, 16)
       : new Date().toISOString().slice(0, 16),
   );
-  // Categoría principal (obligatoria) y subcategoría (opcional, dependiente).
-  const [mainCategory, setMainCategory] = useState<ApiPost['mainCategory'] | ''>(
-    post?.mainCategory ?? '',
-  );
-  const [subCategoryId, setSubCategoryId] = useState(post?.subCategoryId ?? '');
+  // Categoría principal (id, obligatoria) y subcategoría (id, opcional y dependiente).
+  const [mainCategoryId, setMainCategoryId] = useState<string>(post?.mainCategoryId ?? '');
+  const [subCategoryId, setSubCategoryId] = useState<string>(post?.subCategoryId ?? '');
   const [videoUrl, setVideoUrl] = useState(post?.videoUrl ?? '');
-  const [videoType, setVideoType] = useState<VideoTypeValue | null>(
-    post?.videoType ?? null,
-  );
+  const [videoType, setVideoType] = useState<VideoTypeValue | null>(post?.videoType ?? null);
   const [externalLinkLabel, setExternalLinkLabel] = useState(post?.externalLinkLabel ?? '');
   const [externalLinkUrl, setExternalLinkUrl] = useState(post?.externalLinkUrl ?? '');
 
@@ -82,10 +74,15 @@ export function PostForm({ post }: PostFormProps) {
     getCategoryTree().then(setCategoryTree);
   }, []);
 
+  const selectedMain = useMemo(
+    () => categoryTree.find((node) => node.id === mainCategoryId) ?? null,
+    [categoryTree, mainCategoryId],
+  );
+
   /** Solo las subcategorías de la categoría principal elegida. */
   const subcategoryOptions = useMemo(
-    () => subcategoriesOf(categoryTree, mainCategory || null),
-    [categoryTree, mainCategory],
+    () => subcategoriesOf(categoryTree, mainCategoryId || null),
+    [categoryTree, mainCategoryId],
   );
 
   function handleTitleChange(value: string) {
@@ -94,16 +91,15 @@ export function PostForm({ post }: PostFormProps) {
   }
 
   /**
-   * Al cambiar la categoría principal hay que revisar la subcategoría: si la que
-   * estaba elegida no pertenece a la nueva, se limpia. Si no, el API la rechaza
-   * con un 400 (y la FK compuesta tampoco la aceptaría).
+   * Al cambiar la categoría principal se revisa la subcategoría: si la elegida no
+   * pertenece a la nueva, se limpia. Si no, el API la rechaza con un 400 (y el
+   * trigger de Postgres también la rechazaría).
    */
   function handleMainCategoryChange(value: string) {
-    const next = value as ApiPost['mainCategory'] | '';
-    setMainCategory(next);
+    setMainCategoryId(value);
 
     if (subCategoryId) {
-      const stillValid = subcategoriesOf(categoryTree, next || null).some(
+      const stillValid = subcategoriesOf(categoryTree, value || null).some(
         (subcategory) => subcategory.id === subCategoryId,
       );
       if (!stillValid) setSubCategoryId('');
@@ -126,7 +122,7 @@ export function PostForm({ post }: PostFormProps) {
 
     // La categoría principal es obligatoria: se valida aquí para no gastar una
     // ida al API (que devolvería 400) ni perder el resto del formulario.
-    if (!mainCategory) {
+    if (!mainCategoryId) {
       setError('Elige una categoría principal: es obligatoria para guardar el artículo.');
       return;
     }
@@ -146,14 +142,12 @@ export function PostForm({ post }: PostFormProps) {
         videoType: videoType ?? undefined,
         externalLinkLabel: externalLinkLabel.trim(),
         externalLinkUrl: externalLinkUrl.trim(),
-        mainCategory,
+        mainCategoryId,
         // `null` explícito desasigna la subcategoría en el API.
         subCategoryId: subCategoryId || null,
         publishedAt: new Date(publishedAt).toISOString(),
       };
-      const saved = post
-        ? await api.updatePost(post.id, payload)
-        : await api.createPost(payload);
+      const saved = post ? await api.updatePost(post.id, payload) : await api.createPost(payload);
 
       await api.revalidateSite(saved.slug);
 
@@ -263,11 +257,16 @@ export function PostForm({ post }: PostFormProps) {
             <label htmlFor="content" className="mb-2 block text-sm font-medium">
               Contenido
             </label>
-            <PostEditor content={content} onChange={setContent} videoUrl={videoUrl} onVideoPaste={handleVideoUrlChange} />
+            <PostEditor
+              content={content}
+              onChange={setContent}
+              videoUrl={videoUrl}
+              onVideoPaste={handleVideoUrlChange}
+            />
             <p className="mt-2 text-xs text-muted-foreground">
-              Escribe <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono">/</kbd> para insertar
-              código o imágenes. Arrastra, pega capturas (Ctrl+V) o redimensiona imágenes como en
-              Notion.
+              Escribe <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono">/</kbd> para
+              insertar código o imágenes. Arrastra, pega capturas (Ctrl+V) o redimensiona imágenes
+              como en Notion.
             </p>
           </div>
         </div>
@@ -290,10 +289,18 @@ export function PostForm({ post }: PostFormProps) {
               <option value="TRASHED">Papelera</option>
             </select>
             <label className="mt-4 flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={featured} onChange={(event) => setFeatured(event.target.checked)} className="h-4 w-4 rounded border-border bg-muted/50" />
+              <input
+                type="checkbox"
+                checked={featured}
+                onChange={(event) => setFeatured(event.target.checked)}
+                className="h-4 w-4 rounded border-border bg-muted/50"
+              />
               <span>Habilitar artículo destacado</span>
             </label>
-            <p className="mt-1 text-xs text-muted-foreground">Solo un artículo debería estar destacado; el más reciente marcado aparecerá antes del grid.</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Solo un artículo debería estar destacado; el más reciente marcado aparecerá antes del
+              grid.
+            </p>
 
             <label htmlFor="publishedAt" className="mt-4 mb-2 block text-sm font-medium">
               Fecha de publicación
@@ -310,32 +317,32 @@ export function PostForm({ post }: PostFormProps) {
           <div className="glass-card p-5">
             <h3 className="mb-3 font-semibold">Clasificación</h3>
 
-            <label htmlFor="mainCategory" className="mb-2 block text-sm font-medium">
+            <label htmlFor="mainCategoryId" className="mb-2 block text-sm font-medium">
               Categoría principal <span className="text-accent">*</span>
             </label>
             <div className="relative">
               <select
-                id="mainCategory"
-                value={mainCategory}
+                id="mainCategoryId"
+                value={mainCategoryId}
                 onChange={(event) => handleMainCategoryChange(event.target.value)}
                 required
                 aria-describedby="mainCategory-hint"
                 className={`w-full appearance-none rounded-lg border bg-muted/50 px-4 py-2.5 text-sm focus:outline-none focus:ring-1 ${
-                  mainCategory
+                  mainCategoryId
                     ? 'border-border focus:border-accent focus:ring-accent'
                     : 'border-amber-500/50 focus:border-accent focus:ring-accent'
                 }`}
               >
                 <option value="">Selecciona una categoría…</option>
                 {categoryTree.map((category) => (
-                  <option key={category.value} value={category.value}>
+                  <option key={category.id} value={category.id}>
                     {category.label}
                   </option>
                 ))}
               </select>
               <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             </div>
-            {!mainCategory && (
+            {!mainCategoryId && (
               <p id="mainCategory-hint" className="mt-2 text-xs text-amber-400">
                 Obligatoria: ningún artículo se guarda sin categoría principal.
               </p>
@@ -349,7 +356,7 @@ export function PostForm({ post }: PostFormProps) {
                 id="subCategoryId"
                 value={subCategoryId}
                 onChange={(event) => setSubCategoryId(event.target.value)}
-                disabled={!mainCategory || subcategoryOptions.length === 0}
+                disabled={!mainCategoryId || subcategoryOptions.length === 0}
                 className="w-full appearance-none rounded-lg border border-border bg-muted/50 px-4 py-2.5 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <option value="">Sin subcategoría</option>
@@ -362,11 +369,9 @@ export function PostForm({ post }: PostFormProps) {
               <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
-              {!mainCategory
+              {!mainCategoryId
                 ? 'Elige primero una categoría principal.'
-                : `Mostrando las ${subcategoryOptions.length} subcategorías de ${
-                    categoryTree.find((category) => category.value === mainCategory)?.label ?? ''
-                  }.`}
+                : `Mostrando las ${subcategoryOptions.length} subcategorías de ${selectedMain?.label ?? ''}.`}
             </p>
           </div>
 
@@ -389,7 +394,12 @@ export function PostForm({ post }: PostFormProps) {
               <div className="mt-3 space-y-3 rounded-md border border-border bg-card/40 p-3 text-xs">
                 <div className="flex items-start gap-2">
                   <ExternalLink className="mt-0.5 h-3.5 w-3.5 shrink-0 text-accent" />
-                  <a href={videoUrl} target="_blank" rel="noopener noreferrer" className="break-all text-accent hover:underline">
+                  <a
+                    href={videoUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="break-all text-accent hover:underline"
+                  >
                     {videoUrl}
                   </a>
                 </div>
@@ -400,7 +410,9 @@ export function PostForm({ post }: PostFormProps) {
                   <select
                     id="videoType"
                     value={videoType ?? ''}
-                    onChange={(event) => setVideoType((event.target.value || null) as VideoTypeValue | null)}
+                    onChange={(event) =>
+                      setVideoType((event.target.value || null) as VideoTypeValue | null)
+                    }
                     className="flex-1 rounded-md border border-border bg-background px-2 py-1 text-xs"
                   >
                     <option value="">Auto</option>
@@ -431,11 +443,21 @@ export function PostForm({ post }: PostFormProps) {
             <h3 className="mb-3 font-semibold">Imagen de portada</h3>
             {coverImage && (
               <div className="relative mb-3 aspect-video overflow-hidden rounded-lg border border-border">
-                <Image src={coverImage} alt="Portada del artículo" fill className="object-cover" unoptimized />
+                <Image
+                  src={coverImage}
+                  alt="Portada del artículo"
+                  fill
+                  className="object-cover"
+                  unoptimized
+                />
               </div>
             )}
             <label className="block cursor-pointer rounded-lg border border-dashed border-border px-3 py-3 text-center text-sm text-muted-foreground transition-colors hover:border-accent hover:text-accent">
-              {coverUploading ? 'Subiendo portada...' : coverImage ? 'Cambiar portada' : 'Subir portada / thumbnail'}
+              {coverUploading
+                ? 'Subiendo portada...'
+                : coverImage
+                  ? 'Cambiar portada'
+                  : 'Subir portada / thumbnail'}
               <input
                 type="file"
                 accept="image/jpeg,image/png,image/gif,image/webp"
@@ -521,7 +543,9 @@ export function PostForm({ post }: PostFormProps) {
             </p>
             <p className="mt-2">
               Arrastra imágenes al editor, péguelas con Ctrl+V o usa{' '}
-              <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-foreground">/imagen</kbd>
+              <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono text-foreground">
+                /imagen
+              </kbd>
               . Redimensiona arrastrando las esquinas.
             </p>
           </div>
