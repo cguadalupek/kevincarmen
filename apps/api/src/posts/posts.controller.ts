@@ -12,17 +12,34 @@ import {
   Request,
 } from '@nestjs/common';
 import { PostsService } from './posts.service';
+import { CategoriesService } from '../categories/categories.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('posts')
 export class PostsController {
-  constructor(private readonly postsService: PostsService) {}
+  constructor(
+    private readonly postsService: PostsService,
+    private readonly categoriesService: CategoriesService,
+  ) {}
 
+  /**
+   * GET /posts                                  → publicados
+   * GET /posts?category=INFRA_HOMELAB           → filtra por categoría principal
+   * GET /posts?category=infraestructura         → acepta también el slug antiguo
+   * GET /posts?subcategory=servidores-homelab   → filtra por subcategoría
+   * GET /posts?category=...&subcategory=...     → ambos
+   */
   @Get()
-  findAll(@Query('category') category?: string) {
-    return this.postsService.findAllPublished({ categorySlug: category });
+  findAll(
+    @Query('category') category?: string,
+    @Query('subcategory') subcategory?: string,
+  ) {
+    return this.postsService.findAllPublished({
+      categorySlug: category,
+      subCategorySlug: subcategory,
+    });
   }
 
   @Get('videos')
@@ -33,9 +50,13 @@ export class PostsController {
     );
   }
 
+  /**
+   * @deprecated Se movió a `GET /categories`. Se mantiene como alias para no
+   * romper clientes antiguos; devuelve el mismo árbol.
+   */
   @Get('categories')
   findAllCategories() {
-    return this.postsService.findAllCategories();
+    return this.categoriesService.findTree();
   }
 
   @Get('admin/all')

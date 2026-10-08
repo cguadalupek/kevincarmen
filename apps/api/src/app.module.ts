@@ -5,6 +5,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { PostsModule } from './posts/posts.module';
+import { CategoriesModule } from './categories/categories.module';
 import { HealthModule } from './health/health.module';
 import { MediaModule } from './media/media.module';
 import { VideosModule } from './videos/videos.module';
@@ -24,6 +25,7 @@ import { ProjectsModule } from './projects/projects.module';
     ]),
     PrismaModule,
     AuthModule,
+    CategoriesModule,
     PostsModule,
     HealthModule,
     MediaModule,

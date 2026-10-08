@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { ArrowUpRight, Clock } from 'lucide-react';
 import { formatDate } from '@kevincarmen/utils';
 import type { PublicPost } from '@/lib/api/posts';
+import { CategoryBadge } from '@/components/blog/category-badge';
 import { FadeIn, StaggerContainer, StaggerItem } from '@/components/motion/fade-in';
 
 interface ArticlesSectionProps {
@@ -50,11 +51,10 @@ export function ArticlesSection({ posts }: ArticlesSectionProps) {
                             <Clock className="h-3 w-3" />
                             {post.readingTime} min
                           </span>
-                          {post.category && (
-                            <span className="rounded-full bg-primary/20 px-2 py-0.5 text-accent">
-                              {post.category.name}
-                            </span>
-                          )}
+                          <CategoryBadge
+                            category={post.mainCategory}
+                            subcategory={post.subCategory?.name}
+                          />
                         </div>
                         <h3 className="text-lg font-semibold transition-colors group-hover:text-accent">
                           {post.title}

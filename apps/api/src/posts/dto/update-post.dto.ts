@@ -1,5 +1,5 @@
-import { IsDateString, IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
-import { PostStatus, VideoType } from '@prisma/client';
+import { IsBoolean, IsDateString, IsEnum, IsOptional, IsString, MinLength } from 'class-validator';
+import { MainCategory, PostStatus, VideoType } from '@prisma/client';
 
 export class UpdatePostDto {
   @IsOptional()
@@ -25,9 +25,29 @@ export class UpdatePostDto {
   status?: PostStatus;
 
   @IsOptional()
-  @IsString()
-  coverImage?: string;
+  @IsBoolean()
+  featured?: boolean;
 
+  @IsOptional()
+  @IsString()
+  coverImage?: string | null;
+
+  @IsOptional()
+  @IsEnum(MainCategory, {
+    message: 'mainCategory debe ser SOFTWARE_DEV, INFRA_HOMELAB, IT_HARDWARE o IA_TECH',
+  })
+  mainCategory?: MainCategory;
+
+  /**
+   * `null` explícito desasigna la subcategoría; `undefined` la deja como está.
+   * Esa distinción es la que permite quitar una subcategoría sin obligar a
+   * cambiar la categoría principal.
+   */
+  @IsOptional()
+  @IsString()
+  subCategoryId?: string | null;
+
+  /** @deprecated Taxonomía plana anterior. Se acepta pero ya no se usa. */
   @IsOptional()
   @IsString()
   categoryId?: string;

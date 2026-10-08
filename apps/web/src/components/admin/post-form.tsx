@@ -1,13 +1,18 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { ChevronDown, ExternalLink, Link2, Save, Video, X } from 'lucide-react';
 import { slugify } from '@kevincarmen/utils';
 import { Button } from '@/components/ui/button';
 import { PostEditor } from '@/components/admin/post-editor';
-import { api, type ApiPost, type ApiCategory, type VideoTypeValue } from '@/lib/api/client';
+import { api, type ApiPost, type VideoTypeValue } from '@/lib/api/client';
+import {
+  getCategoryTree,
+  subcategoriesOf,
+  type CategoryTreeNode,
+} from '@/lib/api/categories';
 
 interface PostFormProps {
   post?: ApiPost;
@@ -45,7 +50,7 @@ export function PostForm({ post }: PostFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [categories, setCategories] = useState<ApiCategory[]>([]);
+  const [categoryTree, setCategoryTree] = useState<CategoryTreeNode[]>([]);
   const [title, setTitle] = useState(post?.title ?? '');
   const [slug, setSlug] = useState(post?.slug ?? '');
   const [excerpt, setExcerpt] = useState(post?.excerpt ?? '');
@@ -61,7 +66,11 @@ export function PostForm({ post }: PostFormProps) {
       ? new Date(post.publishedAt).toISOString().slice(0, 16)
       : new Date().toISOString().slice(0, 16),
   );
-  const [categoryId, setCategoryId] = useState(post?.categoryId ?? '');
+  // Categoría principal (obligatoria) y subcategoría (opcional, dependiente).
+  const [mainCategory, setMainCategory] = useState<ApiPost['mainCategory'] | ''>(
+    post?.mainCategory ?? '',
+  );
+  const [subCategoryId, setSubCategoryId] = useState(post?.subCategoryId ?? '');
   const [videoUrl, setVideoUrl] = useState(post?.videoUrl ?? '');
   const [videoType, setVideoType] = useState<VideoTypeValue | null>(
     post?.videoType ?? null,
@@ -70,12 +79,35 @@ export function PostForm({ post }: PostFormProps) {
   const [externalLinkUrl, setExternalLinkUrl] = useState(post?.externalLinkUrl ?? '');
 
   useEffect(() => {
-    api.getCategories().then(setCategories).catch(() => setCategories([]));
+    getCategoryTree().then(setCategoryTree);
   }, []);
+
+  /** Solo las subcategorías de la categoría principal elegida. */
+  const subcategoryOptions = useMemo(
+    () => subcategoriesOf(categoryTree, mainCategory || null),
+    [categoryTree, mainCategory],
+  );
 
   function handleTitleChange(value: string) {
     setTitle(value);
     if (autoSlug) setSlug(slugify(value));
+  }
+
+  /**
+   * Al cambiar la categoría principal hay que revisar la subcategoría: si la que
+   * estaba elegida no pertenece a la nueva, se limpia. Si no, el API la rechaza
+   * con un 400 (y la FK compuesta tampoco la aceptaría).
+   */
+  function handleMainCategoryChange(value: string) {
+    const next = value as ApiPost['mainCategory'] | '';
+    setMainCategory(next);
+
+    if (subCategoryId) {
+      const stillValid = subcategoriesOf(categoryTree, next || null).some(
+        (subcategory) => subcategory.id === subCategoryId,
+      );
+      if (!stillValid) setSubCategoryId('');
+    }
   }
 
   function handleVideoUrlChange(value: string) {
@@ -90,8 +122,16 @@ export function PostForm({ post }: PostFormProps) {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
     setError('');
+
+    // La categoría principal es obligatoria: se valida aquí para no gastar una
+    // ida al API (que devolvería 400) ni perder el resto del formulario.
+    if (!mainCategory) {
+      setError('Elige una categoría principal: es obligatoria para guardar el artículo.');
+      return;
+    }
+
+    setLoading(true);
 
     try {
       const payload = {
@@ -101,12 +141,14 @@ export function PostForm({ post }: PostFormProps) {
         content,
         status,
         featured,
-        coverImage: coverImage || undefined,
+        coverImage: coverImage.trim() || null,
         videoUrl: videoUrl.trim(),
         videoType: videoType ?? undefined,
         externalLinkLabel: externalLinkLabel.trim(),
         externalLinkUrl: externalLinkUrl.trim(),
-        categoryId: categoryId || undefined,
+        mainCategory,
+        // `null` explícito desasigna la subcategoría en el API.
+        subCategoryId: subCategoryId || null,
         publishedAt: new Date(publishedAt).toISOString(),
       };
       const saved = post
@@ -263,26 +305,69 @@ export function PostForm({ post }: PostFormProps) {
               onChange={(event) => setPublishedAt(event.target.value)}
               className="w-full rounded-lg border border-border bg-muted/50 px-4 py-2.5 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
             />
+          </div>
 
-            <label htmlFor="categoryId" className="mt-4 mb-2 block text-sm font-medium">
-              Categoría
+          <div className="glass-card p-5">
+            <h3 className="mb-3 font-semibold">Clasificación</h3>
+
+            <label htmlFor="mainCategory" className="mb-2 block text-sm font-medium">
+              Categoría principal <span className="text-accent">*</span>
             </label>
             <div className="relative">
               <select
-                id="categoryId"
-                value={categoryId}
-                onChange={(event) => setCategoryId(event.target.value)}
-                className="w-full appearance-none rounded-lg border border-border bg-muted/50 px-4 py-2.5 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                id="mainCategory"
+                value={mainCategory}
+                onChange={(event) => handleMainCategoryChange(event.target.value)}
+                required
+                aria-describedby="mainCategory-hint"
+                className={`w-full appearance-none rounded-lg border bg-muted/50 px-4 py-2.5 text-sm focus:outline-none focus:ring-1 ${
+                  mainCategory
+                    ? 'border-border focus:border-accent focus:ring-accent'
+                    : 'border-amber-500/50 focus:border-accent focus:ring-accent'
+                }`}
               >
-                <option value="">Sin categoría</option>
-                {categories.map((category) => (
-                  <option key={category.id} value={category.id}>
-                    {category.name}
+                <option value="">Selecciona una categoría…</option>
+                {categoryTree.map((category) => (
+                  <option key={category.value} value={category.value}>
+                    {category.label}
                   </option>
                 ))}
               </select>
               <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             </div>
+            {!mainCategory && (
+              <p id="mainCategory-hint" className="mt-2 text-xs text-amber-400">
+                Obligatoria: ningún artículo se guarda sin categoría principal.
+              </p>
+            )}
+
+            <label htmlFor="subCategoryId" className="mt-4 mb-2 block text-sm font-medium">
+              Subcategoría <span className="text-muted-foreground">(opcional)</span>
+            </label>
+            <div className="relative">
+              <select
+                id="subCategoryId"
+                value={subCategoryId}
+                onChange={(event) => setSubCategoryId(event.target.value)}
+                disabled={!mainCategory || subcategoryOptions.length === 0}
+                className="w-full appearance-none rounded-lg border border-border bg-muted/50 px-4 py-2.5 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="">Sin subcategoría</option>
+                {subcategoryOptions.map((subcategory) => (
+                  <option key={subcategory.id} value={subcategory.id}>
+                    {subcategory.name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              {!mainCategory
+                ? 'Elige primero una categoría principal.'
+                : `Mostrando las ${subcategoryOptions.length} subcategorías de ${
+                    categoryTree.find((category) => category.value === mainCategory)?.label ?? ''
+                  }.`}
+            </p>
           </div>
 
           <div className="glass-card p-5">

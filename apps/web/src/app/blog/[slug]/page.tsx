@@ -8,6 +8,7 @@ import { siteConfig } from '@kevincarmen/config';
 import { getPostBySlug } from '@/lib/api/posts';
 import { MarkdownContent } from '@/components/blog/markdown-content';
 import { VideoEmbed } from '@/components/blog/video-embed';
+import { CategoryBadge } from '@/components/blog/category-badge';
 
 interface BlogPostPageProps {
   params: Promise<{ slug: string }>;
@@ -103,11 +104,10 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
               <Clock className="h-3.5 w-3.5" />
               {post.readingTime} min lectura
             </span>
-            {post.category && (
-              <span className="rounded-full bg-primary/20 px-2 py-0.5 text-xs text-accent">
-                {post.category.name}
-              </span>
-            )}
+            <CategoryBadge
+              category={post.mainCategory}
+              subcategory={post.subCategory?.name}
+            />
           </div>
           <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{post.title}</h1>
           {post.excerpt && (

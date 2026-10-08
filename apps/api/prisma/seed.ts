@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { MainCategory, PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -10,6 +10,37 @@ const BLOG_CATEGORIES = [
   { slug: 'hardware', name: 'Hardware', description: 'Equipos, componentes y rendimiento.' },
   { slug: 'ia', name: 'IA', description: 'Modelos, agentes y aplicaciones de IA.' },
   { slug: 'soporte-ti', name: 'Soporte TI', description: 'Buenas prácticas y guías de soporte.' },
+];
+
+/**
+ * Taxonomía de dos niveles: 4 categorías principales (enum `MainCategory`) y 12
+ * subcategorías (tabla `subcategories`).
+ *
+ * Los ids son explícitos y tienen que coincidir con los de la migración
+ * `20261008000627_add_main_and_subcategories`, que es la que siembra estos mismos
+ * registros en producción (el seed no se ejecuta en el despliegue: el contenedor
+ * solo corre `prisma migrate deploy`).
+ */
+const SUBCATEGORIES: {
+  id: string;
+  slug: string;
+  name: string;
+  description: string;
+  mainCategory: MainCategory;
+  position: number;
+}[] = [
+  { id: 'subsoftwaredev00000001', slug: 'desarrollo-web-apps', name: 'Desarrollo Web & Apps', description: 'Frontend, backend, APIs y aplicaciones completas.', mainCategory: 'SOFTWARE_DEV', position: 1 },
+  { id: 'subsoftwaredev00000002', slug: 'proyectos-showcases', name: 'Proyectos & Showcases', description: 'Casos de estudio y presentación de proyectos.', mainCategory: 'SOFTWARE_DEV', position: 2 },
+  { id: 'subsoftwaredev00000003', slug: 'snippets-guias', name: 'Snippets & Guías', description: 'Fragmentos de código, recetas y guías cortas.', mainCategory: 'SOFTWARE_DEV', position: 3 },
+  { id: 'subinfrahomelab00000001', slug: 'servidores-homelab', name: 'Servidores & Homelab', description: 'Proxmox, virtualización, NAS y servicios autohospedados.', mainCategory: 'INFRA_HOMELAB', position: 1 },
+  { id: 'subinfrahomelab00000002', slug: 'docker-despliegues', name: 'Docker & Despliegues', description: 'Contenedores, Compose, CI/CD y puesta en producción.', mainCategory: 'INFRA_HOMELAB', position: 2 },
+  { id: 'subinfrahomelab00000003', slug: 'redes-seguridad', name: 'Redes & Seguridad', description: 'Conectividad, ruteo, firewall, VPN y hardening.', mainCategory: 'INFRA_HOMELAB', position: 3 },
+  { id: 'subithardware000000001', slug: 'hardware-ensamblaje', name: 'Hardware & Ensamblaje', description: 'Equipos, componentes, builds y rendimiento.', mainCategory: 'IT_HARDWARE', position: 1 },
+  { id: 'subithardware000000002', slug: 'soporte-mantenimiento', name: 'Soporte & Mantenimiento', description: 'Diagnóstico, reparación y mantenimiento de equipos.', mainCategory: 'IT_HARDWARE', position: 2 },
+  { id: 'subithardware000000003', slug: 'cableado-redes-fisicas', name: 'Cableado & Redes Físicas', description: 'Cableado estructurado, racks y montaje físico.', mainCategory: 'IT_HARDWARE', position: 3 },
+  { id: 'subiatech00000000000001', slug: 'ia-local-selfhosted', name: 'IA Local & Self-Hosted', description: 'Modelos ejecutados en tu propio hardware.', mainCategory: 'IA_TECH', position: 1 },
+  { id: 'subiatech00000000000002', slug: 'ai-tooling-workflow', name: 'AI Tooling & Workflow', description: 'Herramientas de IA y cómo integrarlas en el flujo diario.', mainCategory: 'IA_TECH', position: 2 },
+  { id: 'subiatech00000000000003', slug: 'experimentos-fisica-tech', name: 'Experimentos & Física/Tech', description: 'Pruebas, experimentos y exploraciones técnicas.', mainCategory: 'IA_TECH', position: 3 },
 ];
 
 async function main() {
@@ -54,6 +85,30 @@ async function main() {
       create: cat,
     });
   }
+
+  // Subcategorías de la taxonomía nueva. El upsert usa la clave compuesta
+  // (mainCategory, slug), así que volver a correr el seed no duplica nada.
+  for (const sub of SUBCATEGORIES) {
+    await prisma.subcategory.upsert({
+      where: {
+        mainCategory_slug: { mainCategory: sub.mainCategory, slug: sub.slug },
+      },
+      update: {
+        name: sub.name,
+        description: sub.description,
+        position: sub.position,
+      },
+      create: sub,
+    });
+  }
+
+  /** Id de una subcategoría por (categoría principal, slug). */
+  const subId = async (mainCategory: MainCategory, slug: string) =>
+    (
+      await prisma.subcategory.findUniqueOrThrow({
+        where: { mainCategory_slug: { mainCategory, slug } },
+      })
+    ).id;
 
   const desarrollo = await prisma.category.findUniqueOrThrow({ where: { slug: 'desarrollo' } });
   const soporte = await prisma.category.findUniqueOrThrow({ where: { slug: 'soporte-ti' } });

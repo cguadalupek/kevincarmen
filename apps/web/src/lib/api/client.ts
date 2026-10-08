@@ -66,16 +66,29 @@ export interface ApiPost {
   readingTime: number;
   publishedAt: string | null;
   updatedAt: string;
+  /** Categoría principal: obligatoria. */
+  mainCategory: 'SOFTWARE_DEV' | 'INFRA_HOMELAB' | 'IT_HARDWARE' | 'IA_TECH';
+  subCategoryId: string | null;
+  subCategory: {
+    id: string;
+    slug: string;
+    name: string;
+    description: string | null;
+    position: number;
+  } | null;
+  /** @deprecated Taxonomía plana anterior; se mantiene durante la migración. */
   categoryId: string | null;
+  /** @deprecated */
   category: { id: string; slug: string; name: string } | null;
   author: { id: string; name: string };
 }
 
-export interface ApiCategory {
+export interface ApiSubcategory {
   id: string;
   slug: string;
   name: string;
-  description?: string | null;
+  description: string | null;
+  position: number;
 }
 
 export interface ApiVideo {
@@ -194,7 +207,14 @@ export const api = {
   deletePost: (id: string) =>
     apiFetch<{ success: boolean }>(`/posts/${id}`, { method: 'DELETE' }),
 
-  getCategories: () => apiFetch<ApiCategory[]>('/posts/categories').catch(() => []),
+  getCategoryTree: () =>
+    apiFetch<{
+      value: 'SOFTWARE_DEV' | 'INFRA_HOMELAB' | 'IT_HARDWARE' | 'IA_TECH';
+      label: string;
+      description: string;
+      position: number;
+      subcategories: ApiSubcategory[];
+    }[]>('/categories').catch(() => []),
 
   getLatestVideos: () =>
     apiFetch<ApiVideo[]>('/videos').catch(() => []),

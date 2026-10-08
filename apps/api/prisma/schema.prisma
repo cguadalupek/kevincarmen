@@ -14,6 +14,17 @@ enum PostStatus {
   TRASHED
 }
 
+// Taxonomía de primer nivel del blog. Son 4 y son fijas: viven en la BD como
+// enum para que `posts.main_category` no pueda contener basura y para poder
+// filtrar el listado por índice sin join. Si algún día necesitas crearlas desde
+// el CMS, esto tiene que pasar a tabla.
+enum MainCategory {
+  SOFTWARE_DEV   // Software & Dev
+  INFRA_HOMELAB  // Infra & Homelab
+  IT_HARDWARE    // IT & Hardware
+  IA_TECH        // IA & Tech
+}
+
 enum ProjectStatus {
   ACTIVE
   COMPLETED
@@ -114,6 +125,16 @@ model Post {
   readingTime Int        @default(0) @map("reading_time")
   authorId    String     @map("author_id")
   author      User       @relation(fields: [authorId], references: [id])
+  // Taxonomía de dos niveles.
+  // `mainCategory` es obligatorio. `subCategoryId` es opcional, pero si viene tiene
+  // que pertenecer a `mainCategory`: la FK compuesta de abajo lo garantiza en el
+  // motor, no en el código. Si subCategoryId es NULL, Postgres no evalúa la FK.
+  mainCategory  MainCategory @map("main_category")
+  subCategoryId String?      @map("sub_category_id")
+  subCategory   Subcategory? @relation(fields: [subCategoryId, mainCategory], references: [id, mainCategory], onDelete: Restrict)
+
+  // LEGACY: la clasificación plana anterior, retenida durante la migración. Ya no
+  // la expone la API y se elimina cuando la taxonomía nueva esté validada en prod.
   categoryId  String?    @map("category_id")
   category    Category?  @relation(fields: [categoryId], references: [id])
   tags        PostTag[]
@@ -123,6 +144,7 @@ model Post {
 
   @@index([status, publishedAt])
   @@index([categoryId])
+  @@index([mainCategory, subCategoryId])
   @@map("posts")
 }
 
@@ -134,6 +156,25 @@ model Category {
   posts       Post[]
 
   @@map("categories")
+}
+
+/// Subcategoría de segundo nivel. Pertenece SIEMPRE a una categoría principal
+/// concreta: (mainCategory, slug) es único, y la FK compuesta desde Post impide
+/// guardar un post cuya subcategoría no sea de su propia categoría principal.
+model Subcategory {
+  id           String       @id @default(cuid())
+  slug         String
+  name         String
+  description  String?
+  mainCategory MainCategory @map("main_category")
+  position     Int          @default(0)
+  posts        Post[]
+
+  @@unique([mainCategory, slug])
+  /// Necesario para que Post pueda referenciar (id, mainCategory) como FK compuesta.
+  @@unique([id, mainCategory])
+  @@index([mainCategory, position])
+  @@map("subcategories")
 }
 
 model Tag {
