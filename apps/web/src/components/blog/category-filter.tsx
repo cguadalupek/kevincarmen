@@ -13,23 +13,32 @@ export const ALL_CATEGORIES = 'todos';
 export const ALL_SUBCATEGORIES = 'todas';
 
 const FOCUS_RING =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-500 focus-visible:ring-offset-0';
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-0';
 
 /** Botón de categoría principal: pegado al resto (sin gap), separado por su borde izquierdo. */
 const CATEGORY_BUTTON = `shrink-0 whitespace-nowrap rounded-none border-b-2 border-l px-4 py-2.5 text-sm font-medium transition-colors first:border-l-0 ${FOCUS_RING}`;
-const CATEGORY_ACTIVE = 'border-b-sky-500 border-l-slate-800 bg-sky-900/50 text-sky-400';
+const CATEGORY_ACTIVE = 'border-b-accent border-l-slate-800 bg-accent/15 text-accent';
 const CATEGORY_IDLE =
   'border-b-slate-800 border-l-slate-800 bg-slate-900/80 text-slate-400 hover:bg-slate-800 hover:text-slate-200';
 
-/** Botón de subcategoría: una talla más chico y con el mismo tratamiento angular. */
-const SUB_BUTTON = `shrink-0 whitespace-nowrap rounded-none border-b-2 border-l px-3.5 py-1.5 text-xs font-medium transition-colors first:border-l-0 ${FOCUS_RING}`;
-const SUB_ACTIVE = 'border-b-sky-500 border-l-slate-800 bg-sky-900/50 text-sky-300';
+/**
+ * Botón de subcategoría: mismo alto casi que el de categoría (como en la maqueta),
+ * pero sobre una banda gris clara que separa visualmente los dos niveles.
+ */
+const SUB_BUTTON = `shrink-0 whitespace-nowrap rounded-none border-b-2 border-l px-4 py-2.5 text-xs font-medium transition-colors first:border-l-0 ${FOCUS_RING}`;
+const SUB_ACTIVE = 'border-b-accent border-l-slate-800 bg-accent/20 text-accent';
 const SUB_IDLE =
-  'border-b-slate-800 border-l-slate-800 bg-slate-900/40 text-slate-400 hover:bg-slate-800/80 hover:text-slate-200';
+  'border-b-slate-800 border-l-slate-800 bg-slate-700 text-slate-200 hover:bg-slate-600 hover:text-white';
 
-/** Degradado de la derecha: pista de que la fila se puede deslizar. */
-const SCROLL_FADE =
-  'pointer-events-none absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-slate-950 to-transparent';
+/**
+ * Degradado de la derecha: pista de que la fila se puede deslizar. El color de
+ * origen debe ser el fondo REAL de la fila (no `slate-950` en las dos), o sobre la
+ * banda clara de subcategorías se ve una mancha oscura.
+ */
+const SCROLL_FADE_BASE =
+  'pointer-events-none absolute inset-y-0 right-0 w-12 bg-gradient-to-l to-transparent';
+const SCROLL_FADE_ON_DARK = `${SCROLL_FADE_BASE} from-slate-950`;
+const SCROLL_FADE_ON_LIGHT = `${SCROLL_FADE_BASE} from-slate-700`;
 
 interface CategoryFilterProps {
   /** Árbol principal → subcategorías que devuelve el API. */
@@ -59,11 +68,14 @@ interface CategoryFilterProps {
  * ocupa el ancho completo en una sola línea.
  *
  * Los bordes que separan los botones se declaran POR LADO: `border-l-slate-800`
- * entre botones y `border-b-2` (slate-800 en reposo, sky-500 en el activo) como
- * línea inferior de la fila. No usar `divide-slate-800`: `divide-<color>` escribe
- * el `border-color` completo sobre los hermanos con especificidad (0,3,0) y
- * anularía el subrayado eléctrico; y `border-transparent` (atajo de los 4 lados)
- * borraría el separador interno.
+ * entre botones y `border-b-2` (slate-800 en reposo, el acento del tema en el
+ * activo) como línea inferior de la fila. No usar `divide-slate-800`:
+ * `divide-<color>` escribe el `border-color` completo sobre los hermanos con
+ * especificidad (0,3,0) y anularía el subrayado del activo; y `border-transparent`
+ * (atajo de los 4 lados) borraría el separador interno.
+ *
+ * El color activo sale del token del tema (`--accent`, cian) y no de `sky-*`: en el
+ * sitio ya hay un solo azul y el filtro no debe introducir un segundo.
  */
 export function CategoryFilter({
   categories,
@@ -106,7 +118,7 @@ export function CategoryFilter({
               />
             ))}
           </div>
-          {categoryRow.showFade && <span aria-hidden className={SCROLL_FADE} />}
+          {categoryRow.showFade && <span aria-hidden className={SCROLL_FADE_ON_DARK} />}
         </nav>
 
         {/* Fila 2 — subcategorías: sólo cuando hay una principal elegida. */}
@@ -134,7 +146,7 @@ export function CategoryFilter({
                 />
               ))}
             </div>
-            {subcategoryRow.showFade && <span aria-hidden className={SCROLL_FADE} />}
+            {subcategoryRow.showFade && <span aria-hidden className={SCROLL_FADE_ON_LIGHT} />}
           </nav>
         )}
       </div>

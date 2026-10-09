@@ -143,7 +143,7 @@ export function BlogExplorer({
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Buscar artículos..."
               aria-label="Buscar artículos"
-              className="w-full rounded-none border border-slate-800 bg-slate-900/80 py-3 pl-10 pr-10 text-sm text-slate-200 outline-none transition-colors placeholder:text-slate-500 hover:border-slate-700 focus:border-sky-500 focus:ring-1 focus:ring-sky-500/60"
+              className="w-full rounded-none border border-slate-800 bg-slate-900/80 py-3 pl-10 pr-10 text-sm text-slate-200 outline-none transition-colors placeholder:text-slate-500 hover:border-slate-700 focus:border-accent focus:ring-1 focus:ring-accent"
             />
             {query && (
               <button
