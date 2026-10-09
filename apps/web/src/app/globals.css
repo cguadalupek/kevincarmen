@@ -446,3 +446,18 @@
     }
   }
 }
+
+@layer utilities {
+  /*
+   * Fila deslizable sin barra de scroll visible (carruseles de filtros en móvil).
+   * La pista de que hay más contenido es el degradado lateral, no la barra.
+   */
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}

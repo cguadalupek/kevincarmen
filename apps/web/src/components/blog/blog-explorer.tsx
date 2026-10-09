@@ -10,6 +10,11 @@ import type { CategoryTreeNode } from '@/lib/api/categories';
 import { LEGACY_CATEGORY_SLUG_MAP } from '@/lib/categories';
 import { FadeIn } from '@/components/motion/fade-in';
 import { CategoryBadge } from '@/components/blog/category-badge';
+import {
+  ALL_CATEGORIES,
+  ALL_SUBCATEGORIES,
+  CategoryFilter,
+} from '@/components/blog/category-filter';
 
 interface BlogExplorerProps {
   posts: PublicPost[];
@@ -23,8 +28,9 @@ interface BlogExplorerProps {
 export function BlogExplorer({
   posts,
   categoryTree,
-  selectedCategory,
-  selectedSubcategory,
+  // Props con el estado de la URL (`?categoria=` / `?subcategoria=`).
+  selectedCategory: categoryParam,
+  selectedSubcategory: subcategoryParam,
 }: BlogExplorerProps) {
   const [query, setQuery] = useState('');
   const [debouncedQuery, setDebouncedQuery] = useState('');
@@ -38,15 +44,45 @@ export function BlogExplorer({
    * que se normaliza al slug nuevo (a un nodo del árbol) para saber qué pill marcar.
    */
   const activeNode = useMemo<CategoryTreeNode | null>(() => {
-    if (!selectedCategory) return null;
+    if (!categoryParam) return null;
 
-    const direct = categoryTree.find((node) => node.value === selectedCategory);
+    const direct = categoryTree.find((node) => node.value === categoryParam);
     if (direct) return direct;
 
-    const mapped = LEGACY_CATEGORY_SLUG_MAP[selectedCategory.toLowerCase()];
+    const mapped = LEGACY_CATEGORY_SLUG_MAP[categoryParam.toLowerCase()];
     if (!mapped) return null;
     return categoryTree.find((node) => node.value === mapped) ?? null;
-  }, [selectedCategory, categoryTree]);
+  }, [categoryParam, categoryTree]);
+
+  /** La URL ya está normalizada: `todos` / `todas` cuando no hay filtro. */
+  const urlCategory = activeNode?.value ?? ALL_CATEGORIES;
+  const urlSubcategory = subcategoryParam ?? ALL_SUBCATEGORIES;
+
+  /**
+   * Estado local del filtro: se actualiza al hacer clic para que el botón activo y
+   * la fila de subcategorías respondan al instante, sin esperar al servidor.
+   * La URL sigue siendo la fuente de verdad — al cambiar (navegación, atrás/adelante,
+   * enlace compartido) el efecto realinea el estado local.
+   */
+  const [selectedCategory, setSelectedCategory] = useState(urlCategory);
+  const [selectedSubcategory, setSelectedSubcategory] = useState(urlSubcategory);
+
+  useEffect(() => {
+    setSelectedCategory(urlCategory);
+    setSelectedSubcategory(urlSubcategory);
+  }, [urlCategory, urlSubcategory]);
+
+  /** Elegir una categoría principal descarta la subcategoría anterior. */
+  const handleSelectCategory = (slug: string) => {
+    setSelectedCategory(slug);
+    setSelectedSubcategory(ALL_SUBCATEGORIES);
+  };
+
+  /** Subcategoría de la URL resuelta a su nombre legible (para los mensajes de vacío). */
+  const activeSubcategory = useMemo(
+    () => activeNode?.subcategories.find((sub) => sub.slug === subcategoryParam) ?? null,
+    [activeNode, subcategoryParam],
+  );
 
   const filteredPosts = useMemo(() => {
     const normalizedQuery = normalizeSearch(debouncedQuery);
@@ -79,7 +115,7 @@ export function BlogExplorer({
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [debouncedQuery, selectedCategory, selectedSubcategory]);
+  }, [debouncedQuery, categoryParam, subcategoryParam]);
 
   const showDropdown = debouncedQuery.trim().length >= 2;
 
@@ -90,75 +126,56 @@ export function BlogExplorer({
           <BookOpen className="h-6 w-6" />
           <span className="font-mono text-sm">/ artículos</span>
         </div>
-        <h1 className="section-title mt-3">Blog</h1>
-        <p className="section-subtitle">
-          Tutoriales, reflexiones y documentación técnica organizados por categoría y subcategoría.
-        </p>
+        {/* Cabecera: el buscador va a la derecha en escritorio y a todo el ancho en móvil. */}
+        <div className="mt-3 md:flex md:items-end md:justify-between md:gap-8">
+          <div className="min-w-0">
+            <h1 className="section-title">Blog</h1>
+            <p className="section-subtitle">
+              Tutoriales, reflexiones y documentación técnica organizados por categoría y subcategoría.
+            </p>
+          </div>
 
-        <nav aria-label="Categorías principales" className="mt-8 flex flex-wrap gap-2">
-          <CategoryPill label="Todos" isActive={!activeNode} href="/blog" />
-          {categoryTree.map((category) => (
-            <CategoryPill
-              key={category.id}
-              label={category.label}
-              isActive={activeNode?.value === category.value}
-              href={`/blog?categoria=${encodeURIComponent(category.value)}`}
+          <div className="relative mt-6 w-full md:mt-0 md:w-80 md:shrink-0 lg:w-96">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
+            <input
+              type="text"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Buscar artículos..."
+              aria-label="Buscar artículos"
+              className="w-full rounded-none border border-slate-800 bg-slate-900/80 py-3 pl-10 pr-10 text-sm text-slate-200 outline-none transition-colors placeholder:text-slate-500 hover:border-slate-700 focus:border-sky-500 focus:ring-1 focus:ring-sky-500/60"
             />
-          ))}
-        </nav>
-
-        {/* Segundo nivel: solo aparece cuando hay una principal elegida. */}
-        {activeNode && activeNode.subcategories.length > 0 && (
-          <nav
-            aria-label={`Subcategorías de ${activeNode.label}`}
-            className="mt-3 flex flex-wrap gap-2 border-l-2 border-accent/30 pl-3"
-          >
-            <SubcategoryPill
-              label="Todas"
-              isActive={!selectedSubcategory}
-              href={`/blog?categoria=${encodeURIComponent(activeNode.value)}`}
-            />
-            {activeNode.subcategories.map((subcategory) => (
-              <SubcategoryPill
-                key={subcategory.id}
-                label={subcategory.name}
-                isActive={selectedSubcategory === subcategory.slug}
-                href={`/blog?categoria=${encodeURIComponent(activeNode.value)}&subcategoria=${encodeURIComponent(subcategory.slug)}`}
-              />
-            ))}
-          </nav>
-        )}
-
-        <div className="relative mt-6 max-w-full lg:max-w-[500px]">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Buscar artículos..."
-            aria-label="Buscar artículos"
-            className="w-full rounded-lg border border-border bg-muted/40 py-3 pl-10 pr-10 outline-none transition-colors placeholder:text-muted-foreground focus:border-accent focus:ring-1 focus:ring-accent"
-          />
-          {query && (
-            <button
-              type="button"
-              onClick={() => setQuery('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-              aria-label="Limpiar búsqueda"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 transition-colors hover:text-slate-200"
+                aria-label="Limpiar búsqueda"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
         </div>
+
+        {/* Filtros: bloque único con las filas de categorías y subcategorías pegadas. */}
+        <CategoryFilter
+          className="mt-8"
+          categories={categoryTree}
+          selectedCategory={selectedCategory}
+          selectedSubcategory={selectedSubcategory}
+          onSelectCategory={handleSelectCategory}
+          onSelectSubcategory={setSelectedSubcategory}
+        />
       </div>
 
       {showDropdown && filteredPosts.length > 0 && (
-        <div className="section-container mt-3 rounded-xl border border-border bg-card/70 p-2 shadow-xl">
+        <div className="section-container mt-3 rounded-none border border-slate-800 bg-slate-950/90 p-2 shadow-xl">
           {filteredPosts.slice(0, 5).map((post) => (
             <Link
               key={post.id}
               href={`/blog/${post.slug}`}
-              className="flex items-start gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-muted/60"
+              className="flex items-start gap-3 rounded-none px-3 py-2 transition-colors hover:bg-slate-900/70"
             >
               {post.coverImage ? (
                 <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md border border-border">
@@ -191,7 +208,7 @@ export function BlogExplorer({
             <p className="text-muted-foreground">
               {activeNode
                 ? `No hay artículos publicados en ${activeNode.label}${
-                    selectedSubcategory ? ` › ${selectedSubcategory}` : ''
+                    activeSubcategory ? ` › ${activeSubcategory.name}` : ''
                   }.`
                 : 'No se encontraron artículos que coincidan con tu búsqueda.'}
             </p>
@@ -380,52 +397,6 @@ export function BlogExplorer({
         )}
       </div>
     </>
-  );
-}
-
-function CategoryPill({
-  label,
-  href,
-  isActive,
-}: {
-  label: string;
-  href: string;
-  isActive: boolean;
-}) {
-  return (
-    <Link
-      href={href}
-      className={`rounded-full border px-4 py-2 text-sm transition-colors ${
-        isActive
-          ? 'border-accent bg-accent/10 text-accent'
-          : 'border-border bg-card/40 text-muted-foreground hover:border-accent/50 hover:text-accent'
-      }`}
-    >
-      {label}
-    </Link>
-  );
-}
-
-function SubcategoryPill({
-  label,
-  href,
-  isActive,
-}: {
-  label: string;
-  href: string;
-  isActive: boolean;
-}) {
-  return (
-    <Link
-      href={href}
-      className={`rounded-full border px-3 py-1.5 text-xs transition-colors ${
-        isActive
-          ? 'border-accent/70 bg-accent/10 text-accent'
-          : 'border-border/70 bg-card/30 text-muted-foreground hover:border-accent/40 hover:text-accent'
-      }`}
-    >
-      {label}
-    </Link>
   );
 }
 
