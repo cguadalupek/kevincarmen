@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { CSSProperties, RefObject, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import type { CategoryTreeNode } from '@/lib/api/categories';
 
 /**
  * Sentinelas de la fila correspondiente:
- * `ALL_CATEGORIES` = sin categoría elegida (se oculta el mapa de subcategorías),
+ * `ALL_CATEGORIES` = sin categoría elegida (se oculta la llave y las subcategorías),
  * `ALL_SUBCATEGORIES` = todas las subcategorías de la categoría activa.
  */
 export const ALL_CATEGORIES = 'todos';
@@ -16,17 +16,18 @@ export const ALL_SUBCATEGORIES = 'todas';
 const FOCUS_RING =
   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent';
 
-/** Ficha base. Las de categoría además se reparten el ancho de la fila en escritorio. */
+/** Ficha base. En escritorio se reparten el ancho de su fila. */
 const BUTTON_BASE =
-  `shrink-0 whitespace-nowrap rounded-md border px-4 py-2.5 font-medium transition-colors ${FOCUS_RING}`;
+  `shrink-0 whitespace-nowrap rounded-md border px-4 py-2.5 text-center font-medium transition-colors ${FOCUS_RING}`;
 
-const CATEGORY_BUTTON = `${BUTTON_BASE} text-center text-sm md:flex-1`;
+const CATEGORY_BUTTON = `${BUTTON_BASE} text-sm md:flex-1`;
 const CATEGORY_ACTIVE = 'border-accent bg-accent/15 text-accent';
 const CATEGORY_IDLE =
   'border-slate-700 bg-slate-800/60 text-slate-400 hover:border-slate-600 hover:bg-slate-800 hover:text-slate-200';
 
-/** Ficha de subcategoría: va dentro del mapa, así que no se estira. */
-const SUB_BUTTON = `${BUTTON_BASE} text-xs`;
+// `flex-1` sin condicionar: con las filas envueltas en móvil, cada línea se reparte el
+// ancho completo y los extremos de la llave quedan alineados con las fichas.
+const SUB_BUTTON = `${BUTTON_BASE} flex-1 text-xs`;
 const SUB_ACTIVE = 'border-accent bg-accent/20 text-accent';
 const SUB_IDLE = 'border-slate-600 bg-slate-700 text-slate-200 hover:bg-slate-600 hover:text-white';
 
@@ -54,13 +55,14 @@ interface CategoryFilterProps {
 /**
  * Filtro de categorías y subcategorías del blog.
  *
- * Fila de categorías: una sola línea de fichas; en móvil se desliza en horizontal
- * (con la máscara de la derecha como pista) y en escritorio se reparten el ancho.
+ * Fila de categorías: una sola línea de fichas; en móvil se desliza en horizontal (con
+ * la máscara de la derecha como pista) y en escritorio se reparten el ancho.
  *
- * Subcategorías: al elegir una categoría se despliega un **mapa sinóptico**: el nombre
- * de la categoría, un conector y una llave dibujada que se estira a la altura exacta de
- * la lista. La llave es SVG con `preserveAspectRatio="none"`, así que sigue pegada a la
- * lista sin importar cuántas subcategorías haya.
+ * Subcategorías: al elegir una categoría cuelga una **llave horizontal** debajo de la
+ * fila, con la punta apuntando a la ficha activa, y las subcategorías van en fila debajo
+ * de la llave. La llave son dos mitades SVG (`preserveAspectRatio="none"`), una espejada:
+ * el punto donde se juntan es la punta, y se ubica midiendo el centro de la ficha activa,
+ * así sigue a la categoría sin importar lo que se deslice la fila.
  *
  * Cada botón es un `<Link>`: la URL (`?categoria=&subcategoria=`) sigue siendo la fuente
  * de verdad — el API filtra del lado del servidor y los enlaces quedan indexables. Los
@@ -82,10 +84,11 @@ export function CategoryFilter({
   const subcategories = activeCategory?.subcategories ?? [];
 
   const categoryRow = useScrollableRow(categories.length);
+  const brace = useBraceAnchor(categoryRow.ref, activeCategory?.value ?? null);
 
   return (
-    <div className={`flex w-full flex-col gap-1 ${className}`}>
-      {/* Fila 1 — categorías principales. */}
+    <div className={`flex w-full flex-col ${className}`}>
+      {/* Fila de categorías. */}
       <nav aria-label="Categorías principales">
         <div
           ref={categoryRow.ref}
@@ -111,19 +114,15 @@ export function CategoryFilter({
         </div>
       </nav>
 
-      {/* Mapa sinóptico — sólo con una categoría elegida. */}
+      {/* Llave colgando de la categoría activa + subcategorías. */}
       {activeCategory && subcategories.length > 0 && (
-        <nav
-          aria-label={`Subcategorías de ${activeCategory.label}`}
-          className="flex items-stretch gap-2 md:gap-3"
-        >
-          <span className="self-center whitespace-nowrap text-sm font-semibold text-accent">
-            {activeCategory.label}
-          </span>
-          <span aria-hidden className="h-px w-6 shrink-0 self-center bg-slate-500" />
-          <Brace />
-          <ul role="list" className="flex min-w-0 flex-col items-start gap-1">
-            <li>
+        <nav aria-label={`Subcategorías de ${activeCategory.label}`} className="flex flex-col">
+          <div ref={brace.rowRef} className="w-full">
+            <Brace ratio={brace.ratio} />
+          </div>
+
+          <ul role="list" className="mt-1 flex w-full flex-wrap gap-1">
+            <li className="flex flex-1">
               <SubcategoryButton
                 href={`/blog?categoria=${encodeURIComponent(activeCategory.value)}`}
                 label="Todas"
@@ -132,7 +131,7 @@ export function CategoryFilter({
               />
             </li>
             {subcategories.map((subcategory) => (
-              <li key={subcategory.id}>
+              <li key={subcategory.id} className="flex flex-1">
                 <SubcategoryButton
                   href={`/blog?categoria=${encodeURIComponent(
                     activeCategory.value,
@@ -189,7 +188,7 @@ function SubcategoryButton({
       href={href}
       onClick={onClick}
       aria-current={isActive ? 'page' : undefined}
-      className={`${SUB_BUTTON} ${isActive ? SUB_ACTIVE : SUB_IDLE}`}
+      className={`${SUB_BUTTON} w-full ${isActive ? SUB_ACTIVE : SUB_IDLE}`}
     >
       {label}
     </Link>
@@ -197,26 +196,107 @@ function SubcategoryButton({
 }
 
 /**
- * Llave del mapa. Se estira a la altura de la lista (`preserveAspectRatio="none"` +
- * `self-stretch`) con el trazo de ancho constante (`non-scaling-stroke`), así no se
- * deforma por más larga que sea la lista. El trazo va de borde a borde del viewBox
- * (0 → 100) para que las puntas coincidan con la primera y la última ficha.
+ * Llave horizontal colgando de la categoría activa.
+ *
+ * Los codos y la punta son piezas de tamaño FIJO: si se estira un solo path con
+ * `preserveAspectRatio="none"` sobre un ancho grande, los codos se aplanan y la llave se
+ * lee como una línea suave. Acá sólo el trazo horizontal es elástico (un borde), así la
+ * forma se mantiene igual de ancha que de angosta la pantalla.
  */
-function Brace() {
+function Brace({ ratio }: { ratio: number }) {
+  const pct = ratio * 100;
+  const line = 'absolute top-[13px] h-0 border-t border-slate-500';
+  return (
+    <div aria-hidden className="relative h-[26px] w-full">
+      {/* trazo horizontal, cortado por la punta */}
+      <span className={line} style={{ left: 10, width: `calc(${pct}% - 22px)` }} />
+      <span className={line} style={{ left: `calc(${pct}% + 12px)`, right: 10 }} />
+      {/* codo izquierdo */}
+      <Hook className="absolute bottom-0 left-0" />
+      {/* punta: dos mitades espejadas que se juntan en el vértice */}
+      <Tip className="absolute top-0" style={{ left: `calc(${pct}% - 12px)` }} />
+      <Tip className="absolute top-0 -scale-x-100" style={{ left: `${pct}%` }} />
+      {/* codo derecho */}
+      <Hook className="absolute bottom-0 right-0 -scale-x-100" />
+    </div>
+  );
+}
+
+/** Codo: sube desde el extremo y entra al trazo horizontal. */
+function Hook({ className = '', style }: { className?: string; style?: CSSProperties }) {
   return (
     <svg
       aria-hidden
-      viewBox="-1 -1 22 102"
-      preserveAspectRatio="none"
+      width={10}
+      height={13}
+      viewBox="0 0 10 13"
       fill="none"
       stroke="currentColor"
-      strokeWidth={1.6}
-      vectorEffect="non-scaling-stroke"
-      className="w-3.5 shrink-0 self-stretch text-slate-500"
+      strokeWidth={1.5}
+      className={`text-slate-500 ${className}`}
+      style={style}
     >
-      <path d="M18,0 C7,0 15,44 6,50 C15,56 7,100 18,100" />
+      <path d="M0.75,13 C0.75,6.5 4,0.75 10,0.75" />
     </svg>
   );
+}
+
+/** Media punta: del trazo horizontal sube al vértice. */
+function Tip({ className = '', style }: { className?: string; style?: CSSProperties }) {
+  return (
+    <svg
+      aria-hidden
+      width={12}
+      height={14}
+      viewBox="0 0 12 14"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      className={`text-slate-500 ${className}`}
+      style={style}
+    >
+      <path d="M0,13 C6,13 11.25,8 11.25,0" />
+    </svg>
+  );
+}
+
+/**
+ * Ubica la punta de la llave: mide en qué proporción del ancho de la llave cae el centro
+ * de la ficha activa. Se recalcula al cambiar de categoría, al redimensionar y cuando se
+ * desliza la fila de categorías (en móvil la ficha activa se mueve con el scroll).
+ */
+function useBraceAnchor(stripRef: RefObject<HTMLDivElement | null>, activeKey: string | null) {
+  const rowRef = useRef<HTMLDivElement | null>(null);
+  const [ratio, setRatio] = useState(0.5);
+
+  useEffect(() => {
+    const row = rowRef.current;
+    const strip = stripRef.current;
+    if (!row || !strip) return;
+
+    const update = () => {
+      const chip = strip.querySelector<HTMLElement>('a[aria-current="page"]');
+      const bounds = row.getBoundingClientRect();
+      if (!chip || !bounds.width) return;
+      const chipBounds = chip.getBoundingClientRect();
+      const center = (chipBounds.left + chipBounds.right) / 2;
+      setRatio(Math.min(0.92, Math.max(0.08, (center - bounds.left) / bounds.width)));
+    };
+
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(row);
+    strip.addEventListener('scroll', update, { passive: true });
+    window.addEventListener('resize', update);
+
+    return () => {
+      observer.disconnect();
+      strip.removeEventListener('scroll', update);
+      window.removeEventListener('resize', update);
+    };
+  }, [stripRef, activeKey]);
+
+  return { rowRef, ratio };
 }
 
 /**
