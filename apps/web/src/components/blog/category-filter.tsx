@@ -6,36 +6,33 @@ import type { CategoryTreeNode } from '@/lib/api/categories';
 
 /**
  * Sentinelas de la fila correspondiente:
- * `ALL_CATEGORIES` = sin categoría elegida (se oculta la fila de subcategorías),
+ * `ALL_CATEGORIES` = sin categoría elegida (se oculta el mapa de subcategorías),
  * `ALL_SUBCATEGORIES` = todas las subcategorías de la categoría activa.
  */
 export const ALL_CATEGORIES = 'todos';
 export const ALL_SUBCATEGORIES = 'todas';
 
-/** Anillo de foco hacia adentro: fuera se recortaría contra el borde de la fila. */
-const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent';
+/** Anillo de foco hacia adentro: hacia afuera se recortaría contra el borde de la fila. */
+const FOCUS_RING =
+  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent';
 
-/**
- * Fichas sueltas: cada botón lleva su propio borde (no hay marco alrededor del
- * bloque, como en la maqueta) y en escritorio se reparten el ancho de la fila.
- */
+/** Ficha base. Las de categoría además se reparten el ancho de la fila en escritorio. */
 const BUTTON_BASE =
-  `shrink-0 whitespace-nowrap rounded-md border px-4 py-2.5 text-center font-medium transition-colors md:flex-1 ${FOCUS_RING}`;
+  `shrink-0 whitespace-nowrap rounded-md border px-4 py-2.5 font-medium transition-colors ${FOCUS_RING}`;
 
-const CATEGORY_BUTTON = `${BUTTON_BASE} text-sm`;
+const CATEGORY_BUTTON = `${BUTTON_BASE} text-center text-sm md:flex-1`;
 const CATEGORY_ACTIVE = 'border-accent bg-accent/15 text-accent';
 const CATEGORY_IDLE =
   'border-slate-700 bg-slate-800/60 text-slate-400 hover:border-slate-600 hover:bg-slate-800 hover:text-slate-200';
 
-/** Subcategoría: mismo alto casi que la categoría, sobre una banda gris más clara. */
+/** Ficha de subcategoría: va dentro del mapa, así que no se estira. */
 const SUB_BUTTON = `${BUTTON_BASE} text-xs`;
 const SUB_ACTIVE = 'border-accent bg-accent/20 text-accent';
 const SUB_IDLE = 'border-slate-600 bg-slate-700 text-slate-200 hover:bg-slate-600 hover:text-white';
 
 /**
- * Pista de scroll: máscara sobre la fila, no un degradado de color encima. Así
- * funciona igual sobre los botones oscuros y sobre la banda clara, sin arrastrar
- * el color de fondo de cada fila.
+ * Pista de scroll de la fila de categorías: máscara sobre la fila, no un degradado de
+ * color encima, así funciona igual sobre fichas claras y oscuras.
  */
 const FADE_MASK =
   '[mask-image:linear-gradient(to_left,transparent_0,#000_3rem)] [-webkit-mask-image:linear-gradient(to_left,transparent_0,#000_3rem)]';
@@ -57,17 +54,20 @@ interface CategoryFilterProps {
 /**
  * Filtro de categorías y subcategorías del blog.
  *
- * Cada botón es un `<Link>`: la URL (`?categoria=&subcategoria=`) sigue siendo la
- * fuente de verdad — el API filtra del lado del servidor y los enlaces quedan
- * indexables/compartibles. Los callbacks existen sólo para el realce optimista del
- * botón activo mientras la navegación termina.
+ * Fila de categorías: una sola línea de fichas; en móvil se desliza en horizontal
+ * (con la máscara de la derecha como pista) y en escritorio se reparten el ancho.
  *
- * Responsive: en móvil ambas filas son carruseles horizontales de una sola línea
- * (`overflow-x-auto no-scrollbar`) con la máscara de la derecha como pista de que
- * se puede deslizar; en escritorio los botones se reparten el ancho completo.
+ * Subcategorías: al elegir una categoría se despliega un **mapa sinóptico**: el nombre
+ * de la categoría, un conector y una llave dibujada que se estira a la altura exacta de
+ * la lista. La llave es SVG con `preserveAspectRatio="none"`, así que sigue pegada a la
+ * lista sin importar cuántas subcategorías haya.
  *
- * El color activo sale del token del tema (`--accent`): en el sitio ya hay un solo
- * azul y el filtro no debe introducir un segundo.
+ * Cada botón es un `<Link>`: la URL (`?categoria=&subcategoria=`) sigue siendo la fuente
+ * de verdad — el API filtra del lado del servidor y los enlaces quedan indexables. Los
+ * callbacks existen sólo para el realce optimista mientras termina la navegación.
+ *
+ * El color activo sale del token del tema (`--accent`): en el sitio ya hay un solo azul y
+ * el filtro no debe introducir un segundo.
  */
 export function CategoryFilter({
   categories,
@@ -82,7 +82,6 @@ export function CategoryFilter({
   const subcategories = activeCategory?.subcategories ?? [];
 
   const categoryRow = useScrollableRow(categories.length);
-  const subcategoryRow = useScrollableRow(`${selectedCategory}:${subcategories.length}`);
 
   return (
     <div className={`flex w-full flex-col gap-1 ${className}`}>
@@ -112,33 +111,39 @@ export function CategoryFilter({
         </div>
       </nav>
 
-      {/* Fila 2 — subcategorías: sólo cuando hay una principal elegida. */}
+      {/* Mapa sinóptico — sólo con una categoría elegida. */}
       {activeCategory && subcategories.length > 0 && (
-        <nav aria-label={`Subcategorías de ${activeCategory.label}`}>
-          <div
-            ref={subcategoryRow.ref}
-            className={`flex gap-px overflow-x-auto whitespace-nowrap no-scrollbar ${
-              subcategoryRow.showFade ? FADE_MASK : ''
-            }`}
-          >
-            <SubcategoryButton
-              href={`/blog?categoria=${encodeURIComponent(activeCategory.value)}`}
-              label="Todas"
-              isActive={!selectedSubcategory || selectedSubcategory === ALL_SUBCATEGORIES}
-              onClick={() => onSelectSubcategory?.(ALL_SUBCATEGORIES)}
-            />
-            {subcategories.map((subcategory) => (
+        <nav
+          aria-label={`Subcategorías de ${activeCategory.label}`}
+          className="flex items-stretch gap-2 md:gap-3"
+        >
+          <span className="self-center whitespace-nowrap text-sm font-semibold text-accent">
+            {activeCategory.label}
+          </span>
+          <span aria-hidden className="h-px w-6 shrink-0 self-center bg-slate-500" />
+          <Brace />
+          <ul role="list" className="flex min-w-0 flex-col items-start gap-1">
+            <li>
               <SubcategoryButton
-                key={subcategory.id}
-                href={`/blog?categoria=${encodeURIComponent(
-                  activeCategory.value,
-                )}&subcategoria=${encodeURIComponent(subcategory.slug)}`}
-                label={subcategory.name}
-                isActive={selectedSubcategory === subcategory.slug}
-                onClick={() => onSelectSubcategory?.(subcategory.slug)}
+                href={`/blog?categoria=${encodeURIComponent(activeCategory.value)}`}
+                label="Todas"
+                isActive={!selectedSubcategory || selectedSubcategory === ALL_SUBCATEGORIES}
+                onClick={() => onSelectSubcategory?.(ALL_SUBCATEGORIES)}
               />
+            </li>
+            {subcategories.map((subcategory) => (
+              <li key={subcategory.id}>
+                <SubcategoryButton
+                  href={`/blog?categoria=${encodeURIComponent(
+                    activeCategory.value,
+                  )}&subcategoria=${encodeURIComponent(subcategory.slug)}`}
+                  label={subcategory.name}
+                  isActive={selectedSubcategory === subcategory.slug}
+                  onClick={() => onSelectSubcategory?.(subcategory.slug)}
+                />
+              </li>
             ))}
-          </div>
+          </ul>
         </nav>
       )}
     </div>
@@ -192,9 +197,31 @@ function SubcategoryButton({
 }
 
 /**
- * Sigue el scroll de una fila para saber si desborda (y por lo tanto si hay que
- * mostrar la máscara de la derecha), y vuelve al inicio cuando cambia su contenido
- * (al cambiar de categoría).
+ * Llave del mapa. Se estira a la altura de la lista (`preserveAspectRatio="none"` +
+ * `self-stretch`) con el trazo de ancho constante (`non-scaling-stroke`), así no se
+ * deforma por más larga que sea la lista. El trazo va de borde a borde del viewBox
+ * (0 → 100) para que las puntas coincidan con la primera y la última ficha.
+ */
+function Brace() {
+  return (
+    <svg
+      aria-hidden
+      viewBox="-1 -1 22 102"
+      preserveAspectRatio="none"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.6}
+      vectorEffect="non-scaling-stroke"
+      className="w-3.5 shrink-0 self-stretch text-slate-500"
+    >
+      <path d="M18,0 C7,0 15,44 6,50 C15,56 7,100 18,100" />
+    </svg>
+  );
+}
+
+/**
+ * Sigue el scroll de una fila para saber si desborda (y por lo tanto si hay que mostrar
+ * la máscara de la derecha), y vuelve al inicio cuando cambia su contenido.
  */
 function useScrollableRow(dependency: string | number) {
   const ref = useRef<HTMLDivElement | null>(null);
@@ -209,7 +236,7 @@ function useScrollableRow(dependency: string | number) {
       setState({ scrollable: maxScroll > 1, atEnd: element.scrollLeft >= maxScroll - 1 });
     };
 
-    // Contenido nuevo (otra categoría): la fila arranca desde el principio.
+    // Contenido nuevo: la fila arranca desde el principio.
     element.scrollLeft = 0;
     update();
 
