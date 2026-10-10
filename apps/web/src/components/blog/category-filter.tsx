@@ -12,33 +12,33 @@ import type { CategoryTreeNode } from '@/lib/api/categories';
 export const ALL_CATEGORIES = 'todos';
 export const ALL_SUBCATEGORIES = 'todas';
 
-const FOCUS_RING =
-  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-0';
+/** Anillo de foco hacia adentro: fuera se recortaría contra el borde de la fila. */
+const FOCUS_RING = 'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent';
 
-/** Botón de categoría principal: pegado al resto (sin gap), separado por su borde izquierdo. */
-const CATEGORY_BUTTON = `shrink-0 whitespace-nowrap rounded-none border-b-2 border-l px-4 py-2.5 text-sm font-medium transition-colors first:border-l-0 ${FOCUS_RING}`;
-const CATEGORY_ACTIVE = 'border-b-accent border-l-slate-800 bg-accent/15 text-accent';
+/**
+ * Fichas sueltas: cada botón lleva su propio borde (no hay marco alrededor del
+ * bloque, como en la maqueta) y en escritorio se reparten el ancho de la fila.
+ */
+const BUTTON_BASE =
+  `shrink-0 whitespace-nowrap rounded-md border px-4 py-2.5 text-center font-medium transition-colors md:flex-1 ${FOCUS_RING}`;
+
+const CATEGORY_BUTTON = `${BUTTON_BASE} text-sm`;
+const CATEGORY_ACTIVE = 'border-accent bg-accent/15 text-accent';
 const CATEGORY_IDLE =
-  'border-b-slate-800 border-l-slate-800 bg-slate-900/80 text-slate-400 hover:bg-slate-800 hover:text-slate-200';
+  'border-slate-700 bg-slate-800/60 text-slate-400 hover:border-slate-600 hover:bg-slate-800 hover:text-slate-200';
+
+/** Subcategoría: mismo alto casi que la categoría, sobre una banda gris más clara. */
+const SUB_BUTTON = `${BUTTON_BASE} text-xs`;
+const SUB_ACTIVE = 'border-accent bg-accent/20 text-accent';
+const SUB_IDLE = 'border-slate-600 bg-slate-700 text-slate-200 hover:bg-slate-600 hover:text-white';
 
 /**
- * Botón de subcategoría: mismo alto casi que el de categoría (como en la maqueta),
- * pero sobre una banda gris clara que separa visualmente los dos niveles.
+ * Pista de scroll: máscara sobre la fila, no un degradado de color encima. Así
+ * funciona igual sobre los botones oscuros y sobre la banda clara, sin arrastrar
+ * el color de fondo de cada fila.
  */
-const SUB_BUTTON = `shrink-0 whitespace-nowrap rounded-none border-b-2 border-l px-4 py-2.5 text-xs font-medium transition-colors first:border-l-0 ${FOCUS_RING}`;
-const SUB_ACTIVE = 'border-b-accent border-l-slate-800 bg-accent/20 text-accent';
-const SUB_IDLE =
-  'border-b-slate-800 border-l-slate-800 bg-slate-700 text-slate-200 hover:bg-slate-600 hover:text-white';
-
-/**
- * Degradado de la derecha: pista de que la fila se puede deslizar. El color de
- * origen debe ser el fondo REAL de la fila (no `slate-950` en las dos), o sobre la
- * banda clara de subcategorías se ve una mancha oscura.
- */
-const SCROLL_FADE_BASE =
-  'pointer-events-none absolute inset-y-0 right-0 w-12 bg-gradient-to-l to-transparent';
-const SCROLL_FADE_ON_DARK = `${SCROLL_FADE_BASE} from-slate-950`;
-const SCROLL_FADE_ON_LIGHT = `${SCROLL_FADE_BASE} from-slate-700`;
+const FADE_MASK =
+  '[mask-image:linear-gradient(to_left,transparent_0,#000_3rem)] [-webkit-mask-image:linear-gradient(to_left,transparent_0,#000_3rem)]';
 
 interface CategoryFilterProps {
   /** Árbol principal → subcategorías que devuelve el API. */
@@ -63,19 +63,11 @@ interface CategoryFilterProps {
  * botón activo mientras la navegación termina.
  *
  * Responsive: en móvil ambas filas son carruseles horizontales de una sola línea
- * (`overflow-x-auto no-scrollbar`) pegadas verticalmente, con un degradado a la
- * derecha que se apaga al llegar al final; en escritorio la fila de categorías
- * ocupa el ancho completo en una sola línea.
+ * (`overflow-x-auto no-scrollbar`) con la máscara de la derecha como pista de que
+ * se puede deslizar; en escritorio los botones se reparten el ancho completo.
  *
- * Los bordes que separan los botones se declaran POR LADO: `border-l-slate-800`
- * entre botones y `border-b-2` (slate-800 en reposo, el acento del tema en el
- * activo) como línea inferior de la fila. No usar `divide-slate-800`:
- * `divide-<color>` escribe el `border-color` completo sobre los hermanos con
- * especificidad (0,3,0) y anularía el subrayado del activo; y `border-transparent`
- * (atajo de los 4 lados) borraría el separador interno.
- *
- * El color activo sale del token del tema (`--accent`, cian) y no de `sky-*`: en el
- * sitio ya hay un solo azul y el filtro no debe introducir un segundo.
+ * El color activo sale del token del tema (`--accent`): en el sitio ya hay un solo
+ * azul y el filtro no debe introducir un segundo.
  */
 export function CategoryFilter({
   categories,
@@ -93,63 +85,62 @@ export function CategoryFilter({
   const subcategoryRow = useScrollableRow(`${selectedCategory}:${subcategories.length}`);
 
   return (
-    <div className={`flex w-full flex-col ${className}`}>
-      {/* Bloque único: filas pegadas, separadas sólo por el borde interno. */}
-      <div className="flex w-full flex-col overflow-hidden rounded-none border border-slate-800 bg-slate-950">
-        {/* Fila 1 — categorías principales. */}
-        <nav aria-label="Categorías principales" className="relative">
-          <div
-            ref={categoryRow.ref}
-            className="flex overflow-x-auto whitespace-nowrap no-scrollbar"
-          >
+    <div className={`flex w-full flex-col gap-1 ${className}`}>
+      {/* Fila 1 — categorías principales. */}
+      <nav aria-label="Categorías principales">
+        <div
+          ref={categoryRow.ref}
+          className={`flex gap-px overflow-x-auto whitespace-nowrap no-scrollbar ${
+            categoryRow.showFade ? FADE_MASK : ''
+          }`}
+        >
+          <CategoryButton
+            href="/blog"
+            label="Todos"
+            isActive={activeCategory === null}
+            onClick={() => onSelectCategory?.(ALL_CATEGORIES)}
+          />
+          {categories.map((category) => (
             <CategoryButton
-              href="/blog"
-              label="Todos"
-              isActive={activeCategory === null}
-              onClick={() => onSelectCategory?.(ALL_CATEGORIES)}
+              key={category.id}
+              href={`/blog?categoria=${encodeURIComponent(category.value)}`}
+              label={category.label}
+              isActive={activeCategory?.value === category.value}
+              onClick={() => onSelectCategory?.(category.value)}
             />
-            {categories.map((category) => (
-              <CategoryButton
-                key={category.id}
-                href={`/blog?categoria=${encodeURIComponent(category.value)}`}
-                label={category.label}
-                isActive={activeCategory?.value === category.value}
-                onClick={() => onSelectCategory?.(category.value)}
+          ))}
+        </div>
+      </nav>
+
+      {/* Fila 2 — subcategorías: sólo cuando hay una principal elegida. */}
+      {activeCategory && subcategories.length > 0 && (
+        <nav aria-label={`Subcategorías de ${activeCategory.label}`}>
+          <div
+            ref={subcategoryRow.ref}
+            className={`flex gap-px overflow-x-auto whitespace-nowrap no-scrollbar ${
+              subcategoryRow.showFade ? FADE_MASK : ''
+            }`}
+          >
+            <SubcategoryButton
+              href={`/blog?categoria=${encodeURIComponent(activeCategory.value)}`}
+              label="Todas"
+              isActive={!selectedSubcategory || selectedSubcategory === ALL_SUBCATEGORIES}
+              onClick={() => onSelectSubcategory?.(ALL_SUBCATEGORIES)}
+            />
+            {subcategories.map((subcategory) => (
+              <SubcategoryButton
+                key={subcategory.id}
+                href={`/blog?categoria=${encodeURIComponent(
+                  activeCategory.value,
+                )}&subcategoria=${encodeURIComponent(subcategory.slug)}`}
+                label={subcategory.name}
+                isActive={selectedSubcategory === subcategory.slug}
+                onClick={() => onSelectSubcategory?.(subcategory.slug)}
               />
             ))}
           </div>
-          {categoryRow.showFade && <span aria-hidden className={SCROLL_FADE_ON_DARK} />}
         </nav>
-
-        {/* Fila 2 — subcategorías: sólo cuando hay una principal elegida. */}
-        {activeCategory && subcategories.length > 0 && (
-          <nav aria-label={`Subcategorías de ${activeCategory.label}`} className="relative">
-            <div
-              ref={subcategoryRow.ref}
-              className="flex overflow-x-auto whitespace-nowrap no-scrollbar"
-            >
-              <SubcategoryButton
-                href={`/blog?categoria=${encodeURIComponent(activeCategory.value)}`}
-                label="Todas"
-                isActive={!selectedSubcategory || selectedSubcategory === ALL_SUBCATEGORIES}
-                onClick={() => onSelectSubcategory?.(ALL_SUBCATEGORIES)}
-              />
-              {subcategories.map((subcategory) => (
-                <SubcategoryButton
-                  key={subcategory.id}
-                  href={`/blog?categoria=${encodeURIComponent(
-                    activeCategory.value,
-                  )}&subcategoria=${encodeURIComponent(subcategory.slug)}`}
-                  label={subcategory.name}
-                  isActive={selectedSubcategory === subcategory.slug}
-                  onClick={() => onSelectSubcategory?.(subcategory.slug)}
-                />
-              ))}
-            </div>
-            {subcategoryRow.showFade && <span aria-hidden className={SCROLL_FADE_ON_LIGHT} />}
-          </nav>
-        )}
-      </div>
+      )}
     </div>
   );
 }
@@ -201,8 +192,9 @@ function SubcategoryButton({
 }
 
 /**
- * Sigue el scroll de una fila para saber si desborda y si el usuario ya llegó al
- * final, y vuelve al inicio cuando cambia su contenido (al cambiar de categoría).
+ * Sigue el scroll de una fila para saber si desborda (y por lo tanto si hay que
+ * mostrar la máscara de la derecha), y vuelve al inicio cuando cambia su contenido
+ * (al cambiar de categoría).
  */
 function useScrollableRow(dependency: string | number) {
   const ref = useRef<HTMLDivElement | null>(null);
@@ -224,6 +216,11 @@ function useScrollableRow(dependency: string | number) {
     element.addEventListener('scroll', update, { passive: true });
     const observer = new ResizeObserver(update);
     observer.observe(element);
+    // El ancho del CONTENIDO cambia al cargar la tipografía web (o al cambiar los
+    // rótulos) sin mover la caja de la fila: observando sólo la fila, el aviso de
+    // scroll se quedaba apagado. Los hijos delatan esos cambios.
+    for (const child of Array.from(element.children)) observer.observe(child);
+    document.fonts?.ready.then(update).catch(() => {});
 
     return () => {
       element.removeEventListener('scroll', update);

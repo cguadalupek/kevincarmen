@@ -126,16 +126,30 @@ export function BlogExplorer({
           <BookOpen className="h-6 w-6" />
           <span className="font-mono text-sm">/ artículos</span>
         </div>
-        {/* Cabecera: el buscador va a la derecha en escritorio y a todo el ancho en móvil. */}
-        <div className="mt-3 md:flex md:items-end md:justify-between md:gap-8">
-          <div className="min-w-0">
+        {/*
+          Cabecera + filtros + buscador en un solo grid: en móvil el buscador queda
+          DEBAJO de las dos filas de filtros (como en la maqueta); desde `md` sube a
+          la derecha del título y los filtros ocupan el ancho completo debajo.
+        */}
+        <div className="mt-3 flex flex-col md:grid md:grid-cols-[minmax(0,1fr)_auto] md:items-end md:gap-x-8">
+          <div className="min-w-0 md:col-start-1 md:row-start-1">
             <h1 className="section-title">Blog</h1>
             <p className="section-subtitle">
               Tutoriales, reflexiones y documentación técnica organizados por categoría y subcategoría.
             </p>
           </div>
 
-          <div className="relative mt-6 w-full md:mt-0 md:w-80 md:shrink-0 lg:w-96">
+          {/* Filtros: fila de categorías y, al elegir una, la de subcategorías. */}
+          <CategoryFilter
+            className="mt-8 md:col-span-2 md:row-start-2"
+            categories={categoryTree}
+            selectedCategory={selectedCategory}
+            selectedSubcategory={selectedSubcategory}
+            onSelectCategory={handleSelectCategory}
+            onSelectSubcategory={setSelectedSubcategory}
+          />
+
+          <div className="relative mt-6 w-full md:col-start-2 md:row-start-1 md:mt-0 md:w-80 md:shrink-0 lg:w-96">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
             <input
               type="text"
@@ -143,7 +157,7 @@ export function BlogExplorer({
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Buscar artículos..."
               aria-label="Buscar artículos"
-              className="w-full rounded-none border border-slate-800 bg-slate-900/80 py-3 pl-10 pr-10 text-sm text-slate-200 outline-none transition-colors placeholder:text-slate-500 hover:border-slate-700 focus:border-accent focus:ring-1 focus:ring-accent"
+              className="w-full rounded-md border border-slate-700 bg-slate-800/60 py-3 pl-10 pr-10 text-sm text-slate-200 outline-none transition-colors placeholder:text-slate-500 hover:border-slate-600 focus:border-accent focus:ring-1 focus:ring-accent"
             />
             {query && (
               <button
@@ -158,24 +172,15 @@ export function BlogExplorer({
           </div>
         </div>
 
-        {/* Filtros: bloque único con las filas de categorías y subcategorías pegadas. */}
-        <CategoryFilter
-          className="mt-8"
-          categories={categoryTree}
-          selectedCategory={selectedCategory}
-          selectedSubcategory={selectedSubcategory}
-          onSelectCategory={handleSelectCategory}
-          onSelectSubcategory={setSelectedSubcategory}
-        />
       </div>
 
       {showDropdown && filteredPosts.length > 0 && (
-        <div className="section-container mt-3 rounded-none border border-slate-800 bg-slate-950/90 p-2 shadow-xl">
+        <div className="section-container mt-3 rounded-md border border-slate-700 bg-slate-900/95 p-2 shadow-xl">
           {filteredPosts.slice(0, 5).map((post) => (
             <Link
               key={post.id}
               href={`/blog/${post.slug}`}
-              className="flex items-start gap-3 rounded-none px-3 py-2 transition-colors hover:bg-slate-900/70"
+              className="flex items-start gap-3 rounded-md px-3 py-2 transition-colors hover:bg-slate-800/80"
             >
               {post.coverImage ? (
                 <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md border border-border">
