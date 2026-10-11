@@ -117,7 +117,35 @@
   }
 
   .post-editor-content pre code {
-    @apply block overflow-x-auto px-4 py-2.5 text-sm leading-[1.5];
+    @apply block overflow-x-auto px-4 pt-2.5 pb-2 text-sm leading-[1.5];
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--accent) / 0.6) transparent;
+  }
+
+  .post-editor-content pre code::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+
+  .post-editor-content pre code::-webkit-scrollbar-track {
+    margin: 0;
+    background: transparent;
+  }
+
+  .post-editor-content pre code::-webkit-scrollbar-thumb {
+    border-radius: 9999px;
+    background: rgb(var(--accent) / 0.6);
+  }
+
+  .post-editor-content pre code::-webkit-scrollbar-thumb:hover {
+    background: rgb(var(--accent) / 0.95);
+  }
+
+  .post-editor-content pre code::-webkit-scrollbar-button,
+  .post-editor-content pre code::-webkit-scrollbar-corner {
+    display: none;
+    width: 0;
+    height: 0;
   }
 
   .post-editor-content img {
@@ -201,10 +229,39 @@
   .code-block-pre {
     @apply overflow-x-auto p-0;
     background: rgb(31 41 55 / 1);
+    /* Barra horizontal fina, en el cian del sitio y pegada al borde inferior de la caja */
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--accent) / 0.6) transparent;
+  }
+
+  .code-block-pre::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+
+  .code-block-pre::-webkit-scrollbar-track {
+    margin: 0;
+    background: transparent;
+  }
+
+  .code-block-pre::-webkit-scrollbar-thumb {
+    border-radius: 9999px;
+    background: rgb(var(--accent) / 0.6);
+  }
+
+  .code-block-pre::-webkit-scrollbar-thumb:hover {
+    background: rgb(var(--accent) / 0.95);
+  }
+
+  .code-block-pre::-webkit-scrollbar-button,
+  .code-block-pre::-webkit-scrollbar-corner {
+    display: none;
+    width: 0;
+    height: 0;
   }
 
   .code-block-pre code {
-    @apply block px-4 py-2.5 font-mono text-sm leading-[1.5];
+    @apply block px-4 pb-2 pt-2.5 font-mono text-sm leading-[1.5];
   }
 
   /* Syntax highlighting — tema oscuro alineado al sitio */
