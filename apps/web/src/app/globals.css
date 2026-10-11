@@ -227,7 +227,9 @@
   }
 
   .code-block-pre {
-    @apply overflow-x-auto p-0;
+    /* my-0: anula los margenes que .prose pre (typography) aplica al <pre>,
+       que dejaban 24px de hueco bajo la barra de scroll dentro de la caja. */
+    @apply my-0 overflow-x-auto p-0;
     background: rgb(31 41 55 / 1);
     /* Barra horizontal fina, en el cian del sitio y pegada al borde inferior de la caja */
     scrollbar-width: thin;
