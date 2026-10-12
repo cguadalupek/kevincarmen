@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { ArrowLeft, Pencil, Plus, Save, Trash2, X } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { ArrowLeft, ListVideo, Pencil, Plus, Save, Trash2, X } from 'lucide-react';
 import { AdminAuthGuard } from '@/components/admin/auth-guard';
 import { AdminSidebar } from '@/components/admin/sidebar';
 import { Button } from '@/components/ui/button';
@@ -36,6 +37,7 @@ function emptyCourse(): Partial<ApiCourse> {
 }
 
 export default function AdminCoursesPage() {
+  const router = useRouter();
   const [courses, setCourses] = useState<ApiCourse[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -77,7 +79,12 @@ export default function AdminCoursesPage() {
 
     try {
       if (editing.id) await api.updateCourse(editing.id, payload);
-      else await api.createCourse(payload);
+      else {
+        const created = await api.createCourse(payload);
+        // Tras crear, se va directo al constructor de contenido.
+        router.push(`/admin/courses/${created.id}`);
+        return;
+      }
       setEditing(null);
       load();
     } catch (err) {
@@ -301,6 +308,20 @@ export default function AdminCoursesPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-2">
+                  <Button
+                    variant="accent"
+                    size="sm"
+                    onClick={() => router.push(`/admin/courses/${course.id}`)}
+                    title="Editor del contenido del curso"
+                  >
+                    <ListVideo className="h-4 w-4" />
+                    Contenido
+                    {(course.modulesCount ?? 0) > 0 && (
+                      <span className="ml-1 rounded-full bg-black/20 px-1.5 font-mono text-[10px]">
+                        {course.modulesCount}M · {course.lessonsCount}C
+                      </span>
+                    )}
+                  </Button>
                   <Button variant="outline" size="sm" onClick={() => setEditing({ ...course })}>
                     <Pencil className="h-4 w-4" />
                     Editar

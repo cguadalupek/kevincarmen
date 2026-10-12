@@ -104,19 +104,84 @@ export interface ApiVideo {
   updatedAt: string;
 }
 
+export type LessonTypeValue = 'VIDEO' | 'ARTICLE' | 'PRACTICE' | 'QUIZ';
+
+export interface ApiLessonResource {
+  label: string;
+  url: string;
+}
+
+export interface ApiLesson {
+  id: string;
+  title: string;
+  slug: string;
+  description: string | null;
+  type: LessonTypeValue;
+  videoUrl: string | null;
+  videoType: VideoTypeValue;
+  content: string | null;
+  duration: number;
+  resources: ApiLessonResource[] | null;
+  isFree: boolean;
+  published: boolean;
+  position: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ApiCourseModule {
+  id: string;
+  title: string;
+  description: string | null;
+  position: number;
+  lessons: ApiLesson[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Payload aceptado por PUT /courses/:id/curriculum (el backend completa el resto). */
+export interface SaveCurriculumLesson {
+  id?: string;
+  title: string;
+  slug?: string;
+  description?: string | null;
+  type?: LessonTypeValue;
+  videoUrl?: string | null;
+  videoType?: VideoTypeValue;
+  content?: string | null;
+  duration?: number;
+  resources?: ApiLessonResource[] | null;
+  isFree?: boolean;
+  published?: boolean;
+}
+
+export interface SaveCurriculumModule {
+  id?: string;
+  title: string;
+  description?: string | null;
+  lessons: SaveCurriculumLesson[];
+}
+
 export interface ApiCourse {
   id: string;
   title: string;
   slug: string;
   description: string;
+  subtitle: string | null;
   level: 'BEGINNER' | 'INTERMEDIATE' | 'ADVANCED';
   duration: string;
   lessonsCount: number;
+  modulesCount: number;
+  totalMinutes: number;
   status: 'COMING_SOON' | 'AVAILABLE' | 'IN_PROGRESS' | 'ARCHIVED';
   coverImage: string | null;
   position: number;
+  learningPoints: string[];
+  requirements: string[];
+  targetAudience: string | null;
   createdAt: string;
   updatedAt: string;
+  modules: ApiCourseModule[];
 }
 
 export interface ApiLabExperiment {
@@ -278,12 +343,19 @@ export const api = {
     apiFetch<{ success: boolean }>(`/videos/${id}`, { method: 'DELETE' }),
 
   getCourses: () => apiFetch<ApiCourse[]>('/courses/admin/all'),
-  createCourse: (data: Partial<ApiCourse>) =>
-    apiFetch<ApiCourse>('/courses', { method: 'POST', body: JSON.stringify(data) }),
-  updateCourse: (id: string, data: Partial<ApiCourse>) =>
-    apiFetch<ApiCourse>(`/courses/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  deleteCourse: (id: string) =>
-    apiFetch<{ success: boolean }>(`/courses/${id}`, { method: 'DELETE' }),
+    getCourseAdmin: (id: string) => apiFetch<ApiCourse>(`/courses/admin/${id}`),
+    createCourse: (data: Partial<ApiCourse>) =>
+      apiFetch<ApiCourse>('/courses', { method: 'POST', body: JSON.stringify(data) }),
+    updateCourse: (id: string, data: Partial<ApiCourse>) =>
+      apiFetch<ApiCourse>(`/courses/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    /** Guarda el árbol completo (módulos + clases) en una sola llamada. */
+        saveCourseCurriculum: (id: string, modules: SaveCurriculumModule[]) =>
+          apiFetch<ApiCourse>(`/courses/${id}/curriculum`, {
+            method: 'PUT',
+            body: JSON.stringify({ modules }),
+          }),
+    deleteCourse: (id: string) =>
+      apiFetch<{ success: boolean }>(`/courses/${id}`, { method: 'DELETE' }),
 
   getLabExperiments: () => apiFetch<ApiLabExperiment[]>('/lab/admin/all'),
   createLabExperiment: (data: Partial<ApiLabExperiment>) =>

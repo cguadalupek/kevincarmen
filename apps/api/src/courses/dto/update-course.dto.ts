@@ -1,4 +1,12 @@
-import { IsEnum, IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
+import {
+  IsArray,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  MaxLength,
+  Min,
+} from 'class-validator';
 import { CourseDifficulty, CourseStatus } from '@prisma/client';
 
 export class UpdateCourseDto {
@@ -15,6 +23,10 @@ export class UpdateCourseDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @IsOptional()
+  @IsString()
+  subtitle?: string | null;
 
   @IsOptional()
   @IsEnum(CourseDifficulty)
@@ -35,10 +47,24 @@ export class UpdateCourseDto {
 
   @IsOptional()
   @IsString()
-  coverImage?: string;
+  coverImage?: string | null;
 
   @IsOptional()
   @IsInt()
   @Min(0)
   position?: number;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  learningPoints?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  requirements?: string[];
+
+  @IsOptional()
+  @IsString()
+  targetAudience?: string | null;
 }

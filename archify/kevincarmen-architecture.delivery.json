@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "733db969-ea04-478b-88c2-a92338b024f4",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "C:\\Users\\Kevin Carmen\\kevincarmen\\archify\\kevincarmen-architecture.json",
+  "output": "C:\\Users\\Kevin Carmen\\kevincarmen\\archify\\kevincarmen-architecture.html",
+  "specification": {
+    "sha256": "cea6423825c2226cf1e83f33c0a17d0064e0d8b71e3d7daa7b9b546b88b39dd6",
+    "bytes": 33207
+  },
+  "artifact": {
+    "sha256": "5e5716b18fab80d6a5eb8fa8d2e178dd88244691c7a33468f4a06085b79718dc",
+    "bytes": 766521
+  }
+}

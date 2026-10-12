@@ -258,17 +258,79 @@ model Course {
   title        String
   slug         String           @unique
   description  String
+  subtitle     String?
   level        CourseDifficulty @default(BEGINNER)
   duration     String
   lessonsCount Int              @default(0) @map("lessons_count")
-  status       CourseStatus @default(COMING_SOON)
+  status       CourseStatus     @default(COMING_SOON)
   coverImage   String?          @map("cover_image")
   position     Int              @default(0)
+  /** Bullets de "lo que aprenderás" (uno por línea en el CMS). */
+  learningPoints String[]       @default([]) @map("learning_points")
+  /** Requisitos previos del alumno. */
+  requirements   String[]       @default([]) @map("requirements")
+  /** A quién va dirigido el curso. */
+  targetAudience String?        @map("target_audience")
   createdAt    DateTime         @default(now()) @map("created_at")
   updatedAt    DateTime         @updatedAt @map("updated_at")
 
+  modules      CourseModule[]
+
   @@index([status, position])
   @@map("courses")
+}
+
+enum LessonType {
+  VIDEO
+  ARTICLE
+  PRACTICE
+  QUIZ
+}
+
+/** Módulo de un curso: agrupa clases. */
+model CourseModule {
+  id          String   @id @default(cuid())
+  courseId    String   @map("course_id")
+  title       String
+  description String?
+  position    Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons     Lesson[]
+
+  @@index([courseId, position])
+  @@map("course_modules")
+}
+
+/** Clase de un módulo: video (estilo Platzi) + contenido escrito. */
+model Lesson {
+  id          String     @id @default(cuid())
+  moduleId    String     @map("module_id")
+  title       String
+  slug        String
+  description String?
+  type        LessonType @default(VIDEO)
+  videoUrl    String?    @map("video_url")
+  videoType   VideoType  @default(YOUTUBE) @map("video_type")
+  /** Contenido en Markdown que acompaña al video. */
+  content     String?
+  /** Duración en minutos. */
+  duration    Int        @default(0)
+  /** Recursos de la clase: [{ label, url }] */
+  resources   Json?
+  isFree      Boolean    @default(true) @map("is_free")
+  published   Boolean    @default(true)
+  position    Int        @default(0)
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  module      CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+
+  @@unique([moduleId, slug])
+  @@index([moduleId, position])
+  @@map("lessons")
 }
 
 model LabExperiment {

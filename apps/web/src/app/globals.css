@@ -507,6 +507,37 @@
 }
 
 @layer utilities {
+  /* Barra de desplazamiento fina y en cian (temarios, listas largas). */
+  .thin-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--accent) / 0.5) transparent;
+  }
+
+  .thin-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .thin-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .thin-scrollbar::-webkit-scrollbar-thumb {
+    border-radius: 9999px;
+    background: rgb(var(--accent) / 0.5);
+  }
+
+  .thin-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgb(var(--accent) / 0.9);
+  }
+
+  .thin-scrollbar::-webkit-scrollbar-button,
+  .thin-scrollbar::-webkit-scrollbar-corner {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
   /*
    * Fila deslizable sin barra de scroll visible (carruseles de filtros en móvil).
    * La pista de que hay más contenido es el degradado lateral, no la barra.
