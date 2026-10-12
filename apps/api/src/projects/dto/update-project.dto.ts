@@ -7,6 +7,7 @@ export class UpdateProjectDto {
   @IsOptional() @IsString() description?: string;
   @IsOptional() @IsEnum(ProjectStatus) status?: ProjectStatus;
   @IsOptional() @IsString() coverImage?: string;
+  @IsOptional() @IsString() content?: string;
   @IsOptional() @IsString() longDescription?: string;
   @IsOptional() @IsArray() @IsString({ each: true }) technologies?: string[];
   @IsOptional() @IsString() category?: string;

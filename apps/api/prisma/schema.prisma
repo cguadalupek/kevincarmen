@@ -207,8 +207,10 @@ model Project {
   title           String
   slug            String        @unique
   description       String
-  longDescription   String?       @map("long_description")
-  technologies      String[]
+    longDescription   String?       @map("long_description")
+    /** Cuerpo del proyecto en Markdown (mismo formato que los artículos). */
+    content           String?
+    technologies      String[]
   category          String?
   tags              String[]
   projectYear       Int?          @map("project_year")

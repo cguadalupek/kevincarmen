@@ -18,6 +18,7 @@ export class ProjectsService {
     if (await this.prisma.project.findUnique({ where: { slug } })) throw new ConflictException('El slug ya existe');
     return this.prisma.project.create({ data: {
       title: dto.title, slug, description: dto.description, status: dto.status, coverImage: dto.coverImage,
+      content: dto.content || null,
       longDescription: dto.longDescription || null, technologies: dto.technologies ?? [], category: dto.category || null,
       tags: dto.tags ?? [], projectYear: dto.projectYear ?? null, repository: dto.repository || null, demo: dto.demo || null,
       documentation: dto.documentation || null, problem: dto.problem || null, solution: dto.solution || null, role: dto.role || null,
@@ -41,6 +42,7 @@ export class ProjectsService {
     if (dto.description !== undefined) data.description = dto.description;
     if (dto.status !== undefined) { data.status = dto.status; data.publishedAt = dto.status === 'ARCHIVED' ? null : new Date(); }
     if (dto.coverImage !== undefined) data.coverImage = dto.coverImage || null;
+    if (dto.content !== undefined) data.content = dto.content || null;
     if (dto.longDescription !== undefined) data.longDescription = dto.longDescription || null;
     if (dto.technologies !== undefined) data.technologies = dto.technologies;
     if (dto.category !== undefined) data.category = dto.category || null;

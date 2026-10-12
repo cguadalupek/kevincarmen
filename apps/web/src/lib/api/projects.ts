@@ -9,6 +9,7 @@ export interface PublicProject {
   slug: string;
   description: string;
   longDescription: string | null;
+  content: string | null;
   technologies: string[];
   category: string | null;
   tags: string[];
