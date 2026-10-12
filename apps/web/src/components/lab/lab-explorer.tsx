@@ -1,11 +1,14 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowUpRight, Clock, FlaskConical, Play, Search } from 'lucide-react';
 import type { PublicLabExperiment, ExperimentStatus } from '@/lib/api/lab';
+import { Pagination } from '@/components/ui/pagination';
 import { cn } from '@/lib/utils';
+
+const PAGE_SIZE = 6;
 
 const STATUS = {
   IN_PROGRESS: ['En pruebas', 'bg-blue-500/10 text-blue-300'],
@@ -20,6 +23,7 @@ type Filter = 'ALL' | ExperimentStatus;
 export function LabExplorer({ experiments }: { experiments: PublicLabExperiment[] }) {
   const [filter, setFilter] = useState<Filter>('ALL');
   const [query, setQuery] = useState('');
+  const [page, setPage] = useState(1);
 
   const counts = useMemo(() => {
     const result: Record<Filter, number> = {
@@ -48,6 +52,15 @@ export function LabExplorer({ experiments }: { experiments: PublicLabExperiment[
       );
     });
   }, [experiments, filter, query]);
+
+  // Al cambiar filtro o búsqueda vuelve a la primera página.
+  useEffect(() => {
+    setPage(1);
+  }, [filter, query]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, totalPages);
+  const pageItems = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   return (
     <div>
@@ -88,75 +101,88 @@ export function LabExplorer({ experiments }: { experiments: PublicLabExperiment[
           No hay experimentos que coincidan con tu búsqueda.
         </div>
       ) : (
-        <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((experiment) => {
-            const [label, color] = STATUS[experiment.status];
-            return (
-              <Link
-                key={experiment.id}
-                href={`/lab/${experiment.slug}`}
-                className="glass-card group block h-full overflow-hidden transition hover:-translate-y-1 hover:border-accent/50"
-              >
-                <div className="relative aspect-[16/9] overflow-hidden">
-                  {experiment.coverImage ? (
-                    <Image
-                      src={experiment.coverImage}
-                      alt={experiment.title}
-                      fill
-                      className="object-cover transition duration-500 group-hover:scale-105"
-                      sizes="(max-width: 768px) 100vw, 33vw"
-                      unoptimized
-                    />
-                  ) : (
-                    <div className="flex h-full items-center justify-center bg-muted/40">
-                      <FlaskConical className="h-12 w-12 text-accent/40" />
-                    </div>
-                  )}
-                  {experiment.videoUrl && (
-                    <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/70 px-2 py-1 text-xs text-white backdrop-blur">
-                      <Play className="h-3 w-3" />
-                      {experiment.videoDuration ? `${experiment.videoDuration} min` : 'Video'}
-                    </span>
-                  )}
-                </div>
-                <div className="p-5">
-                  <div className="mb-3 flex items-center justify-between gap-2">
-                    <span className={cn('rounded-full px-2.5 py-1 text-xs font-medium', color)}>
-                      {label}
-                    </span>
-                    <ArrowUpRight className="h-4 w-4 text-muted-foreground transition group-hover:text-accent" />
-                  </div>
-                  <h2 className="text-lg font-semibold">
-                    {experiment.title || 'Experimento legacy'}
-                  </h2>
-                  <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">
-                    {experiment.description}
-                  </p>
-                  {experiment.stack.length > 0 && (
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      {experiment.stack.map((tech) => (
-                        <span
-                          key={tech}
-                          className="rounded-md bg-muted px-2 py-1 font-mono text-xs text-muted-foreground"
-                        >
-                          {tech}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  <div className="mt-4 flex items-center gap-3 border-t border-border/60 pt-3 text-xs text-muted-foreground">
-                    <span>{(experiment.startedAt ?? experiment.createdAt).slice(0, 10)}</span>
-                    {experiment.readingTime > 0 && (
-                      <span className="inline-flex items-center gap-1">
-                        <Clock className="h-3 w-3" /> {experiment.readingTime} min
+        <>
+          <div
+            className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+            key={`${filter}-${query}-${safePage}`}
+          >
+            {pageItems.map((experiment) => {
+              const [label, color] = STATUS[experiment.status];
+              return (
+                <Link
+                  key={experiment.id}
+                  href={`/lab/${experiment.slug}`}
+                  className="glass-card group block h-full overflow-hidden transition hover:-translate-y-1 hover:border-accent/50"
+                >
+                  <div className="relative aspect-[16/9] overflow-hidden">
+                    {experiment.coverImage ? (
+                      <Image
+                        src={experiment.coverImage}
+                        alt={experiment.title}
+                        fill
+                        className="object-cover transition duration-500 group-hover:scale-105"
+                        sizes="(max-width: 768px) 100vw, 33vw"
+                        unoptimized
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center bg-muted/40">
+                        <FlaskConical className="h-12 w-12 text-accent/40" />
+                      </div>
+                    )}
+                    {experiment.videoUrl && (
+                      <span className="absolute bottom-2 right-2 inline-flex items-center gap-1 rounded-full bg-black/70 px-2 py-1 text-xs text-white backdrop-blur">
+                        <Play className="h-3 w-3" />
+                        {experiment.videoDuration ? `${experiment.videoDuration} min` : 'Video'}
                       </span>
                     )}
                   </div>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
+                  <div className="p-5">
+                    <div className="mb-3 flex items-center justify-between gap-2">
+                      <span className={cn('rounded-full px-2.5 py-1 text-xs font-medium', color)}>
+                        {label}
+                      </span>
+                      <ArrowUpRight className="h-4 w-4 text-muted-foreground transition group-hover:text-accent" />
+                    </div>
+                    <h2 className="text-lg font-semibold">
+                      {experiment.title || 'Experimento legacy'}
+                    </h2>
+                    <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">
+                      {experiment.description}
+                    </p>
+                    {experiment.stack.length > 0 && (
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        {experiment.stack.map((tech) => (
+                          <span
+                            key={tech}
+                            className="rounded-md bg-muted px-2 py-1 font-mono text-xs text-muted-foreground"
+                          >
+                            {tech}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    <div className="mt-4 flex items-center gap-3 border-t border-border/60 pt-3 text-xs text-muted-foreground">
+                      <span>{(experiment.startedAt ?? experiment.createdAt).slice(0, 10)}</span>
+                      {experiment.readingTime > 0 && (
+                        <span className="inline-flex items-center gap-1">
+                          <Clock className="h-3 w-3" /> {experiment.readingTime} min
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+          <Pagination
+            page={safePage}
+            totalPages={totalPages}
+            totalItems={filtered.length}
+            pageSize={PAGE_SIZE}
+            label="experimentos"
+            onChange={setPage}
+          />
+        </>
       )}
     </div>
   );
