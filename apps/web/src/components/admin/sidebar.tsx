@@ -7,6 +7,7 @@ import {
   Clock,
   ChevronDown,
   ChevronRight,
+  Download,
   FileText,
   FlaskConical,
   FolderOpen,
@@ -50,6 +51,7 @@ const navItems: NavItem[] = [
   { label: 'Proyectos', href: '/admin/projects', icon: FolderOpen },
   { label: 'Cursos', href: '/admin/courses', icon: GraduationCap },
   { label: 'Lab', href: '/admin/lab', icon: FlaskConical },
+  { label: 'Recursos', href: '/admin/recursos', icon: Download },
   { label: 'Timeline', href: '/admin/timeline', icon: Clock },
   { label: 'Configuración', href: '/admin/settings', icon: Settings },
 ];

@@ -1,5 +1,24 @@
 import { ExperimentStatus } from '@prisma/client';
-import { IsArray, IsDateString, IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsArray,
+  IsBoolean,
+  IsDateString,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  MaxLength,
+  Min,
+} from 'class-validator';
+
+/** Capítulo del video: { time: "00:00", title: "..." } */
+export class ChapterDto {
+  @IsString()
+  time!: string;
+
+  @IsString()
+  title!: string;
+}
 
 export class CreateLabDto {
   @IsString()
@@ -31,4 +50,15 @@ export class CreateLabDto {
   @IsOptional() @IsDateString() completedAt?: string;
   @IsOptional() @IsString() relatedPostId?: string;
   @IsOptional() @IsString() relatedProjectId?: string;
+
+  /** Cuerpo del experimento en Markdown. */
+  @IsOptional() @IsString() content?: string;
+  /** Video largo de YouTube (10-20 min) que documenta el experimento. */
+  @IsOptional() @IsString() videoUrl?: string;
+  /** Duración del video en minutos. */
+  @IsOptional() @IsInt() @Min(1) videoDuration?: number;
+  /** Capítulos del video. */
+  @IsOptional() @IsArray() chapters?: ChapterDto[];
+  /** Borrador / Publicado. */
+  @IsOptional() @IsBoolean() published?: boolean;
 }

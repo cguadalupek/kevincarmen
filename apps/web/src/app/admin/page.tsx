@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import {
+  Download,
   FileText,
   FolderOpen,
   GraduationCap,
@@ -42,8 +43,14 @@ const sections = [
   {
     href: '/admin/lab',
     icon: FlaskConical,
-    title: 'Homelab',
-    description: 'Servicios self-hosted del lab',
+    title: 'Lab',
+    description: 'Experimentos documentados que alimentan los videos largos de YouTube',
+  },
+  {
+    href: '/admin/recursos',
+    icon: Download,
+    title: 'Recursos',
+    description: 'Scripts, plantillas y descargas de la sección /recursos',
   },
   {
     href: '/admin/settings',

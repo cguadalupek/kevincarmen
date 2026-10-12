@@ -1,81 +1,279 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowLeft, Pencil, Plus, Save, Trash2, Upload, X } from 'lucide-react';
+import { Copy, ExternalLink, Pencil, Plus, Search, Trash2, Video } from 'lucide-react';
 import { AdminAuthGuard } from '@/components/admin/auth-guard';
 import { AdminSidebar } from '@/components/admin/sidebar';
 import { Button } from '@/components/ui/button';
 import { api, type ApiLabExperiment } from '@/lib/api/client';
+import { formatDate } from '@kevincarmen/utils';
+import { cn } from '@/lib/utils';
 
-const STATUS_LABELS = { IN_PROGRESS: 'En pruebas', SUCCESS: 'Funcionó', PARTIAL: 'Funcionó con limitaciones', FAILED: 'No funcionó', ABANDONED: 'Abandonado' } as const;
-const fieldClass = 'w-full rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm focus:border-accent focus:outline-none';
+const STATUS_META = {
+  IN_PROGRESS: ['En pruebas', 'bg-blue-500/10 text-blue-300'],
+  SUCCESS: ['Funcionó', 'bg-emerald-500/10 text-emerald-300'],
+  PARTIAL: ['Funcionó con limitaciones', 'bg-amber-500/10 text-amber-300'],
+  FAILED: ['No funcionó', 'bg-red-500/10 text-red-300'],
+  ABANDONED: ['Abandonado', 'bg-zinc-500/10 text-zinc-300'],
+} as const;
 
-function emptyExperiment(): Partial<ApiLabExperiment> {
-  return { title: '', slug: '', description: '', objective: '', hypothesis: '', environment: '', procedure: '', status: 'IN_PROGRESS', result: '', conclusion: '', stack: [], tags: [], coverImage: '', gallery: [], startedAt: null, completedAt: null };
-}
+type StatusFilter = 'ALL' | ApiLabExperiment['status'];
 
 export default function AdminLabPage() {
   const [experiments, setExperiments] = useState<ApiLabExperiment[]>([]);
-  const [editing, setEditing] = useState<Partial<ApiLabExperiment> | null>(null);
-  const [stackInput, setStackInput] = useState('');
-  const [tagsInput, setTagsInput] = useState('');
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
   const [error, setError] = useState('');
-  const fileRef = useRef<HTMLInputElement>(null);
+  const [query, setQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
 
-  function load() { setLoading(true); api.getLabExperiments().then(setExperiments).catch((e) => setError(e instanceof Error ? e.message : 'Error al cargar experimentos')).finally(() => setLoading(false)); }
-  useEffect(() => { load(); }, []);
-  function edit(item: ApiLabExperiment) { setEditing({ ...item }); setStackInput(item.stack.join(', ')); setTagsInput(item.tags.join(', ')); }
-  function update(key: keyof ApiLabExperiment, value: string) { setEditing((current) => current ? { ...current, [key]: value } : current); }
-  async function uploadCover(file: File) { setUploading(true); setError(''); try { const result = await api.uploadImage(file); update('coverImage', result.url); } catch (e) { setError(e instanceof Error ? e.message : 'Error al subir portada'); } finally { setUploading(false); } }
-
-  async function submit(event: React.FormEvent) {
-    event.preventDefault();
-    if (!editing) return;
-    setSaving(true);
-    setError('');
-    const list = (value: string) => value.split(',').map((item) => item.trim()).filter(Boolean);
-    const payload = {
-      title: editing.title?.trim() ?? '',
-      slug: editing.slug?.trim() || undefined,
-      description: editing.description?.trim() ?? '',
-      objective: editing.objective?.trim() || undefined,
-      hypothesis: editing.hypothesis?.trim() || undefined,
-      environment: editing.environment?.trim() || undefined,
-      procedure: editing.procedure?.trim() || undefined,
-      status: editing.status,
-      result: editing.result?.trim() || undefined,
-      conclusion: editing.conclusion?.trim() || undefined,
-      stack: list(stackInput),
-      tags: list(tagsInput),
-      coverImage: editing.coverImage?.trim() || undefined,
-      gallery: editing.gallery ?? [],
-      startedAt: editing.startedAt?.trim() || undefined,
-      completedAt: editing.completedAt?.trim() || undefined,
-      relatedPostId: editing.relatedPostId || undefined,
-      relatedProjectId: editing.relatedProjectId || undefined,
-    };
-    try { if (editing.id) await api.updateLabExperiment(editing.id, payload); else await api.createLabExperiment(payload); setEditing(null); load(); } catch (e) { setError(e instanceof Error ? e.message : 'Error al guardar'); } finally { setSaving(false); }
+  function load() {
+    setLoading(true);
+    api
+      .getLabExperiments()
+      .then(setExperiments)
+      .catch((err) => setError(err instanceof Error ? err.message : 'Error al cargar experimentos'))
+      .finally(() => setLoading(false));
   }
-  async function remove(item: ApiLabExperiment) { if (!window.confirm(`¿Eliminar el experimento "${item.title || 'sin título'}"?`)) return; try { await api.deleteLabExperiment(item.id); load(); } catch (e) { setError(e instanceof Error ? e.message : 'Error al eliminar'); } }
 
-  return <AdminAuthGuard><AdminSidebar /><main className="flex-1 overflow-auto p-8">
-    <div className="mb-6 flex items-center justify-between"><div><Link href="/admin" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-accent"><ArrowLeft className="h-4 w-4" /> Dashboard</Link><h1 className="mt-2 text-2xl font-bold">Experimentos del Lab</h1><p className="text-sm text-muted-foreground">Documenta pruebas, experimentos y descubrimientos técnicos.</p></div><Button variant="accent" onClick={() => setEditing(emptyExperiment())} disabled={!!editing}><Plus className="h-4 w-4" /> Nuevo experimento</Button></div>
-    {error && <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">{error}</div>}
-    {editing && <form onSubmit={submit} className="glass-card mb-6 space-y-5 p-5"><div className="flex items-center justify-between"><h2 className="font-semibold">{editing.id ? 'Editar experimento' : 'Nuevo experimento'}</h2><button type="button" onClick={() => setEditing(null)} aria-label="Cerrar"><X className="h-4 w-4" /></button></div>
-      <div className="grid gap-4 sm:grid-cols-2"><label className="text-sm font-medium">Título<input required value={editing.title ?? ''} onChange={(e) => update('title', e.target.value)} className={fieldClass} /></label><label className="text-sm font-medium">Slug<input value={editing.slug ?? ''} onChange={(e) => update('slug', e.target.value)} placeholder="Se genera del título" className={fieldClass} /></label></div>
-      <label className="block text-sm font-medium">Descripción corta<textarea required rows={2} value={editing.description ?? ''} onChange={(e) => update('description', e.target.value)} className={fieldClass} /></label>
-      <div className="grid gap-4 sm:grid-cols-2"><label className="text-sm font-medium">Imagen de portada<div className="flex gap-2"><input value={editing.coverImage ?? ''} onChange={(e) => update('coverImage', e.target.value)} placeholder="URL o sube una imagen" className={fieldClass} /><Button type="button" variant="outline" onClick={() => fileRef.current?.click()} disabled={uploading}><Upload className="h-4 w-4" />{uploading ? '...' : 'Subir'}</Button></div></label><div><span className="text-sm font-medium">Vista previa</span>{editing.coverImage && <img src={editing.coverImage} alt="Portada" className="mt-1 h-20 w-32 rounded object-cover" />}</div></div>
-      <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => e.target.files?.[0] && uploadCover(e.target.files[0])} />
-      <div className="grid gap-4 md:grid-cols-2"><label className="text-sm font-medium">Objetivo<textarea rows={3} value={editing.objective ?? ''} onChange={(e) => update('objective', e.target.value)} className={fieldClass} /></label><label className="text-sm font-medium">Hipótesis<textarea rows={3} value={editing.hypothesis ?? ''} onChange={(e) => update('hypothesis', e.target.value)} className={fieldClass} /></label><label className="text-sm font-medium">Entorno<textarea rows={3} value={editing.environment ?? ''} onChange={(e) => update('environment', e.target.value)} className={fieldClass} /></label><label className="text-sm font-medium">Procedimiento<textarea rows={3} value={editing.procedure ?? ''} onChange={(e) => update('procedure', e.target.value)} className={fieldClass} /></label></div>
-      <div className="grid gap-4 md:grid-cols-3"><label className="text-sm font-medium">Estado<select value={editing.status ?? 'IN_PROGRESS'} onChange={(e) => update('status', e.target.value)} className={fieldClass}>{Object.entries(STATUS_LABELS).map(([key, label]) => <option key={key} value={key}>{label}</option>)}</select></label><label className="text-sm font-medium">Inicio<input type="date" value={editing.startedAt?.slice(0, 10) ?? ''} onChange={(e) => update('startedAt', e.target.value)} className={fieldClass} /></label><label className="text-sm font-medium">Finalización<input type="date" value={editing.completedAt?.slice(0, 10) ?? ''} onChange={(e) => update('completedAt', e.target.value)} className={fieldClass} /></label></div>
-      <div className="grid gap-4 md:grid-cols-2"><label className="text-sm font-medium">Resultado<textarea rows={4} value={editing.result ?? ''} onChange={(e) => update('result', e.target.value)} className={fieldClass} /></label><label className="text-sm font-medium">Conclusión<textarea rows={4} value={editing.conclusion ?? ''} onChange={(e) => update('conclusion', e.target.value)} className={fieldClass} /></label></div>
-      <div className="grid gap-4 sm:grid-cols-2"><label className="text-sm font-medium">Stack / Tecnologías<input value={stackInput} onChange={(e) => setStackInput(e.target.value)} placeholder="Docker, Proxmox, PostgreSQL" className={fieldClass} /></label><label className="text-sm font-medium">Tags<input value={tagsInput} onChange={(e) => setTagsInput(e.target.value)} placeholder="virtualización, hardware" className={fieldClass} /></label></div>
-      <div className="flex gap-3"><Button type="submit" variant="accent" disabled={saving}><Save className="h-4 w-4" />{saving ? 'Guardando...' : editing.id ? 'Actualizar experimento' : 'Crear experimento'}</Button><Button type="button" variant="outline" onClick={() => setEditing(null)}>Cancelar</Button></div>
-    </form>}
-    {loading ? <div className="text-sm text-muted-foreground">Cargando...</div> : experiments.length === 0 ? <div className="rounded-xl border border-border bg-card/40 p-10 text-center text-muted-foreground">Aún no hay experimentos.</div> : <div className="space-y-3">{experiments.map((item) => <div key={item.id} className="glass-card flex items-center gap-4 p-4"><div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><span className="font-semibold">{item.title || 'Experimento legacy'}</span><span className="rounded-full bg-accent/10 px-2 py-0.5 text-xs text-accent">{STATUS_LABELS[item.status]}</span></div><p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{item.description}</p></div><div className="flex gap-2"><Button variant="outline" size="sm" onClick={() => edit(item)}><Pencil className="h-4 w-4" /> Editar</Button><Button variant="outline" size="sm" onClick={() => remove(item)} className="text-red-400"><Trash2 className="h-4 w-4" /> Quitar</Button></div></div>)}</div>}
-  </main></AdminAuthGuard>;
+  useEffect(() => {
+    load();
+  }, []);
+
+  const counts = useMemo(() => {
+    const result: Record<StatusFilter, number> = {
+      ALL: experiments.length,
+      IN_PROGRESS: 0,
+      SUCCESS: 0,
+      PARTIAL: 0,
+      FAILED: 0,
+      ABANDONED: 0,
+    };
+    for (const item of experiments) {
+      result[item.status] = (result[item.status] ?? 0) + 1;
+    }
+    return result;
+  }, [experiments]);
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return experiments.filter((item) => {
+      if (statusFilter !== 'ALL' && item.status !== statusFilter) return false;
+      if (!q) return true;
+      return (
+        item.title.toLowerCase().includes(q) ||
+        item.slug.toLowerCase().includes(q) ||
+        item.stack.some((tech) => tech.toLowerCase().includes(q)) ||
+        item.tags.some((tag) => tag.toLowerCase().includes(q))
+      );
+    });
+  }, [experiments, query, statusFilter]);
+
+  async function handleDelete(item: ApiLabExperiment) {
+    if (
+      !window.confirm(
+        `¿Eliminar el experimento "${item.title || 'sin título'}"? Esta acción no se puede deshacer.`,
+      )
+    )
+      return;
+    try {
+      await api.deleteLabExperiment(item.id);
+      await api.revalidateSite();
+      load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al eliminar');
+    }
+  }
+
+  async function handleDuplicate(item: ApiLabExperiment) {
+    try {
+      const payload: Partial<ApiLabExperiment> = {
+        title: `${item.title} (copia)`,
+        description: item.description,
+        content: item.content,
+        status: item.status,
+        published: false,
+        stack: item.stack,
+        tags: item.tags,
+        objective: item.objective,
+        hypothesis: item.hypothesis,
+        conclusion: item.conclusion,
+        coverImage: item.coverImage,
+        gallery: item.gallery,
+        startedAt: item.startedAt,
+        completedAt: item.completedAt,
+        videoUrl: item.videoUrl,
+        videoDuration: item.videoDuration,
+        chapters: item.chapters,
+      };
+      await api.createLabExperiment(payload);
+      load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al duplicar');
+    }
+  }
+
+  return (
+    <AdminAuthGuard>
+      <AdminSidebar />
+      <main className="flex-1 overflow-auto p-8">
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <Link
+              href="/admin"
+              className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-accent"
+            >
+              ← Dashboard
+            </Link>
+            <h1 className="mt-2 text-2xl font-bold">Experimentos del Lab</h1>
+            <p className="text-sm text-muted-foreground">
+              Cada experimento alimenta un video largo (10–20 min). Escribe el contenido con el
+              editor enriquecido y añade el video con capítulos.
+            </p>
+          </div>
+          <Button variant="accent" asChild>
+            <Link href="/admin/lab/new">
+              <Plus className="h-4 w-4" /> Nuevo experimento
+            </Link>
+          </Button>
+        </div>
+
+        {error && (
+          <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+            {error}
+          </div>
+        )}
+
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Buscar por título, stack o tag…"
+              className="w-72 rounded-lg border border-border bg-muted/50 py-2 pl-9 pr-3 text-sm focus:border-accent focus:outline-none"
+            />
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {(
+              ['ALL', 'IN_PROGRESS', 'SUCCESS', 'PARTIAL', 'FAILED', 'ABANDONED'] as StatusFilter[]
+            ).map((status) => (
+              <button
+                key={status}
+                type="button"
+                onClick={() => setStatusFilter(status)}
+                className={cn(
+                  'rounded-full border px-3 py-1 text-xs transition-colors',
+                  statusFilter === status
+                    ? 'border-accent/60 bg-accent/10 text-accent'
+                    : 'border-border text-muted-foreground hover:border-accent/40 hover:text-foreground',
+                )}
+              >
+                {status === 'ALL' ? 'Todos' : STATUS_META[status][0]}
+                <span className="ml-1.5 text-muted-foreground/70">{counts[status] ?? 0}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="text-sm text-muted-foreground">Cargando…</div>
+        ) : experiments.length === 0 ? (
+          <div className="rounded-xl border border-border bg-card/40 p-14 text-center">
+            <p className="text-muted-foreground">Aún no hay experimentos.</p>
+            <Button variant="accent" className="mt-4" asChild>
+              <Link href="/admin/lab/new">Documentar el primero</Link>
+            </Button>
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="rounded-xl border border-border bg-card/40 p-10 text-center text-sm text-muted-foreground">
+            Ningún experimento coincide con el filtro.
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filtered.map((item) => {
+              const [statusLabel, statusClass] = STATUS_META[item.status];
+              return (
+                <div key={item.id} className="glass-card flex items-center gap-4 p-4">
+                  {item.coverImage ? (
+                    <div className="relative h-14 w-24 shrink-0 overflow-hidden rounded-lg border border-border">
+                      <Image
+                        src={item.coverImage}
+                        alt={item.title || 'Portada'}
+                        fill
+                        className="object-cover"
+                        unoptimized
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex h-14 w-24 shrink-0 items-center justify-center rounded-lg border border-border bg-muted/40 text-2xl">
+                      🧪
+                    </div>
+                  )}
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Link
+                        href={`/admin/lab/${item.id}`}
+                        className="font-semibold hover:text-accent"
+                      >
+                        {item.title || 'Experimento legacy'}
+                      </Link>
+                      <span
+                        className={cn('rounded-full px-2 py-0.5 text-xs font-medium', statusClass)}
+                      >
+                        {statusLabel}
+                      </span>
+                      {!item.published && (
+                        <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                          Borrador
+                        </span>
+                      )}
+                      {item.videoUrl && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2 py-0.5 text-xs text-accent">
+                          <Video className="h-3 w-3" />
+                          {item.videoDuration ? `${item.videoDuration} min` : 'Video'}
+                        </span>
+                      )}
+                    </div>
+                    <p className="mt-1 line-clamp-1 font-mono text-xs text-muted-foreground">
+                      /lab/{item.slug}
+                    </p>
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Actualizado: {formatDate(item.updatedAt)}
+                    </p>
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
+                    {item.published && (
+                      <Button variant="outline" size="sm" asChild>
+                        <a href={`/lab/${item.slug}`} target="_blank" rel="noopener noreferrer">
+                          <ExternalLink className="h-4 w-4" /> Ver
+                        </a>
+                      </Button>
+                    )}
+                    <Button variant="outline" size="sm" asChild>
+                      <Link href={`/admin/lab/${item.id}`}>
+                        <Pencil className="h-4 w-4" /> Editar
+                      </Link>
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => handleDuplicate(item)}>
+                      <Copy className="h-4 w-4" /> Duplicar
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDelete(item)}
+                      className="text-red-400 hover:text-red-300"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </main>
+    </AdminAuthGuard>
+  );
 }

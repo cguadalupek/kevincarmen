@@ -52,6 +52,16 @@ enum ExperimentStatus {
   ABANDONED
 }
 
+enum ResourceType {
+  SCRIPT
+  TEMPLATE
+  DOCKER
+  CHECKLIST
+  GUIDE
+  DATASET
+  OTHER
+}
+
 enum TimelineEventType {
   EDUCATION
   WORK
@@ -355,6 +365,18 @@ model LabExperiment {
   completedAt     DateTime?        @map("completed_at")
   relatedPostId   String?          @map("related_post_id")
   relatedProjectId String?         @map("related_project_id")
+  /** Cuerpo del experimento en Markdown (editor enriquecido, mismo formato que los artículos). */
+  content         String           @default("")
+  /** Video largo (10-20 min) en YouTube que documenta el experimento. */
+  videoUrl        String?          @map("video_url")
+  /** Duración del video en minutos. */
+  videoDuration   Int?             @map("video_duration")
+  /** Capítulos del video: [{ time: "00:00", title: "..." }] (para la descripción de YouTube). */
+  chapters        Json             @default("[]")
+  /** Borrador/Publicado: solo los publicados aparecen en /lab. */
+  published       Boolean          @default(false)
+  /** Minutos de lectura estimados del cuerpo. */
+  readingTime     Int              @default(0) @map("reading_time")
   // Legacy columns are retained during the data migration and are no longer exposed by the API.
   name            String?
   icon            String?
@@ -364,7 +386,36 @@ model LabExperiment {
   updatedAt       DateTime         @updatedAt @map("updated_at")
 
   @@index([status, createdAt])
+  @@index([published, startedAt])
   @@map("lab_services")
+}
+
+/** Recurso descargable de la sección Recursos (scripts, plantillas, guías...). */
+model Resource {
+  id          String       @id @default(cuid())
+  title       String
+  slug        String       @unique
+  description String
+  type        ResourceType @default(OTHER)
+  /** URL pública del archivo subido o del enlace externo. */
+  fileUrl     String?      @map("file_url")
+  /** Nombre original del archivo (para la descarga). */
+  fileName    String?      @map("file_name")
+  /** Tamaño en bytes. */
+  fileSize    Int?         @map("file_size")
+  /** Versión del recurso (opcional). */
+  version     String?
+  tags        String[]
+  published   Boolean      @default(true)
+  featured    Boolean      @default(false)
+  position    Int          @default(0)
+  /** Contador de descargas (se incrementa en el endpoint público). */
+  downloads   Int          @default(0)
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  @@index([published, position])
+  @@map("resources")
 }
 
 model Media {

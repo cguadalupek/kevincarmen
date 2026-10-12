@@ -18,8 +18,13 @@ import { PrismaService } from '../prisma/prisma.service';
 const UPLOAD_DIR =
   process.env.UPLOAD_DIR ?? join(process.cwd(), '..', 'web', 'public', 'uploads', 'posts');
 
+const RESOURCE_DIR = join(UPLOAD_DIR, 'recursos');
+
 if (!existsSync(UPLOAD_DIR)) {
   mkdirSync(UPLOAD_DIR, { recursive: true });
+}
+if (!existsSync(RESOURCE_DIR)) {
+  mkdirSync(RESOURCE_DIR, { recursive: true });
 }
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
@@ -28,13 +33,18 @@ const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 function isAllowedImage(buffer: Buffer): boolean {
   if (buffer.length < 12) return false;
   // PNG: 89 50 4E 47 0D 0A 1A 0A
-  if (buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return true;
+  if (buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a])))
+    return true;
   // JPEG: FF D8 FF
   if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) return true;
   // GIF: GIF87a / GIF89a
   if (buffer.subarray(0, 4).toString('ascii') === 'GIF8') return true;
   // WebP: RIFF .... WEBP
-  if (buffer.subarray(0, 4).toString('ascii') === 'RIFF' && buffer.subarray(8, 12).toString('ascii') === 'WEBP') return true;
+  if (
+    buffer.subarray(0, 4).toString('ascii') === 'RIFF' &&
+    buffer.subarray(8, 12).toString('ascii') === 'WEBP'
+  )
+    return true;
   return false;
 }
 
@@ -100,5 +110,35 @@ export class MediaController {
     });
 
     return { url, filename: file.filename };
+  }
+
+  /**
+   * POST /media/upload-file — subida de archivos genéricos para la sección
+   * Recursos (scripts, plantillas, PDFs, comprimidos...). Sin validación de
+   * magic bytes porque el tipo no es restringido; límite de 25 MB.
+   */
+  @Post('upload-file')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 25 * 1024 * 1024 },
+      storage: diskStorage({
+        destination: RESOURCE_DIR,
+        filename: (_req, file, cb) => {
+          const ext = extname(file.originalname).toLowerCase() || '.bin';
+          cb(null, `${randomUUID()}${ext}`);
+        },
+      }),
+    }),
+  )
+  async uploadFile(@UploadedFile() file: Express.Multer.File) {
+    if (!file) throw new BadRequestException('No se recibió ningún archivo');
+    const url = `/uploads/recursos/${file.filename}`;
+    return {
+      url,
+      fileName: file.originalname,
+      size: file.size,
+      mimeType: file.mimetype,
+    };
   }
 }

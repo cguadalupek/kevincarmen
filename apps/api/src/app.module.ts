@@ -14,6 +14,7 @@ import { LabModule } from './lab/lab.module';
 import { SettingsModule } from './settings/settings.module';
 import { TimelineModule } from './timeline/timeline.module';
 import { ProjectsModule } from './projects/projects.module';
+import { ResourcesModule } from './resources/resources.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { ProjectsModule } from './projects/projects.module';
     VideosModule,
     CoursesModule,
     LabModule,
+    ResourcesModule,
     SettingsModule,
     TimelineModule,
     ProjectsModule,

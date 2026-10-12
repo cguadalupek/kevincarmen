@@ -204,6 +204,39 @@ export interface ApiLabExperiment {
   completedAt: string | null;
   relatedPostId: string | null;
   relatedProjectId: string | null;
+  /** Cuerpo en Markdown (editor enriquecido). */
+  content: string;
+  /** Video largo que documenta el experimento. */
+  videoUrl: string | null;
+  /** Duración del video en minutos. */
+  videoDuration: number | null;
+  /** Capítulos del video: [{ time, title }]. */
+  chapters: { time: string; title: string }[];
+  /** Borrador/Publicado: solo los publicados salen en /lab. */
+  published: boolean;
+  readingTime: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type ApiResourceType =
+  'SCRIPT' | 'TEMPLATE' | 'DOCKER' | 'CHECKLIST' | 'GUIDE' | 'DATASET' | 'OTHER';
+
+export interface ApiResource {
+  id: string;
+  title: string;
+  slug: string;
+  description: string;
+  type: ApiResourceType;
+  fileUrl: string | null;
+  fileName: string | null;
+  fileSize: number | null;
+  version: string | null;
+  tags: string[];
+  published: boolean;
+  featured: boolean;
+  position: number;
+  downloads: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -344,27 +377,36 @@ export const api = {
     apiFetch<{ success: boolean }>(`/videos/${id}`, { method: 'DELETE' }),
 
   getCourses: () => apiFetch<ApiCourse[]>('/courses/admin/all'),
-    getCourseAdmin: (id: string) => apiFetch<ApiCourse>(`/courses/admin/${id}`),
-    createCourse: (data: Partial<ApiCourse>) =>
-      apiFetch<ApiCourse>('/courses', { method: 'POST', body: JSON.stringify(data) }),
-    updateCourse: (id: string, data: Partial<ApiCourse>) =>
-      apiFetch<ApiCourse>(`/courses/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-    /** Guarda el árbol completo (módulos + clases) en una sola llamada. */
-        saveCourseCurriculum: (id: string, modules: SaveCurriculumModule[]) =>
-          apiFetch<ApiCourse>(`/courses/${id}/curriculum`, {
-            method: 'PUT',
-            body: JSON.stringify({ modules }),
-          }),
-    deleteCourse: (id: string) =>
-      apiFetch<{ success: boolean }>(`/courses/${id}`, { method: 'DELETE' }),
+  getCourseAdmin: (id: string) => apiFetch<ApiCourse>(`/courses/admin/${id}`),
+  createCourse: (data: Partial<ApiCourse>) =>
+    apiFetch<ApiCourse>('/courses', { method: 'POST', body: JSON.stringify(data) }),
+  updateCourse: (id: string, data: Partial<ApiCourse>) =>
+    apiFetch<ApiCourse>(`/courses/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  /** Guarda el árbol completo (módulos + clases) en una sola llamada. */
+  saveCourseCurriculum: (id: string, modules: SaveCurriculumModule[]) =>
+    apiFetch<ApiCourse>(`/courses/${id}/curriculum`, {
+      method: 'PUT',
+      body: JSON.stringify({ modules }),
+    }),
+  deleteCourse: (id: string) =>
+    apiFetch<{ success: boolean }>(`/courses/${id}`, { method: 'DELETE' }),
 
   getLabExperiments: () => apiFetch<ApiLabExperiment[]>('/lab/admin/all'),
+  getLabExperiment: (id: string) => apiFetch<ApiLabExperiment>(`/lab/admin/${id}`),
   createLabExperiment: (data: Partial<ApiLabExperiment>) =>
     apiFetch<ApiLabExperiment>('/lab', { method: 'POST', body: JSON.stringify(data) }),
   updateLabExperiment: (id: string, data: Partial<ApiLabExperiment>) =>
     apiFetch<ApiLabExperiment>(`/lab/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteLabExperiment: (id: string) =>
     apiFetch<{ success: boolean }>(`/lab/${id}`, { method: 'DELETE' }),
+
+  getResources: () => apiFetch<ApiResource[]>('/resources/admin/all'),
+  createResource: (data: Partial<ApiResource>) =>
+    apiFetch<ApiResource>('/resources', { method: 'POST', body: JSON.stringify(data) }),
+  updateResource: (id: string, data: Partial<ApiResource>) =>
+    apiFetch<ApiResource>(`/resources/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteResource: (id: string) =>
+    apiFetch<{ success: boolean }>(`/resources/${id}`, { method: 'DELETE' }),
 
   getProjects: () => apiFetch<ApiProject[]>('/projects/admin/all'),
   createProject: (data: Partial<ApiProject>) =>
@@ -420,6 +462,26 @@ export const api = {
 
     if (!res.ok) {
       const error = await res.json().catch(() => ({ message: 'Error al subir imagen' }));
+      throw new Error(error.message ?? `Error ${res.status}`);
+    }
+
+    return res.json();
+  },
+
+  /** Sube un archivo genérico (scripts, plantillas, PDFs...) para la sección Recursos. */
+  uploadFile: async (file: File): Promise<{ url: string; fileName: string; size: number }> => {
+    const token = getToken();
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const res = await fetch(`${API_URL}/media/upload-file`, {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : {},
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const error = await res.json().catch(() => ({ message: 'Error al subir archivo' }));
       throw new Error(error.message ?? `Error ${res.status}`);
     }
 

@@ -1,5 +1,16 @@
 import { ExperimentStatus } from '@prisma/client';
-import { IsArray, IsDateString, IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsArray,
+  IsBoolean,
+  IsDateString,
+  IsEnum,
+  IsInt,
+  IsOptional,
+  IsString,
+  MaxLength,
+  Min,
+} from 'class-validator';
+import { ChapterDto } from './create-lab.dto';
 
 export class UpdateLabDto {
   @IsOptional() @IsString() @MaxLength(160) title?: string;
@@ -20,4 +31,10 @@ export class UpdateLabDto {
   @IsOptional() @IsDateString() completedAt?: string;
   @IsOptional() @IsString() relatedPostId?: string;
   @IsOptional() @IsString() relatedProjectId?: string;
+
+  @IsOptional() @IsString() content?: string;
+  @IsOptional() @IsString() videoUrl?: string;
+  @IsOptional() @IsInt() @Min(1) videoDuration?: number;
+  @IsOptional() @IsArray() chapters?: ChapterDto[];
+  @IsOptional() @IsBoolean() published?: boolean;
 }

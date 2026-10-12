@@ -18,11 +18,14 @@ export async function POST(request: NextRequest) {
   revalidateTag(TIMELINE_CACHE_TAG);
   revalidatePath('/', 'layout');
   revalidatePath('/blog');
+  revalidatePath('/lab');
+  revalidatePath('/recursos');
   revalidatePath('/feed.xml');
   revalidatePath('/sitemap.xml');
 
   if (slug) {
     revalidatePath(`/blog/${slug}`);
+    revalidatePath(`/lab/${slug}`);
   }
 
   return NextResponse.json({ revalidated: true, now: Date.now() });

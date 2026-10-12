@@ -9,17 +9,19 @@ export interface PublicLabExperiment {
   description: string;
   objective: string | null;
   hypothesis: string | null;
-  environment: string | null;
-  procedure: string | null;
-  status: ExperimentStatus;
-  result: string | null;
   conclusion: string | null;
+  status: ExperimentStatus;
   stack: string[];
   tags: string[];
   coverImage: string | null;
   gallery: string[];
   startedAt: string | null;
   completedAt: string | null;
+  content: string;
+  videoUrl: string | null;
+  videoDuration: number | null;
+  chapters: { time: string; title: string }[];
+  readingTime: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -30,7 +32,7 @@ async function fetchLab(path: string): Promise<PublicLabExperiment | PublicLabEx
   return response.json();
 }
 
-export async function getLabExperiments() {
+export async function getLabExperiments(): Promise<PublicLabExperiment[]> {
   const data = await fetchLab('/lab');
   return Array.isArray(data) ? data : [];
 }
