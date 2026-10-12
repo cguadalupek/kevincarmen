@@ -18,6 +18,9 @@ UPDATE "lab_services" SET "content" = trim(concat_ws(E'\n\n',
 -- Los experimentos existentes ya estaban visibles en /lab.
 UPDATE "lab_services" SET "published" = true;
 
+-- Tiempo de lectura estimado de los cuerpos ya existentes.
+UPDATE "lab_services" SET "reading_time" = GREATEST(1, CEIL((length("content") - length(regexp_replace("content", '[[:space:]]+', '', 'g')) + 1)::numeric / 200)::int) WHERE "content" <> '' AND "reading_time" = 0;
+
 -- Recursos descargables
 CREATE TYPE "ResourceType" AS ENUM ('SCRIPT', 'TEMPLATE', 'DOCKER', 'CHECKLIST', 'GUIDE', 'DATASET', 'OTHER');
 
