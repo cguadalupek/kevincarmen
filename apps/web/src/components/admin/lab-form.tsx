@@ -13,6 +13,7 @@ import {
   FileText,
   ImageIcon,
   ListVideo,
+  FolderKanban,
   Plus,
   Save,
   Trash2,
@@ -111,6 +112,31 @@ export function LabForm({ experiment }: LabFormProps) {
   );
   const [chapters, setChapters] = useState<Chapter[]>(experiment?.chapters ?? []);
   const [copiedChapters, setCopiedChapters] = useState(false);
+
+  // ── Contenido relacionado ──
+  const [relatedPostId, setRelatedPostId] = useState(experiment?.relatedPostId ?? '');
+  const [relatedProjectId, setRelatedProjectId] = useState(experiment?.relatedProjectId ?? '');
+  const [postOptions, setPostOptions] = useState<{ id: string; title: string; status: string }[]>([]);
+  const [projectOptions, setProjectOptions] = useState<{ id: string; title: string }[]>([]);
+
+  useEffect(() => {
+    api
+      .getPosts()
+      .then((posts) =>
+        setPostOptions(
+          posts
+            .filter((post) => post.status === 'PUBLISHED')
+            .sort((a, b) => (b.publishedAt ?? '').localeCompare(a.publishedAt ?? '')),
+        ),
+      )
+      .catch(() => undefined);
+    api
+      .getProjects()
+      .then((projects) =>
+        setProjectOptions(projects.filter((project) => project.status !== 'ARCHIVED')),
+      )
+      .catch(() => undefined);
+  }, []);
 
   // ── Media ──
   const [coverImage, setCoverImage] = useState(experiment?.coverImage ?? '');
@@ -232,6 +258,8 @@ export function LabForm({ experiment }: LabFormProps) {
       videoUrl: videoUrl.trim() || null,
       videoDuration: videoDuration.trim() ? Number.parseInt(videoDuration, 10) || null : null,
       chapters,
+      relatedPostId: relatedPostId || null,
+      relatedProjectId: relatedProjectId || null,
     };
 
     try {
@@ -593,6 +621,45 @@ export function LabForm({ experiment }: LabFormProps) {
               onChange={setTags}
               placeholder="homelab, virtualización…"
             />
+          </div>
+
+          <div className="glass-card space-y-3 p-5">
+            <h3 className="flex items-center gap-2">
+              <FolderKanban className="h-4 w-4 text-accent" /> Contenido relacionado
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Aparece como enlace al final del experimento en /lab.
+            </p>
+            <label className="block text-sm font-medium">
+              Artículo del blog
+              <select
+                value={relatedPostId}
+                onChange={(e) => setRelatedPostId(e.target.value)}
+                className={cn(fieldClass, 'mt-1')}
+              >
+                <option value="">Sin artículo</option>
+                {postOptions.map((post) => (
+                  <option key={post.id} value={post.id}>
+                    {post.title}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="block text-sm font-medium">
+              Proyecto
+              <select
+                value={relatedProjectId}
+                onChange={(e) => setRelatedProjectId(e.target.value)}
+                className={cn(fieldClass, 'mt-1')}
+              >
+                <option value="">Sin proyecto</option>
+                {projectOptions.map((project) => (
+                  <option key={project.id} value={project.id}>
+                    {project.title}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
 
           <div className="glass-card space-y-3 p-5">

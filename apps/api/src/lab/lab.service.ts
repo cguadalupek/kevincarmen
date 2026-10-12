@@ -71,27 +71,70 @@ export class LabService {
   constructor(private prisma: PrismaService) {}
 
   async findAllAdmin() {
-    return this.prisma.labExperiment.findMany({ orderBy: { createdAt: 'desc' } });
+    return this.withRelated(
+      await this.prisma.labExperiment.findMany({ orderBy: { createdAt: 'desc' } }),
+    );
   }
 
   /** Solo experimentos publicados, el más reciente primero (por fecha de inicio). */
   async findPublished() {
-    return this.prisma.labExperiment.findMany({
-      where: { published: true },
-      orderBy: [{ startedAt: 'desc' }, { createdAt: 'desc' }],
+    return this.withRelated(
+      await this.prisma.labExperiment.findMany({
+        where: { published: true },
+        orderBy: [{ startedAt: 'desc' }, { createdAt: 'desc' }],
+      }),
+    );
+  }
+
+  /** Resuelve los ids de contenido relacionado a sus resúmenes públicos. */
+  private async withRelated<
+    T extends { relatedPostId: string | null; relatedProjectId: string | null },
+  >(items: T[]) {
+    if (items.length === 0) return items;
+    const postIds = items
+      .map((item) => item.relatedPostId)
+      .filter((id): id is string => Boolean(id));
+    const projectIds = items
+      .map((item) => item.relatedProjectId)
+      .filter((id): id is string => Boolean(id));
+
+    const [posts, projects] = await Promise.all([
+      postIds.length
+        ? this.prisma.post.findMany({
+            where: { id: { in: postIds }, status: 'PUBLISHED' },
+            select: { id: true, title: true, slug: true, coverImage: true, publishedAt: true },
+          })
+        : Promise.resolve([]),
+      projectIds.length
+        ? this.prisma.project.findMany({
+            where: { id: { in: projectIds }, status: { not: 'ARCHIVED' } },
+            select: { id: true, title: true, slug: true, coverImage: true },
+          })
+        : Promise.resolve([]),
+    ]);
+
+    const postIndex = new Map(posts.map((post) => [post.id, post]));
+    const projectIndex = new Map(projects.map((project) => [project.id, project]));
+
+    return items.map((item) => {
+      const relatedPost = item.relatedPostId ? postIndex.get(item.relatedPostId) ?? null : null;
+      const relatedProject = item.relatedProjectId
+        ? projectIndex.get(item.relatedProjectId) ?? null
+        : null;
+      return { ...item, relatedPost, relatedProject };
     });
   }
 
   async findById(id: string) {
     const item = await this.prisma.labExperiment.findUnique({ where: { id } });
     if (!item) throw new NotFoundException('Experimento no encontrado');
-    return item;
+    return (await this.withRelated([item]))[0];
   }
 
   async findBySlug(slug: string) {
     const item = await this.prisma.labExperiment.findUnique({ where: { slug } });
     if (!item || !item.published) throw new NotFoundException('Experimento no encontrado');
-    return item;
+    return (await this.withRelated([item]))[0];
   }
 
   async create(dto: CreateLabDto) {

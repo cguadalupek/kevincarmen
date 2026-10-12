@@ -215,6 +215,19 @@ export interface ApiLabExperiment {
   /** Borrador/Publicado: solo los publicados salen en /lab. */
   published: boolean;
   readingTime: number;
+  /** Contenido relacionado resuelto por el API (solo público). */
+  relatedPost: {
+    id: string;
+    title: string;
+    slug: string;
+    coverImage: string | null;
+  } | null;
+  relatedProject: {
+    id: string;
+    title: string;
+    slug: string;
+    coverImage: string | null;
+  } | null;
   createdAt: string;
   updatedAt: string;
 }

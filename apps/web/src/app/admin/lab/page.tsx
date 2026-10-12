@@ -106,6 +106,8 @@ export default function AdminLabPage() {
         videoUrl: item.videoUrl,
         videoDuration: item.videoDuration,
         chapters: item.chapters,
+        relatedPostId: item.relatedPostId,
+        relatedProjectId: item.relatedProjectId,
       };
       await api.createLabExperiment(payload);
       load();

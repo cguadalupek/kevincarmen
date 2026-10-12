@@ -6,7 +6,9 @@ import {
   ArrowLeft,
   Calendar,
   Clock,
+  FileText,
   FlaskConical,
+  FolderKanban,
   Play,
   Target,
   Lightbulb,
@@ -227,6 +229,72 @@ export default async function LabExperimentPage({ params }: Props) {
                   />
                 </div>
               ))}
+            </div>
+          </section>
+        )}
+
+        {(experiment.relatedPost || experiment.relatedProject) && (
+          <section className="mt-12 border-t border-border pt-8">
+            <h2 className="mb-4 font-mono text-sm uppercase tracking-wider text-accent">
+              Sigue explorando
+            </h2>
+            <div className="grid gap-4 sm:grid-cols-2">
+              {experiment.relatedPost && (
+                <Link
+                  href={`/blog/${experiment.relatedPost.slug}`}
+                  className="glass-card group flex items-center gap-4 p-5 transition hover:-translate-y-0.5 hover:border-accent/50"
+                >
+                  {experiment.relatedPost.coverImage ? (
+                    <div className="relative h-16 w-24 shrink-0 overflow-hidden rounded-lg border border-border">
+                      <Image
+                        src={experiment.relatedPost.coverImage}
+                        alt={experiment.relatedPost.title}
+                        fill
+                        className="object-cover"
+                        unoptimized
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex h-16 w-24 shrink-0 items-center justify-center rounded-lg border border-border bg-muted/40">
+                      <FileText className="h-6 w-6 text-accent/60" />
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="font-mono text-xs text-muted-foreground">Artículo · /blog</p>
+                    <p className="mt-1 line-clamp-2 font-semibold transition group-hover:text-accent">
+                      {experiment.relatedPost.title}
+                    </p>
+                  </div>
+                </Link>
+              )}
+              {experiment.relatedProject && (
+                <Link
+                  href={`/proyectos/${experiment.relatedProject.slug}`}
+                  className="glass-card group flex items-center gap-4 p-5 transition hover:-translate-y-0.5 hover:border-accent/50"
+                >
+                  {experiment.relatedProject.coverImage ? (
+                    <div className="relative h-16 w-24 shrink-0 overflow-hidden rounded-lg border border-border">
+                      <Image
+                        src={experiment.relatedProject.coverImage}
+                        alt={experiment.relatedProject.title}
+                        fill
+                        className="object-cover"
+                        unoptimized
+                      />
+                    </div>
+                  ) : (
+                    <div className="flex h-16 w-24 shrink-0 items-center justify-center rounded-lg border border-border bg-muted/40">
+                      <FolderKanban className="h-6 w-6 text-accent/60" />
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="font-mono text-xs text-muted-foreground">Proyecto · /proyectos</p>
+                    <p className="mt-1 line-clamp-2 font-semibold transition group-hover:text-accent">
+                      {experiment.relatedProject.title}
+                    </p>
+                  </div>
+                </Link>
+              )}
             </div>
           </section>
         )}

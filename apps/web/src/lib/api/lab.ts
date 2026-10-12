@@ -22,6 +22,18 @@ export interface PublicLabExperiment {
   videoDuration: number | null;
   chapters: { time: string; title: string }[];
   readingTime: number;
+  relatedPost: {
+    id: string;
+    title: string;
+    slug: string;
+    coverImage: string | null;
+  } | null;
+  relatedProject: {
+    id: string;
+    title: string;
+    slug: string;
+    coverImage: string | null;
+  } | null;
   createdAt: string;
   updatedAt: string;
 }
