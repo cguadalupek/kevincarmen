@@ -4,10 +4,11 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  Clock,
   ChevronDown,
   ChevronRight,
+  Clock,
   Download,
+  ExternalLink,
   FileText,
   FlaskConical,
   FolderOpen,
@@ -16,9 +17,9 @@ import {
   LayoutDashboard,
   LogOut,
   Settings,
-  Tags,
   User,
   Video,
+  X,
 } from 'lucide-react';
 import { Logo } from '@/components/brand/logo';
 import { clearToken } from '@/lib/api/client';
@@ -60,7 +61,21 @@ const navItems: NavItem[] = [
   { label: 'Configuración', href: '/admin/settings', icon: Settings },
 ];
 
-export function AdminSidebar() {
+/** Área mínima de toque recomendada en pantallas táctiles. */
+const TOUCH_TARGET = 'min-h-[44px]';
+
+interface AdminSidebarPanelProps {
+  /** Se ejecuta al navegar (usado para cerrar el drawer en móvil). */
+  onNavigate?: () => void;
+  /** Si se pasa, muestra el botón de cierre (solo en el drawer móvil). */
+  onClose?: () => void;
+}
+
+/**
+ * Contenido del panel de navegación del admin. Se reutiliza tal cual en el
+ * sidebar fijo de escritorio y en el drawer deslizante de móvil.
+ */
+export function AdminSidebarPanel({ onNavigate, onClose }: AdminSidebarPanelProps) {
   const pathname = usePathname();
   const router = useRouter();
 
@@ -84,6 +99,7 @@ export function AdminSidebar() {
   function rowClass(active: boolean) {
     return cn(
       'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors',
+      TOUCH_TARGET,
       active
         ? 'bg-primary/20 text-accent'
         : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground',
@@ -91,23 +107,49 @@ export function AdminSidebar() {
   }
 
   return (
-    <aside className="flex w-64 shrink-0 flex-col border-r border-border bg-card/50">
-      <div className="border-b border-border p-5">
-        <Link href="/admin">
-          <Logo size={32} showText />
-        </Link>
-        <p className="mt-2 font-mono text-xs text-muted-foreground">CMS · Panel admin</p>
+    <>
+      <div className="flex items-start justify-between gap-2 border-b border-border p-5">
+        <div className="min-w-0">
+          <Link
+            href="/admin"
+            onClick={onNavigate}
+            className={cn('inline-flex items-center', TOUCH_TARGET)}
+          >
+            <Logo size={32} showText />
+          </Link>
+          <p className="font-mono text-xs text-muted-foreground">CMS · Panel admin</p>
+        </div>
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Cerrar menú"
+            className={cn(
+              'inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-muted-foreground',
+              'hover:bg-muted/60 hover:text-foreground',
+            )}
+          >
+            <X className="h-5 w-5" />
+          </button>
+        )}
       </div>
 
-      <nav className="flex-1 space-y-1 p-3">
+      <nav
+        className="flex-1 space-y-1 overflow-y-auto overscroll-contain p-3"
+        aria-label="Navegación del panel"
+      >
         {navItems.map((item) => {
           const Icon = item.icon;
+          const active = isActive(item.href);
 
           if (item.disabled) {
             return (
               <span
                 key={item.href}
-                className="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted-foreground/50"
+                className={cn(
+                  'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted-foreground/50',
+                  TOUCH_TARGET,
+                )}
               >
                 <Icon className="h-4 w-4" />
                 {item.label}
@@ -121,9 +163,10 @@ export function AdminSidebar() {
             const childActive = item.children.some((child) => isActive(child.href));
             return (
               <div key={item.href}>
-                <div className="flex items-center">
+                <div className="flex items-center gap-1">
                   <Link
                     href={item.href}
+                    aria-current={active ? 'page' : undefined}
                     onClick={(e) => {
                       if (childActive) {
                         e.preventDefault();
@@ -131,17 +174,19 @@ export function AdminSidebar() {
                         return;
                       }
                       setExpanded(item.href);
+                      onNavigate?.();
                     }}
                     className={cn(rowClass(childActive), 'flex-1')}
                   >
-                    <Icon className="h-4 w-4" />
+                    <Icon className="h-4 w-4 shrink-0" />
                     {item.label}
                   </Link>
                   <button
                     type="button"
                     onClick={() => setExpanded(open ? null : item.href)}
-                    aria-label={open ? 'Contraer' : 'Desplegar'}
-                    className="mr-1 rounded-md p-2 text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                    aria-label={open ? 'Contraer submenú' : 'Desplegar submenú'}
+                    aria-expanded={open}
+                    className="inline-flex h-11 w-9 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/60 hover:text-foreground"
                   >
                     {open ? (
                       <ChevronDown className="h-4 w-4" />
@@ -151,13 +196,16 @@ export function AdminSidebar() {
                   </button>
                 </div>
                 {open && (
-                  <div className="ml-4 mt-1 space-y-0.5 border-l border-border/60 pl-3">
+                  <div className="mt-1 space-y-0.5 border-l border-border/60 pl-3 ml-4">
                     {item.children.map((child) => (
                       <Link
                         key={child.href}
                         href={child.href}
+                        onClick={onNavigate}
+                        aria-current={isActive(child.href) ? 'page' : undefined}
                         className={cn(
-                          'block rounded-md px-3 py-2 text-sm transition-colors',
+                          'flex items-center rounded-md px-3 py-2 text-sm transition-colors',
+                          TOUCH_TARGET,
                           isActive(child.href)
                             ? 'bg-primary/15 text-accent'
                             : 'text-muted-foreground hover:text-foreground',
@@ -173,8 +221,14 @@ export function AdminSidebar() {
           }
 
           return (
-            <Link key={item.href} href={item.href} className={rowClass(isActive(item.href))}>
-              <Icon className="h-4 w-4" />
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={onNavigate}
+              aria-current={active ? 'page' : undefined}
+              className={rowClass(active)}
+            >
+              <Icon className="h-4 w-4 shrink-0" />
               {item.label}
             </Link>
           );
@@ -184,19 +238,28 @@ export function AdminSidebar() {
       <div className="border-t border-border p-3">
         <Link
           href="/"
-          className="mb-2 block rounded-lg px-3 py-2 text-sm text-muted-foreground hover:text-accent"
+          target="_blank"
+          rel="noreferrer"
+          className={cn(
+            'mb-1 flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted/50 hover:text-accent',
+            TOUCH_TARGET,
+          )}
         >
-          ← Ver sitio público
+          <ExternalLink className="h-4 w-4 shrink-0" />
+          Ver sitio público
         </Link>
         <button
           type="button"
           onClick={logout}
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+          className={cn(
+            'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted-foreground hover:bg-muted/50 hover:text-foreground',
+            TOUCH_TARGET,
+          )}
         >
-          <LogOut className="h-4 w-4" />
+          <LogOut className="h-4 w-4 shrink-0" />
           Cerrar sesión
         </button>
       </div>
-    </aside>
+    </>
   );
 }
