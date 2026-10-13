@@ -12,10 +12,12 @@ import {
   FlaskConical,
   FolderOpen,
   GraduationCap,
+  Home,
   LayoutDashboard,
   LogOut,
   Settings,
   Tags,
+  User,
   Video,
 } from 'lucide-react';
 import { Logo } from '@/components/brand/logo';
@@ -38,6 +40,8 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { label: 'Dashboard', href: '/admin', icon: LayoutDashboard },
+  { label: 'Inicio', href: '/admin/inicio', icon: Home },
+  { label: 'Sobre mí', href: '/admin/sobre-mi', icon: User },
   {
     label: 'Artículos',
     href: '/admin/posts',

@@ -464,3 +464,31 @@ model TimelineEvent {
   @@index([position, createdAt])
   @@map("timeline_events")
 }
+
+/// Categoría del grid de tecnologías del inicio (FRONTEND, BACKEND, DEVOPS, ...).
+/// Se crea y edita desde el CMS; los ítems cuelgan de ella con orden propio.
+model TechCategory {
+  id        String     @id @default(cuid())
+  name      String
+  position  Int        @default(0)
+  items     TechItem[]
+  createdAt DateTime   @default(now()) @map("created_at")
+  updatedAt DateTime   @updatedAt @map("updated_at")
+
+  @@index([position])
+  @@map("tech_categories")
+}
+
+/// Tecnología individual dentro de una categoría (Next.js, Docker, Proxmox, ...).
+model TechItem {
+  id         String       @id @default(cuid())
+  name       String
+  position   Int          @default(0)
+  categoryId String       @map("category_id")
+  category   TechCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  createdAt  DateTime     @default(now()) @map("created_at")
+  updatedAt  DateTime     @updatedAt @map("updated_at")
+
+  @@index([categoryId, position])
+  @@map("tech_items")
+}

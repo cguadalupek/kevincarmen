@@ -2,13 +2,13 @@
 
 import Link from 'next/link';
 import { ArrowRight, Sparkles } from 'lucide-react';
-import { siteConfig } from '@kevincarmen/config';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/brand/logo';
 import { AnimatedRoles } from '@/components/home/animated-roles';
 import { FadeIn } from '@/components/motion/fade-in';
+import type { SiteHero } from '@/lib/api/site';
 
-export function HeroSection() {
+export function HeroSection({ hero }: { hero: SiteHero }) {
   return (
     <section className="relative overflow-hidden py-24 sm:py-32">
       <div
@@ -25,20 +25,19 @@ export function HeroSection() {
 
             <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-border bg-muted/50 px-4 py-1.5 text-sm text-muted-foreground">
               <Sparkles className="h-3.5 w-3.5 text-accent" />
-              {siteConfig.tagline}
+              {hero.tagline}
             </div>
 
             <h1 className="text-4xl font-bold tracking-tight sm:text-6xl lg:text-7xl">
-              {siteConfig.name}
+              {hero.name}
             </h1>
 
             <div className="mt-4">
-              <AnimatedRoles />
+              <AnimatedRoles roles={hero.roles} />
             </div>
 
             <p className="mt-6 max-w-2xl text-lg text-muted-foreground sm:text-xl">
-              Desarrollo software, administro infraestructura, enseño tecnología y creo contenido.
-              Construyendo soluciones que escalan.
+              {hero.description}
             </p>
 
             <div className="mt-10 flex flex-wrap items-center justify-center gap-4">

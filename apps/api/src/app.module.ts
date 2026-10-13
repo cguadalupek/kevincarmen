@@ -13,6 +13,7 @@ import { CoursesModule } from './courses/courses.module';
 import { LabModule } from './lab/lab.module';
 import { SettingsModule } from './settings/settings.module';
 import { TimelineModule } from './timeline/timeline.module';
+import { SiteModule } from './site/site.module';
 import { ProjectsModule } from './projects/projects.module';
 import { ResourcesModule } from './resources/resources.module';
 
@@ -36,6 +37,7 @@ import { ResourcesModule } from './resources/resources.module';
     ResourcesModule,
     SettingsModule,
     TimelineModule,
+    SiteModule,
     ProjectsModule,
   ],
   controllers: [AppController],

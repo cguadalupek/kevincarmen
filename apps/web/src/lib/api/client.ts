@@ -286,15 +286,49 @@ export interface ApiProject {
   updatedAt: string;
 }
 
+export type TimelineEventTypeValue = 'EDUCATION' | 'WORK' | 'PROJECT' | 'ACHIEVEMENT';
+
 export interface ApiTimelineEvent {
   id: string;
   year: string;
   title: string;
   description: string;
-  type: 'EDUCATION' | 'WORK' | 'PROJECT' | 'ACHIEVEMENT';
+  type: TimelineEventTypeValue;
   position: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ApiSiteHero {
+  name: string;
+  tagline: string;
+  roles: string[];
+  description: string;
+}
+
+export interface ApiSiteAbout {
+  bio: string[];
+  expertise: string[];
+  nowTitle: string;
+  nowItems: string[];
+}
+
+export interface ApiSiteContent {
+  hero: ApiSiteHero;
+  about: ApiSiteAbout;
+}
+
+export interface ApiTechItem {
+  id: string;
+  name: string;
+  position: number;
+}
+
+export interface ApiTechCategory {
+  id: string;
+  name: string;
+  position: number;
+  items: ApiTechItem[];
 }
 
 export const api = {
@@ -441,6 +475,34 @@ export const api = {
     apiFetch<Record<string, string>>('/settings', {
       method: 'PUT',
       body: JSON.stringify({ settings }),
+    }),
+
+  getSiteContent: () => apiFetch<ApiSiteContent>('/site'),
+  saveSiteContent: (data: Partial<ApiSiteContent>) =>
+    apiFetch<ApiSiteContent>('/site', { method: 'PUT', body: JSON.stringify(data) }),
+  getTech: () => apiFetch<ApiTechCategory[]>('/tech'),
+  createTechCategory: (name: string) =>
+    apiFetch<ApiTechCategory>('/tech/categories', {
+      method: 'POST',
+      body: JSON.stringify({ name }),
+    }),
+  updateTechCategory: (id: string, name: string) =>
+    apiFetch<ApiTechCategory>(`/tech/categories/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify({ name }),
+    }),
+  deleteTechCategory: (id: string) =>
+    apiFetch<{ success: boolean }>(`/tech/categories/${id}`, { method: 'DELETE' }),
+  createTechItem: (name: string, categoryId: string) =>
+    apiFetch<ApiTechItem>('/tech/items', { method: 'POST', body: JSON.stringify({ name, categoryId }) }),
+  updateTechItem: (id: string, data: { name?: string; categoryId?: string }) =>
+    apiFetch<ApiTechItem>(`/tech/items/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteTechItem: (id: string) =>
+    apiFetch<{ success: boolean }>(`/tech/items/${id}`, { method: 'DELETE' }),
+  reorderTech: (categoryIds?: string[], itemIds?: string[]) =>
+    apiFetch<ApiTechCategory[]>('/tech/categories/reorder', {
+      method: 'PUT',
+      body: JSON.stringify({ categoryIds, itemIds }),
     }),
 
   revalidateSite: async (slug?: string) => {

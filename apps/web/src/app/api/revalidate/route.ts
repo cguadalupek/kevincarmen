@@ -2,6 +2,7 @@ import { revalidatePath, revalidateTag } from 'next/cache';
 import { NextRequest, NextResponse } from 'next/server';
 import { POSTS_CACHE_TAG } from '@/lib/api/posts';
 import { TIMELINE_CACHE_TAG } from '@/lib/api/timeline';
+import { SITE_CACHE_TAG } from '@/lib/api/site';
 
 export async function POST(request: NextRequest) {
   const secret = request.headers.get('x-revalidate-secret');
