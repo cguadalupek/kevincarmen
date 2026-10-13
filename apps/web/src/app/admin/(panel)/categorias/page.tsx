@@ -318,8 +318,11 @@ export default function AdminCategoriesPage() {
             />
           </div>
           <div className="sm:max-w-xs">
-            <label className="mb-1 block text-sm font-medium">Orden en la fila del blog</label>
+            <label htmlFor="categoria-orden" className="mb-1 block text-sm font-medium">
+              Orden en la fila del blog
+            </label>
             <input
+              id="categoria-orden"
               type="number"
               min={0}
               step={10}
@@ -552,8 +555,11 @@ export default function AdminCategoriesPage() {
               />
             </div>
             <div>
-              <label className="mb-1 block text-sm font-medium">Orden entre sus hermanas</label>
+              <label htmlFor="subcategoria-orden" className="mb-1 block text-sm font-medium">
+                Orden entre sus hermanas
+              </label>
               <input
+                id="subcategoria-orden"
                 type="number"
                 min={0}
                 step={10}
