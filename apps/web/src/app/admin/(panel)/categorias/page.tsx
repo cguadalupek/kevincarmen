@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Check, ChevronDown, ChevronRight, Edit3, Plus, Tags, Trash2, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, Check, ChevronDown, ChevronRight, Edit3, Plus, Tags, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AdminListCard } from '@/components/admin/admin-list-card';
 import { AdminPageHeader } from '@/components/admin/admin-page-header';
@@ -28,9 +28,34 @@ interface CategoryFormState {
   description: string;
   /** Clave de la paleta (emerald, cyan, ...). */
   color: string;
+  /** Posición en la fila del blog, como texto para el input (`''` = al final). */
+  position: string;
 }
 
-const EMPTY_FORM: CategoryFormState = { name: '', slug: '', description: '', color: 'emerald' };
+const EMPTY_FORM: CategoryFormState = {
+  name: '',
+  slug: '',
+  description: '',
+  color: 'emerald',
+  position: '',
+};
+
+/** Convierte el input de orden al payload del API (`''` = que el API lo ponga al final). */
+function toPosition(value: string): number | undefined {
+  const trimmed = value.trim();
+  if (trimmed === '') return undefined;
+  const parsed = Number(trimmed);
+  return Number.isFinite(parsed) && parsed >= 0 ? Math.trunc(parsed) : undefined;
+}
+
+/** Mueve el elemento `index` una posición arriba/abajo; `null` si se sale de la lista. */
+function move<T>(list: T[], index: number, delta: -1 | 1): T[] | null {
+  const target = index + delta;
+  if (target < 0 || target >= list.length) return null;
+  const next = [...list];
+  [next[index], next[target]] = [next[target], next[index]];
+  return next;
+}
 
 export default function AdminCategoriesPage() {
   const [tree, setTree] = useState<CategoryTreeNode[]>([]);
@@ -46,6 +71,7 @@ export default function AdminCategoriesPage() {
     name: '',
     slug: '',
     description: '',
+    position: '',
   });
 
   const load = useCallback(() => {
@@ -77,6 +103,7 @@ export default function AdminCategoriesPage() {
       slug: node.value,
       description: node.description ?? '',
       color: node.color || 'emerald',
+      position: String(node.position ?? 0),
     });
   }
 
@@ -94,6 +121,7 @@ export default function AdminCategoriesPage() {
         slug: mainForm.slug.trim(),
         description: mainForm.description.trim() || undefined,
         color: mainForm.color || 'emerald',
+        position: toPosition(mainForm.position),
       };
       if (editingMain) await api.updateCategory(editingMain.id, payload);
       else await api.createCategory(payload);
@@ -123,13 +151,18 @@ export default function AdminCategoriesPage() {
   function openNewSub(mainId: string) {
     setError('');
     setSubTarget({ mainId });
-    setSubForm({ name: '', slug: '', description: '' });
+    setSubForm({ name: '', slug: '', description: '', position: '' });
   }
 
   function openEditSub(mainId: string, sub: ApiSubcategory) {
     setError('');
     setSubTarget({ mainId, sub });
-    setSubForm({ name: sub.name, slug: sub.slug, description: sub.description ?? '' });
+    setSubForm({
+      name: sub.name,
+      slug: sub.slug,
+      description: sub.description ?? '',
+      position: String(sub.position ?? 0),
+    });
   }
 
   async function saveSub(e: React.FormEvent) {
@@ -146,13 +179,13 @@ export default function AdminCategoriesPage() {
         name: subForm.name.trim(),
         slug: subForm.slug.trim(),
         description: subForm.description.trim() || undefined,
+        position: toPosition(subForm.position),
       };
       if (subTarget.sub) await api.updateSubcategory(subTarget.sub.id, payload);
       else {
         await api.createSubcategory({
           mainCategoryId: subTarget.mainId,
           ...payload,
-          position: 999,
         });
       }
       setSubTarget(null);
@@ -174,6 +207,44 @@ export default function AdminCategoriesPage() {
       load();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al eliminar');
+      setBusy(false);
+    }
+  }
+
+  /**
+   * Reordenar con las flechas ↑↓: se manda el array COMPLETO ya intercambiado y el API
+   * renumera las posiciones (10, 20, 30…). El árbol que devuelve el API se pinta tal cual,
+   * así el orden que se ve en el CMS es exactamente el de la fila de filtros del blog.
+   */
+  async function moveMain(index: number, delta: -1 | 1) {
+    const next = move(tree, index, delta);
+    if (!next) return;
+    setBusy(true);
+    setError('');
+    try {
+      setTree(await api.reorderCategories(next.map((node) => node.id)));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al reordenar');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function moveSub(node: CategoryTreeNode, index: number, delta: -1 | 1) {
+    const next = move(node.subcategories, index, delta);
+    if (!next) return;
+    setBusy(true);
+    setError('');
+    try {
+      setTree(
+        await api.reorderSubcategories(
+          node.id,
+          next.map((sub) => sub.id),
+        ),
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al reordenar');
+    } finally {
       setBusy(false);
     }
   }
@@ -246,6 +317,22 @@ export default function AdminCategoriesPage() {
               className={`${FIELD} resize-none`}
             />
           </div>
+          <div className="sm:max-w-xs">
+            <label className="mb-1 block text-sm font-medium">Orden en la fila del blog</label>
+            <input
+              type="number"
+              min={0}
+              step={10}
+              value={mainForm.position}
+              onChange={(e) => setMainForm({ ...mainForm, position: e.target.value })}
+              placeholder="Vacío = al final"
+              className={FIELD}
+            />
+            <p className="mt-1 text-xs text-muted-foreground">
+              Menor número = más a la izquierda (después de «Todos»). También puedes usar las
+              flechas ↑ ↓ de la lista.
+            </p>
+          </div>
           <div>
             <label className="mb-1 block text-sm font-medium">Color del badge</label>
             <div className="flex flex-wrap gap-2">
@@ -292,7 +379,7 @@ export default function AdminCategoriesPage() {
           <p className="text-muted-foreground">Aún no hay categorías.</p>
         )}
 
-        {tree.map((node) => (
+        {tree.map((node, index) => (
           <AdminListCard
             key={node.id}
             title={
@@ -318,6 +405,26 @@ export default function AdminCategoriesPage() {
             }
             actions={
               <>
+                <button
+                  type="button"
+                  onClick={() => moveMain(index, -1)}
+                  disabled={index === 0}
+                  className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/60 hover:text-accent disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
+                  aria-label={`Mover ${node.label} antes`}
+                  title="Mover antes"
+                >
+                  <ArrowUp className="h-4 w-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => moveMain(index, 1)}
+                  disabled={index === tree.length - 1}
+                  className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/60 hover:text-accent disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
+                  aria-label={`Mover ${node.label} después`}
+                  title="Mover después"
+                >
+                  <ArrowDown className="h-4 w-4" />
+                </button>
                 <button
                   type="button"
                   onClick={() => openEditMain(node)}
@@ -348,7 +455,7 @@ export default function AdminCategoriesPage() {
 
             {node.subcategories.length > 0 && (
               <ul className="mt-4 divide-y divide-border border-t border-border pt-2">
-                {node.subcategories.map((sub) => (
+                {node.subcategories.map((sub, subIndex) => (
                   <li key={sub.id} className="flex items-center justify-between gap-3 py-2">
                     <div className="flex min-w-0 items-center gap-2">
                       <span className="truncate text-sm font-medium">{sub.name}</span>
@@ -359,8 +466,28 @@ export default function AdminCategoriesPage() {
                     <div className="flex items-center gap-1">
                       <button
                         type="button"
+                        onClick={() => moveSub(node, subIndex, -1)}
+                        disabled={subIndex === 0}
+                        className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/60 hover:text-accent disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
+                        aria-label={`Mover ${sub.name} antes`}
+                        title="Mover antes"
+                      >
+                        <ArrowUp className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => moveSub(node, subIndex, 1)}
+                        disabled={subIndex === node.subcategories.length - 1}
+                        className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/60 hover:text-accent disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
+                        aria-label={`Mover ${sub.name} después`}
+                        title="Mover después"
+                      >
+                        <ArrowDown className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        type="button"
                         onClick={() => openEditSub(node.id, sub)}
-                        className="rounded-md p-2 text-muted-foreground hover:bg-muted/60 hover:text-accent"
+                        className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/60 hover:text-accent"
                         aria-label="Editar subcategoría"
                       >
                         <Edit3 className="h-4 w-4" />
@@ -368,7 +495,7 @@ export default function AdminCategoriesPage() {
                       <button
                         type="button"
                         onClick={() => removeSub(node.id, sub)}
-                        className="rounded-md p-2 text-muted-foreground hover:bg-muted/60 hover:text-red-400"
+                        className="flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/60 hover:text-red-400"
                         aria-label="Eliminar subcategoría"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -424,6 +551,21 @@ export default function AdminCategoriesPage() {
                 className={`${FIELD} resize-none`}
               />
             </div>
+            <div>
+              <label className="mb-1 block text-sm font-medium">Orden entre sus hermanas</label>
+              <input
+                type="number"
+                min={0}
+                step={10}
+                value={subForm.position}
+                onChange={(e) => setSubForm({ ...subForm, position: e.target.value })}
+                placeholder="Vacío = al final"
+                className={FIELD}
+              />
+              <p className="mt-1 text-xs text-muted-foreground">
+                Menor número = más a la izquierda. También puedes usar las flechas ↑ ↓ de la lista.
+              </p>
+            </div>
             <div className="flex justify-end gap-2">
               <Button
                 type="button"
@@ -454,6 +596,10 @@ export default function AdminCategoriesPage() {
             artículos cambien de categoría (evita borrados accidentales con contenido).
           </li>
           <li>El color que elijas es el del badge en el blog; lo puedes cambiar cuando quieras.</li>
+          <li>
+            El orden de la fila de filtros del blog lo mandan las flechas ↑ ↓ o el campo «Orden»
+            (menor número = más a la izquierda). «Todos» es una ficha fija y siempre va primera.
+          </li>
           <li>
             Los enlaces con los slugs antiguos (
             <code className="rounded bg-muted px-1">?category=redes</code>) siguen funcionando.

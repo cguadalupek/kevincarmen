@@ -107,12 +107,83 @@ export class CategoriesService {
 
   // ── CRUD categorías principales ──────────────────────────────────────────
 
+  /**
+   * Siguiente posición libre al FINAL de la lista (último + 10). Se usan múltiplos
+   * de 10 para poder insertar entre dos existentes sin renumerar todo.
+   *
+   * Sin esto, toda categoría nueva nacía con `position = 0` y saltaba al primer
+   * puesto de la fila de filtros del blog (el orden es `position ASC`).
+   */
+  private async nextMainPosition(): Promise<number> {
+    const last = await this.prisma.mainCategory.findFirst({
+      orderBy: { position: 'desc' },
+      select: { position: true },
+    });
+    return (last?.position ?? 0) + 10;
+  }
+
+  /** Igual que `nextMainPosition` pero dentro de una categoría principal. */
+  private async nextSubPosition(mainCategoryId: string): Promise<number> {
+    const last = await this.prisma.subcategory.findFirst({
+      where: { mainCategoryId },
+      orderBy: { position: 'desc' },
+      select: { position: true },
+    });
+    return (last?.position ?? 0) + 10;
+  }
+
   async createCategory(dto: CreateCategoryDto) {
+    const position = dto.position ?? (await this.nextMainPosition());
     try {
-      return await this.prisma.mainCategory.create({ data: dto });
+      return await this.prisma.mainCategory.create({ data: { ...dto, position } });
     } catch (error) {
       throw this.toSlugConflict(error, 'Ya existe una categoría con ese slug');
     }
+  }
+
+  /**
+   * Reordena las categorías principales: la posición se deriva del índice del array
+   * (10, 20, 30…). Valida TODOS los ids antes de escribir y devuelve el árbol ya
+   * ordenado, para que el CMS pinte el resultado sin una segunda petición.
+   */
+  async reorderCategories(categoryIds: string[]): Promise<MainCategoryView[]> {
+    const found = await this.prisma.mainCategory.count({ where: { id: { in: categoryIds } } });
+    if (found !== categoryIds.length) {
+      throw new BadRequestException('Alguna de las categorías a reordenar no existe');
+    }
+
+    await this.prisma.$transaction(
+      categoryIds.map((id, index) =>
+        this.prisma.mainCategory.update({ where: { id }, data: { position: (index + 1) * 10 } }),
+      ),
+    );
+
+    return this.findTree();
+  }
+
+  /** Reordena las subcategorías de una categoría principal (índice = posición). */
+  async reorderSubcategories(
+    mainCategoryId: string,
+    subcategoryIds: string[],
+  ): Promise<MainCategoryView[]> {
+    await this.assertMainExists(mainCategoryId);
+
+    const found = await this.prisma.subcategory.count({
+      where: { id: { in: subcategoryIds }, mainCategoryId },
+    });
+    if (found !== subcategoryIds.length) {
+      throw new BadRequestException(
+        'Alguna de las subcategorías no existe o no pertenece a esa categoría',
+      );
+    }
+
+    await this.prisma.$transaction(
+      subcategoryIds.map((id, index) =>
+        this.prisma.subcategory.update({ where: { id }, data: { position: (index + 1) * 10 } }),
+      ),
+    );
+
+    return this.findTree();
   }
 
   async updateCategory(id: string, dto: UpdateCategoryDto) {
@@ -156,8 +227,9 @@ export class CategoriesService {
 
   async createSubcategory(dto: CreateSubcategoryDto) {
     await this.assertMainExists(dto.mainCategoryId);
+    const position = dto.position ?? (await this.nextSubPosition(dto.mainCategoryId));
     try {
-      return await this.prisma.subcategory.create({ data: dto });
+      return await this.prisma.subcategory.create({ data: { ...dto, position } });
     } catch (error) {
       throw this.toSlugConflict(error, 'Ya existe una subcategoría con ese slug en esa categoría');
     }

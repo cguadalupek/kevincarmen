@@ -37,6 +37,6 @@ export class UpdateSubcategoryDto {
   @IsOptional()
   @IsInt()
   @Min(0)
-  @Max(1000)
+  @Max(1000000)
   position?: number;
 }

@@ -4,6 +4,8 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { CreateSubcategoryDto } from './dto/create-subcategory.dto';
 import { UpdateSubcategoryDto } from './dto/update-subcategory.dto';
+import { ReorderCategoriesDto } from './dto/reorder-categories.dto';
+import { ReorderSubcategoriesDto } from './dto/reorder-subcategories.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('categories')
@@ -20,6 +22,21 @@ export class CategoriesController {
   @Get('flat')
   findFlat(@Query('category') category?: string) {
     return this.categories.findAllSubcategories(category);
+  }
+
+  // ── Reordenamiento (solo admin) ──
+  // Van ANTES de `@Put(':id')` / `@Put('subcategories/:id')`: Nest resuelve por
+  // orden de declaración y si no, `reorder` se interpretaría como un id.
+  @Put('reorder')
+  @UseGuards(JwtAuthGuard)
+  reorderCategories(@Body() dto: ReorderCategoriesDto) {
+    return this.categories.reorderCategories(dto.categoryIds);
+  }
+
+  @Put('subcategories/reorder')
+  @UseGuards(JwtAuthGuard)
+  reorderSubcategories(@Body() dto: ReorderSubcategoriesDto) {
+    return this.categories.reorderSubcategories(dto.mainCategoryId, dto.subcategoryIds);
   }
 
   // ── CRUD categorías principales (solo admin) ──

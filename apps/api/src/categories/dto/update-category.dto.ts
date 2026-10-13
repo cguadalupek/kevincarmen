@@ -35,7 +35,7 @@ export class UpdateCategoryDto {
   @IsOptional()
   @IsInt()
   @Min(0)
-  @Max(1000)
+  @Max(1000000)
   position?: number;
 
   /** Clave de la paleta. */

@@ -1,6 +1,6 @@
 'use client';
 
-import { CSSProperties, RefObject, useEffect, useRef, useState } from 'react';
+import { CSSProperties, RefObject, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import type { CategoryTreeNode } from '@/lib/api/categories';
 
@@ -83,7 +83,23 @@ export function CategoryFilter({
     categories.find((category) => category.value === selectedCategory) ?? null;
   const subcategories = activeCategory?.subcategories ?? [];
 
-  const categoryRow = useScrollableRow(categories.length);
+  /**
+   * Orden de la fila = el que se configura en /admin/categorias (`position` ascendente).
+   * El API ya lo devuelve ordenado; se ordena también aquí para que la garantía viva en
+   * el propio componente y no dependa del transporte.
+   *
+   * «Todos» NO es una categoría de la BD: es una ficha fija que se pinta en el índice 0,
+   * antes de este array.
+   */
+  const orderedCategories = useMemo(
+    () =>
+      [...categories].sort(
+        (a, b) => (a.position ?? 0) - (b.position ?? 0) || a.label.localeCompare(b.label, 'es'),
+      ),
+    [categories],
+  );
+
+  const categoryRow = useScrollableRow(orderedCategories.length);
   const brace = useBraceAnchor(categoryRow.ref, activeCategory?.value ?? null);
 
   return (
@@ -102,7 +118,7 @@ export function CategoryFilter({
             isActive={activeCategory === null}
             onClick={() => onSelectCategory?.(ALL_CATEGORIES)}
           />
-          {categories.map((category) => (
+          {orderedCategories.map((category) => (
             <CategoryButton
               key={category.id}
               href={`/blog?categoria=${encodeURIComponent(category.value)}`}

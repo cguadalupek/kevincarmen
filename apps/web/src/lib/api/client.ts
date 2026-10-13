@@ -413,6 +413,38 @@ export const api = {
       method: 'DELETE',
     }),
 
+  /**
+   * Reordenamiento de la taxonomía del blog: el índice del array define la posición.
+   * El API devuelve el árbol ya ordenado (para pintarlo sin recargar).
+   */
+  reorderCategories: (categoryIds: string[]) =>
+    apiFetch<
+      {
+        id: string;
+        value: string;
+        label: string;
+        description: string | null;
+        position: number;
+        color: string;
+        subcategories: ApiSubcategory[];
+      }[]
+    >('/categories/reorder', { method: 'PUT', body: JSON.stringify({ categoryIds }) }),
+  reorderSubcategories: (mainCategoryId: string, subcategoryIds: string[]) =>
+    apiFetch<
+      {
+        id: string;
+        value: string;
+        label: string;
+        description: string | null;
+        position: number;
+        color: string;
+        subcategories: ApiSubcategory[];
+      }[]
+    >('/categories/subcategories/reorder', {
+      method: 'PUT',
+      body: JSON.stringify({ mainCategoryId, subcategoryIds }),
+    }),
+
   getLatestVideos: () => apiFetch<ApiVideo[]>('/videos').catch(() => []),
 
   getVideos: () => apiFetch<ApiVideo[]>('/videos/admin/all'),
