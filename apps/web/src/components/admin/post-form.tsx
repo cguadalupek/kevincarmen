@@ -210,7 +210,7 @@ export function PostForm({ post }: PostFormProps) {
       )}
 
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="space-y-4 lg:col-span-2">
+        <div className="min-w-0 space-y-4 lg:col-span-2">
           <div>
             <label htmlFor="title" className="mb-2 block text-sm font-medium">
               Título
@@ -271,7 +271,7 @@ export function PostForm({ post }: PostFormProps) {
           </div>
         </div>
 
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           <div className="glass-card p-5">
             <h3 className="mb-4 font-semibold">Publicación</h3>
             <label htmlFor="status" className="mb-2 block text-sm font-medium">

@@ -270,7 +270,7 @@ export default function AdminProjectsPage() {
 
           <div className="grid gap-6 lg:grid-cols-3">
             {/* Columna principal: contenido */}
-            <div className="space-y-4 lg:col-span-2">
+            <div className="min-w-0 space-y-4 lg:col-span-2">
               <div>
                 <label htmlFor="project-title" className={labelClass}>
                   Título <span className="text-red-400">*</span>
@@ -333,7 +333,7 @@ export default function AdminProjectsPage() {
             </div>
 
             {/* Columna lateral: metadatos */}
-            <div className="space-y-4">
+            <div className="min-w-0 space-y-4">
               <section className="glass-card p-5">
                 <h3 className="mb-4 font-semibold">Publicación</h3>
                 <label htmlFor="project-status" className={labelClass}>
