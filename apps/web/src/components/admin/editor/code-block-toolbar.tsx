@@ -56,7 +56,7 @@ export function CodeBlockToolbar({ editor }: CodeBlockToolbarProps) {
       shouldShow={({ editor: ed }) => ed.isActive('codeBlock')}
       className="code-block-toolbar"
     >
-      <div className="flex items-center gap-1 rounded-lg border border-border bg-card/95 p-1 shadow-lg backdrop-blur-sm">
+      <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-1 shadow-lg">
         <div ref={menuRef} className="relative">
           <button
             type="button"
