@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { ArrowLeft, Pencil, Plus, Save, Trash2, Video, X } from 'lucide-react';
+import { Pencil, Plus, Save, Trash2, Video, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { AdminListCard } from '@/components/admin/admin-list-card';
+import { AdminPageHeader } from '@/components/admin/admin-page-header';
 import { api, type ApiVideo, type VideoTypeValue } from '@/lib/api/client';
 
 const VIDEO_PROVIDER_OPTIONS: { value: VideoTypeValue; label: string }[] = [
@@ -125,23 +126,15 @@ export default function AdminVideosPage() {
 
   return (
     <>
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <Link
-            href="/admin"
-            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-accent"
-          >
-            <ArrowLeft className="h-4 w-4" /> Dashboard
-          </Link>
-          <h1 className="mt-2 text-2xl font-bold">Videos del inicio</h1>
-          <p className="text-sm text-muted-foreground">
-            Aparecen en la sección «Últimos videos» del home y pueden retirarse cuando quieras.
-          </p>
-        </div>
-        <Button variant="accent" onClick={openCreate} disabled={!!editing}>
-          <Plus className="h-4 w-4" /> Nuevo video
-        </Button>
-      </div>
+      <AdminPageHeader
+        title="Videos del inicio"
+        subtitle="Aparecen en la sección «Últimos videos» del home y pueden retirarse cuando quieras."
+        action={
+          <Button variant="accent" onClick={openCreate} disabled={!!editing}>
+            <Plus className="h-4 w-4" /> Nuevo video
+          </Button>
+        }
+      />
 
       {error && (
         <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
@@ -313,49 +306,54 @@ export default function AdminVideosPage() {
       ) : (
         <div className="space-y-3">
           {videos.map((video) => (
-            <div key={video.id} className="glass-card flex items-center gap-4 p-4">
-              <div className="flex-1 min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-semibold">{video.title}</span>
+            <AdminListCard
+              key={video.id}
+              title={video.title}
+              badges={
+                <>
                   {video.featured && (
-                    <span className="rounded-full bg-accent/10 px-2 py-0.5 text-xs text-accent">
+                    <span className="shrink-0 rounded-full bg-accent/10 px-2.5 py-0.5 text-xs text-accent">
                       Destacado
                     </span>
                   )}
                   {video.isShort && (
-                    <span className="rounded-full bg-primary/20 px-2 py-0.5 text-xs text-accent">
+                    <span className="shrink-0 rounded-full bg-primary/20 px-2.5 py-0.5 text-xs text-accent">
                       Short
                     </span>
                   )}
-                  <span className="rounded-full bg-muted px-2 py-0.5 font-mono text-xs text-muted-foreground">
+                  <span className="shrink-0 rounded-full bg-muted px-2.5 py-0.5 font-mono text-xs text-muted-foreground">
                     {video.videoType}
                   </span>
-                </div>
+                </>
+              }
+              meta={
                 <a
                   href={video.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="mt-1 block break-all text-xs text-muted-foreground hover:text-accent"
+                  className="truncate hover:text-accent"
                 >
                   {video.url}
                 </a>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => openEdit(video)}>
-                  <Pencil className="h-4 w-4" />
-                  Editar
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleDelete(video)}
-                  className="text-red-400 hover:text-red-300"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Quitar
-                </Button>
-              </div>
-            </div>
+              }
+              actions={
+                <>
+                  <Button variant="outline" size="sm" onClick={() => openEdit(video)}>
+                    <Pencil className="h-4 w-4" />
+                    Editar
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDelete(video)}
+                    className="text-red-400 hover:text-red-300"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Quitar
+                  </Button>
+                </>
+              }
+            />
           ))}
         </div>
       )}

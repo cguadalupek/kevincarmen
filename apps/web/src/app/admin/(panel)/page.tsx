@@ -12,6 +12,7 @@ import {
   Video,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { AdminPageHeader } from '@/components/admin/admin-page-header';
 
 const sections = [
   {
@@ -61,19 +62,19 @@ const sections = [
 export default function AdminDashboardPage() {
   return (
     <>
-      {/* Cabecera: título + acción principal */}
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p className="text-muted-foreground">Bienvenido al panel de administración</p>
-        </div>
-        <Button variant="accent" asChild className="min-h-[44px] w-full sm:w-auto">
-          <Link href="/admin/posts/new">
-            <Plus className="h-4 w-4" />
-            Nuevo artículo
-          </Link>
-        </Button>
-      </div>
+      <AdminPageHeader
+        title="Dashboard"
+        subtitle="Bienvenido al panel de administración"
+        backHref={null}
+        action={
+          <Button variant="accent" asChild className="min-h-[44px]">
+            <Link href="/admin/posts/new">
+              <Plus className="h-4 w-4" />
+              Nuevo artículo
+            </Link>
+          </Button>
+        }
+      />
 
       {/* Accesos rápidos */}
       <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">

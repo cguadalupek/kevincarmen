@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { ArrowLeft, Save } from 'lucide-react';
+import { Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { AdminPageHeader } from '@/components/admin/admin-page-header';
 import { api } from '@/lib/api/client';
 
 const SETTINGS_FIELDS: { key: string; label: string; placeholder?: string; multiline?: boolean }[] =
@@ -57,20 +57,16 @@ export default function AdminSettingsPage() {
 
   return (
     <>
-      <div className="mb-6">
-        <Link
-          href="/admin"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-accent"
-        >
-          <ArrowLeft className="h-4 w-4" /> Dashboard
-        </Link>
-        <h1 className="mt-2 text-2xl font-bold">Configuración</h1>
-        <p className="text-sm text-muted-foreground">
-          Valores generales del sitio (título, contacto, redes sociales). Se guardan en la tabla
-          <code className="mx-1 rounded bg-muted px-1 font-mono text-xs">settings</code> como pares
-          clave/valor.
-        </p>
-      </div>
+      <AdminPageHeader
+        title="Configuración"
+        subtitle={
+          <>
+            Valores generales del sitio (título, contacto, redes sociales). Se guardan en la tabla
+            <code className="mx-1 rounded bg-muted px-1 font-mono text-xs">settings</code> como
+            pares clave/valor.
+          </>
+        }
+      />
 
       {error && (
         <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">

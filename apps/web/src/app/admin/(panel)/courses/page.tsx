@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, ListVideo, Pencil, Plus, Save, Trash2, X } from 'lucide-react';
+import { ListVideo, Pencil, Plus, Save, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { AdminListCard } from '@/components/admin/admin-list-card';
+import { AdminPageHeader } from '@/components/admin/admin-page-header';
 import { api, type ApiCourse } from '@/lib/api/client';
 
 const LEVEL_LABELS = {
@@ -117,23 +118,15 @@ export default function AdminCoursesPage() {
 
   return (
     <>
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <Link
-            href="/admin"
-            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-accent"
-          >
-            <ArrowLeft className="h-4 w-4" /> Dashboard
-          </Link>
-          <h1 className="mt-2 text-2xl font-bold">Cursos</h1>
-          <p className="text-sm text-muted-foreground">
-            Agrega los cursos que se mostrarán en la sección Cursos del sitio.
-          </p>
-        </div>
-        <Button variant="accent" onClick={() => setEditing(emptyCourse())} disabled={!!editing}>
-          <Plus className="h-4 w-4" /> Nuevo curso
-        </Button>
-      </div>
+      <AdminPageHeader
+        title="Cursos"
+        subtitle="Agrega los cursos que se mostrarán en la sección Cursos del sitio."
+        action={
+          <Button variant="accent" onClick={() => setEditing(emptyCourse())} disabled={!!editing}>
+            <Plus className="h-4 w-4" /> Nuevo curso
+          </Button>
+        }
+      />
 
       {error && (
         <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
@@ -309,54 +302,57 @@ export default function AdminCoursesPage() {
       ) : (
         <div className="space-y-3">
           {courses.map((course) => (
-            <div key={course.id} className="glass-card flex items-center gap-4 p-4">
-              <div className="flex-1 min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-semibold">{course.title}</span>
-                  <span className="rounded-full bg-accent/10 px-2 py-0.5 text-xs text-accent">
+            <AdminListCard
+              key={course.id}
+              title={course.title}
+              badges={
+                <>
+                  <span className="shrink-0 rounded-full bg-accent/10 px-2.5 py-0.5 text-xs text-accent">
                     {STATUS_LABELS[course.status]}
                   </span>
-                  <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                  <span className="shrink-0 rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
                     {LEVEL_LABELS[course.level]}
                   </span>
-                  <span className="rounded-full bg-muted px-2 py-0.5 font-mono text-xs text-muted-foreground">
+                  <span className="shrink-0 rounded-full bg-muted px-2.5 py-0.5 font-mono text-xs text-muted-foreground">
                     {course.duration}
                   </span>
-                </div>
-                <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                  {course.description}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="accent"
-                  size="sm"
-                  onClick={() => router.push(`/admin/courses/${course.id}`)}
-                  title="Editor del contenido del curso"
-                >
-                  <ListVideo className="h-4 w-4" />
-                  Contenido
-                  {(course.modulesCount ?? 0) > 0 && (
-                    <span className="ml-1 rounded-full bg-black/20 px-1.5 font-mono text-[10px]">
-                      {course.modulesCount}M · {course.lessonsCount}C
-                    </span>
-                  )}
-                </Button>
-                <Button variant="outline" size="sm" onClick={() => setEditing({ ...course })}>
-                  <Pencil className="h-4 w-4" />
-                  Editar
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleDelete(course)}
-                  className="text-red-400 hover:text-red-300"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Quitar
-                </Button>
-              </div>
-            </div>
+                </>
+              }
+              meta={
+                course.description ? <p className="line-clamp-2">{course.description}</p> : null
+              }
+              actions={
+                <>
+                  <Button
+                    variant="accent"
+                    size="sm"
+                    onClick={() => router.push(`/admin/courses/${course.id}`)}
+                    title="Editor del contenido del curso"
+                  >
+                    <ListVideo className="h-4 w-4" />
+                    Contenido
+                    {(course.modulesCount ?? 0) > 0 && (
+                      <span className="ml-1 rounded-full bg-black/20 px-1.5 font-mono text-[10px]">
+                        {course.modulesCount}M · {course.lessonsCount}C
+                      </span>
+                    )}
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => setEditing({ ...course })}>
+                    <Pencil className="h-4 w-4" />
+                    Editar
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDelete(course)}
+                    className="text-red-400 hover:text-red-300"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Quitar
+                  </Button>
+                </>
+              }
+            />
           ))}
         </div>
       )}

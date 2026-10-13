@@ -1,10 +1,8 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
 import Image from 'next/image';
 import {
-  ArrowLeft,
   ExternalLink,
   FolderKanban,
   Pencil,
@@ -16,6 +14,8 @@ import {
 } from 'lucide-react';
 import { slugify } from '@kevincarmen/utils';
 import { Button } from '@/components/ui/button';
+import { AdminListCard } from '@/components/admin/admin-list-card';
+import { AdminPageHeader } from '@/components/admin/admin-page-header';
 import { PostEditor } from '@/components/admin/post-editor';
 import { api, type ApiProject } from '@/lib/api/client';
 
@@ -237,21 +237,15 @@ export default function AdminProjectsPage() {
 
   return (
     <>
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <Link
-            href="/admin"
-            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-accent"
-          >
-            <ArrowLeft className="h-4 w-4" /> Dashboard
-          </Link>
-          <h1 className="mt-2 text-2xl font-bold">Proyectos</h1>
-          <p className="text-sm text-muted-foreground">Casos de estudio técnicos profesionales.</p>
-        </div>
-        <Button variant="accent" onClick={newProject} disabled={!!draft}>
-          <Plus className="h-4 w-4" /> Nuevo proyecto
-        </Button>
-      </div>
+      <AdminPageHeader
+        title="Proyectos"
+        subtitle="Casos de estudio técnicos profesionales."
+        action={
+          <Button variant="accent" onClick={newProject} disabled={!!draft}>
+            <Plus className="h-4 w-4" /> Nuevo proyecto
+          </Button>
+        }
+      />
 
       {error && (
         <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
@@ -579,52 +573,57 @@ export default function AdminProjectsPage() {
       ) : (
         <div className="space-y-3">
           {projects.map((item) => (
-            <div key={item.id} className="glass-card flex items-center gap-4 p-4">
-              {item.coverImage && (
-                <Image
-                  src={item.coverImage}
-                  alt={item.title}
-                  width={112}
-                  height={64}
-                  className="h-16 w-28 shrink-0 rounded-md border border-border object-cover"
-                  unoptimized
-                />
-              )}
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-semibold">{item.title}</span>
-                  <span className="rounded-full bg-accent/10 px-2 py-0.5 text-xs text-accent">
+            <AdminListCard
+              key={item.id}
+              leading={
+                item.coverImage ? (
+                  <Image
+                    src={item.coverImage}
+                    alt={item.title}
+                    width={112}
+                    height={64}
+                    className="h-14 w-24 rounded-md border border-border object-cover sm:h-16 sm:w-28"
+                    unoptimized
+                  />
+                ) : null
+              }
+              title={item.title}
+              badges={
+                <>
+                  <span className="shrink-0 rounded-full bg-accent/10 px-2.5 py-0.5 text-xs text-accent">
                     {STATUS_LABELS[item.status]}
                   </span>
                   {item.featured && (
-                    <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                    <span className="shrink-0 rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
                       Destacado
                     </span>
                   )}
                   {item.category && (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                    <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
                       <FolderKanban className="h-3 w-3" /> {item.category}
                     </span>
                   )}
-                </div>
-                <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                  {item.description}
-                </p>
-              </div>
-              <div className="flex shrink-0 gap-2">
-                <Button variant="outline" size="sm" onClick={() => editProject(item)}>
-                  <Pencil className="h-4 w-4" /> Editar
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => remove(item)}
-                  className="text-red-400"
-                >
-                  <Trash2 className="h-4 w-4" /> Quitar
-                </Button>
-              </div>
-            </div>
+                </>
+              }
+              meta={
+                item.description ? <p className="line-clamp-2">{item.description}</p> : null
+              }
+              actions={
+                <>
+                  <Button variant="outline" size="sm" onClick={() => editProject(item)}>
+                    <Pencil className="h-4 w-4" /> Editar
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => remove(item)}
+                    className="text-red-400"
+                  >
+                    <Trash2 className="h-4 w-4" /> Quitar
+                  </Button>
+                </>
+              }
+            />
           ))}
         </div>
       )}

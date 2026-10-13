@@ -1,9 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import Link from 'next/link';
 import {
-  ArrowLeft,
   Check,
   Copy,
   Download,
@@ -17,6 +15,8 @@ import {
 } from 'lucide-react';
 import { slugify } from '@kevincarmen/utils';
 import { Button } from '@/components/ui/button';
+import { AdminListCard } from '@/components/admin/admin-list-card';
+import { AdminPageHeader } from '@/components/admin/admin-page-header';
 import { ChipInput } from '@/components/admin/chip-input';
 import { api, type ApiResource, type ApiResourceType } from '@/lib/api/client';
 import { formatDate } from '@kevincarmen/utils';
@@ -184,23 +184,15 @@ export default function AdminResourcesPage() {
 
   return (
     <>
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <Link
-            href="/admin"
-            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-accent"
-          >
-            <ArrowLeft className="h-4 w-4" /> Dashboard
-          </Link>
-          <h1 className="mt-2 text-2xl font-bold">Recursos</h1>
-          <p className="text-sm text-muted-foreground">
-            Scripts, plantillas y descargas de la sección pública /recursos.
-          </p>
-        </div>
-        <Button variant="accent" onClick={openCreate} disabled={!!editing}>
-          <Plus className="h-4 w-4" /> Nuevo recurso
-        </Button>
-      </div>
+      <AdminPageHeader
+        title="Recursos"
+        subtitle="Scripts, plantillas y descargas de la sección pública /recursos."
+        action={
+          <Button variant="accent" onClick={openCreate} disabled={!!editing}>
+            <Plus className="h-4 w-4" /> Nuevo recurso
+          </Button>
+        }
+      />
 
       {error && (
         <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
@@ -388,72 +380,79 @@ export default function AdminResourcesPage() {
       ) : (
         <div className="space-y-3">
           {resources.map((resource) => (
-            <div key={resource.id} className="glass-card flex items-center gap-4 p-4">
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-semibold">{resource.title}</span>
-                  <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+            <AdminListCard
+              key={resource.id}
+              title={resource.title}
+              badges={
+                <>
+                  <span className="shrink-0 rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
                     {typeLabel(resource.type)}
                   </span>
                   {resource.featured && (
-                    <span className="rounded-full bg-accent/10 px-2 py-0.5 text-xs text-accent">
+                    <span className="shrink-0 rounded-full bg-accent/10 px-2.5 py-0.5 text-xs text-accent">
                       Destacado
                     </span>
                   )}
                   {!resource.published && (
-                    <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                    <span className="shrink-0 rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
                       Oculto
                     </span>
                   )}
-                  <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                  <span className="shrink-0 rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
                     {resource.downloads} descargas
                   </span>
                   {resource.fileSize ? (
-                    <span className="rounded-full bg-muted px-2 py-0.5 font-mono text-xs text-muted-foreground">
+                    <span className="shrink-0 rounded-full bg-muted px-2.5 py-0.5 font-mono text-xs text-muted-foreground">
                       {formatBytes(resource.fileSize)}
                     </span>
                   ) : null}
-                </div>
-                <p className="mt-1 line-clamp-1 text-sm text-muted-foreground">
-                  {resource.description}
-                </p>
-                <p className="mt-1 font-mono text-xs text-muted-foreground">
-                  /recursos · actualizado {formatDate(resource.updatedAt)}
-                </p>
-              </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => copyDownloadLink(resource)}>
-                  {copiedSlug === resource.id ? (
-                    <Check className="h-4 w-4 text-emerald-400" />
-                  ) : (
-                    <Copy className="h-4 w-4" />
-                  )}
-                  {copiedSlug === resource.id ? 'Copiado' : 'Enlace'}
-                </Button>
-                {resource.fileUrl && (
-                  <Button variant="outline" size="sm" asChild>
-                    <a
-                      href={`/api/v1/resources/${resource.slug}/download`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      <Download className="h-4 w-4" /> Probar
-                    </a>
+                </>
+              }
+              meta={
+                <>
+                  {resource.description ? (
+                    <p className="line-clamp-2">{resource.description}</p>
+                  ) : null}
+                  <p className="truncate font-mono">
+                    /recursos · actualizado {formatDate(resource.updatedAt)}
+                  </p>
+                </>
+              }
+              actions={
+                <>
+                  <Button variant="outline" size="sm" onClick={() => copyDownloadLink(resource)}>
+                    {copiedSlug === resource.id ? (
+                      <Check className="h-4 w-4 text-emerald-400" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                    {copiedSlug === resource.id ? 'Copiado' : 'Enlace'}
                   </Button>
-                )}
-                <Button variant="outline" size="sm" onClick={() => openEdit(resource)}>
-                  <Pencil className="h-4 w-4" /> Editar
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleDelete(resource)}
-                  className="text-red-400 hover:text-red-300"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+                  {resource.fileUrl && (
+                    <Button variant="outline" size="sm" asChild>
+                      <a
+                        href={`/api/v1/resources/${resource.slug}/download`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <Download className="h-4 w-4" /> Probar
+                      </a>
+                    </Button>
+                  )}
+                  <Button variant="outline" size="sm" onClick={() => openEdit(resource)}>
+                    <Pencil className="h-4 w-4" /> Editar
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDelete(resource)}
+                    className="text-red-400 hover:text-red-300"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </>
+              }
+            />
           ))}
         </div>
       )}

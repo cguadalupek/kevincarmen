@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Check, ChevronDown, ChevronRight, Edit3, Plus, Tags, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { AdminListCard } from '@/components/admin/admin-list-card';
+import { AdminPageHeader } from '@/components/admin/admin-page-header';
 import { api } from '@/lib/api/client';
 import type { ApiSubcategory, CategoryTreeNode } from '@/lib/api/categories';
 import { CATEGORY_COLORS, categoryColorClass } from '@/lib/categories';
@@ -178,13 +180,11 @@ export default function AdminCategoriesPage() {
 
   return (
     <>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Categorías</h1>
-        <p className="text-muted-foreground">
-          Crea y organiza tus propias categorías principales y subcategorías. Se reflejan al
-          instante en el blog y en el formulario de artículos.
-        </p>
-      </div>
+      <AdminPageHeader
+        title="Categorías"
+        subtitle="Crea y organiza tus propias categorías principales y subcategorías. Se reflejan al instante en el blog y en el formulario de artículos."
+        backHref={null}
+      />
 
       {error && (
         <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
@@ -194,9 +194,9 @@ export default function AdminCategoriesPage() {
 
       {busy && <p className="mb-4 text-sm text-muted-foreground">Guardando…</p>}
 
-      <div className="mb-8 flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Categorías principales</h2>
-        <Button type="button" variant="accent" onClick={openNewMain}>
+      <div className="mb-6 flex flex-col gap-3 sm:mb-8 sm:flex-row sm:items-center sm:justify-between">
+        <h2 className="text-base font-semibold sm:text-lg">Categorías principales</h2>
+        <Button type="button" variant="accent" onClick={openNewMain} className="w-full sm:w-auto">
           <Plus className="h-4 w-4" />
           Nueva categoría
         </Button>
@@ -293,30 +293,35 @@ export default function AdminCategoriesPage() {
         )}
 
         {tree.map((node) => (
-          <section key={node.id} className="glass-card p-5">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0">
-                <div className="flex flex-wrap items-center gap-3">
-                  <span
-                    className={`rounded-full border px-2.5 py-1 text-xs font-medium ${categoryColorClass(node.color)}`}
-                  >
-                    {node.label}
-                  </span>
-                  <span className="font-mono text-xs text-muted-foreground">/{node.value}</span>
-                </div>
-                {node.description && (
-                  <p className="mt-2 text-sm text-muted-foreground">{node.description}</p>
-                )}
-                <p className="mt-2 text-xs text-muted-foreground">
+          <AdminListCard
+            key={node.id}
+            title={
+              <span
+                className={`rounded-full border px-2.5 py-1 text-xs font-medium ${categoryColorClass(node.color)}`}
+              >
+                {node.label}
+              </span>
+            }
+            badges={
+              <span className="shrink-0 font-mono text-xs text-muted-foreground">
+                /{node.value}
+              </span>
+            }
+            meta={
+              <>
+                {node.description ? <p className="line-clamp-2">{node.description}</p> : null}
+                <p>
                   {node.subcategories.length} subcategoría
                   {node.subcategories.length === 1 ? '' : 's'}
                 </p>
-              </div>
-              <div className="flex items-center gap-2">
+              </>
+            }
+            actions={
+              <>
                 <button
                   type="button"
                   onClick={() => openEditMain(node)}
-                  className="rounded-md p-2 text-muted-foreground hover:bg-muted/60 hover:text-accent"
+                  className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/60 hover:text-accent"
                   aria-label="Editar categoría"
                 >
                   <Edit3 className="h-4 w-4" />
@@ -324,7 +329,7 @@ export default function AdminCategoriesPage() {
                 <button
                   type="button"
                   onClick={() => removeMain(node)}
-                  className="rounded-md p-2 text-muted-foreground hover:bg-muted/60 hover:text-red-400"
+                  className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/60 hover:text-red-400"
                   aria-label="Eliminar categoría"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -337,16 +342,17 @@ export default function AdminCategoriesPage() {
                 >
                   <Plus className="h-4 w-4" /> Subcategoría
                 </Button>
-              </div>
-            </div>
+              </>
+            }
+          >
 
             {node.subcategories.length > 0 && (
               <ul className="mt-4 divide-y divide-border border-t border-border pt-2">
                 {node.subcategories.map((sub) => (
                   <li key={sub.id} className="flex items-center justify-between gap-3 py-2">
-                    <div className="min-w-0">
-                      <span className="text-sm font-medium">{sub.name}</span>
-                      <span className="ml-2 font-mono text-xs text-muted-foreground">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <span className="truncate text-sm font-medium">{sub.name}</span>
+                      <span className="truncate font-mono text-xs text-muted-foreground">
                         /{sub.slug}
                       </span>
                     </div>
@@ -372,7 +378,7 @@ export default function AdminCategoriesPage() {
                 ))}
               </ul>
             )}
-          </section>
+          </AdminListCard>
         ))}
       </div>
 

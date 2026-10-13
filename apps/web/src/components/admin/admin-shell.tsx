@@ -47,6 +47,9 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="flex min-h-screen w-full flex-col overflow-x-clip md:flex-row">
+      {/* overflow-x-clip (no hidden): recorta el desborde horizontal sin crear un
+          contenedor de scroll, para que los elementos `sticky` (toolbar del editor)
+          sigan anclándose respecto de la ventana. */}
       {/* Sidebar fijo (escritorio) */}
       <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-border bg-card/50 md:flex">
         <AdminSidebarPanel />
@@ -103,7 +106,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Contenido */}
-      <main className="min-w-0 flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+      <main className="w-full min-w-0 max-w-full flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
         <div className="mx-auto w-full max-w-7xl">{children}</div>
       </main>
     </div>

@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { ArrowLeft, Plus, Save, Trash2 } from 'lucide-react';
+import { Plus, Save, Trash2 } from 'lucide-react';
 import { ChipInput } from '@/components/admin/chip-input';
+import { AdminPageHeader } from '@/components/admin/admin-page-header';
 import { Button } from '@/components/ui/button';
 import { api, type ApiSiteAbout } from '@/lib/api/client';
 
@@ -58,19 +58,10 @@ export default function AdminSobreMiPage() {
 
   return (
     <>
-      <div className="mb-6">
-        <Link
-          href="/admin"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-accent"
-        >
-          <ArrowLeft className="h-4 w-4" /> Dashboard
-        </Link>
-        <h1 className="mt-2 text-2xl font-bold">Sobre mí</h1>
-        <p className="text-sm text-muted-foreground">
-          Biografía, áreas de expertise y el bloque &quot;Lo que estoy haciendo ahora&quot; de la
-          vista /sobre-mi.
-        </p>
-      </div>
+      <AdminPageHeader
+        title="Sobre mí"
+        subtitle={'Biografía, áreas de expertise y el bloque "Lo que estoy haciendo ahora" de la vista /sobre-mi.'}
+      />
 
       {error && (
         <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">

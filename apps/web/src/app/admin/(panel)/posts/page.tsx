@@ -4,6 +4,8 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ExternalLink, Plus, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { AdminListCard } from '@/components/admin/admin-list-card';
+import { AdminPageHeader } from '@/components/admin/admin-page-header';
 import { api, type ApiPost } from '@/lib/api/client';
 import { formatDate } from '@kevincarmen/utils';
 
@@ -36,18 +38,19 @@ export default function AdminPostsPage() {
 
   return (
     <>
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Artículos</h1>
-          <p className="text-muted-foreground">Gestiona las entradas del blog</p>
-        </div>
-        <Button variant="accent" asChild>
-          <Link href="/admin/posts/new">
-            <Plus className="h-4 w-4" />
-            Nuevo artículo
-          </Link>
-        </Button>
-      </div>
+      <AdminPageHeader
+        title="Artículos"
+        subtitle="Gestiona las entradas del blog"
+        backHref={null}
+        action={
+          <Button variant="accent" asChild>
+            <Link href="/admin/posts/new">
+              <Plus className="h-4 w-4" />
+              Nuevo artículo
+            </Link>
+          </Button>
+        }
+      />
 
       {loading && <p className="text-muted-foreground">Cargando...</p>}
       {error && <p className="text-red-400">{error}</p>}
@@ -63,44 +66,47 @@ export default function AdminPostsPage() {
 
       <div className="space-y-3">
         {posts.map((post) => (
-          <article key={post.id} className="glass-card flex items-center gap-4 p-5">
-            <div className="flex-1">
-              <div className="flex items-center gap-3">
-                <h2 className="font-semibold">{post.title}</h2>
-                <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                  {statusLabels[post.status]}
-                </span>
-              </div>
-              <p className="mt-1 font-mono text-xs text-muted-foreground">/{post.slug}</p>
-              <p className="mt-1 text-xs text-muted-foreground">
-                Actualizado: {formatDate(post.updatedAt)}
-              </p>
-            </div>
-            <div className="flex gap-2">
-              {post.status === 'PUBLISHED' && (
+          <AdminListCard
+            key={post.id}
+            title={post.title}
+            badges={
+              <span className="shrink-0 rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
+                {statusLabels[post.status]}
+              </span>
+            }
+            meta={
+              <>
+                <p className="truncate font-mono">/{post.slug}</p>
+                <p>Actualizado: {formatDate(post.updatedAt)}</p>
+              </>
+            }
+            actions={
+              <>
+                {post.status === 'PUBLISHED' && (
+                  <Button variant="outline" size="sm" asChild>
+                    <a href={`/blog/${post.slug}`} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="h-4 w-4" />
+                      Ver
+                    </a>
+                  </Button>
+                )}
                 <Button variant="outline" size="sm" asChild>
-                  <a href={`/blog/${post.slug}`} target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="h-4 w-4" />
-                    Ver
-                  </a>
+                  <Link href={`/admin/posts/${post.id}`}>
+                    <Pencil className="h-4 w-4" />
+                    Editar
+                  </Link>
                 </Button>
-              )}
-              <Button variant="outline" size="sm" asChild>
-                <Link href={`/admin/posts/${post.id}`}>
-                  <Pencil className="h-4 w-4" />
-                  Editar
-                </Link>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => handleDelete(post.id, post.slug)}
-                className="text-red-400 hover:text-red-300"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          </article>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleDelete(post.id, post.slug)}
+                  className="text-red-400 hover:text-red-300"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </>
+            }
+          />
         ))}
       </div>
     </>

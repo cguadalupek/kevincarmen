@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { ArrowLeft, Pencil, Plus, Save, Trash2, X } from 'lucide-react';
+import { Pencil, Plus, Save, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { AdminListCard } from '@/components/admin/admin-list-card';
+import { AdminPageHeader } from '@/components/admin/admin-page-header';
 import { api, type ApiTimelineEvent } from '@/lib/api/client';
 
 const TYPE_LABELS = {
@@ -83,23 +84,15 @@ export default function AdminTimelinePage() {
 
   return (
     <>
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <Link
-            href="/admin"
-            className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-accent"
-          >
-            <ArrowLeft className="h-4 w-4" /> Dashboard
-          </Link>
-          <h1 className="mt-2 text-2xl font-bold">Timeline</h1>
-          <p className="text-sm text-muted-foreground">
-            Agrega, edita o elimina los hitos que se muestran en la sección Timeline del sitio.
-          </p>
-        </div>
-        <Button variant="accent" onClick={() => setEditing(emptyEvent())} disabled={!!editing}>
-          <Plus className="h-4 w-4" /> Nuevo hito
-        </Button>
-      </div>
+      <AdminPageHeader
+        title="Timeline"
+        subtitle="Agrega, edita o elimina los hitos que se muestran en la sección Timeline del sitio."
+        action={
+          <Button variant="accent" onClick={() => setEditing(emptyEvent())} disabled={!!editing}>
+            <Plus className="h-4 w-4" /> Nuevo hito
+          </Button>
+        }
+      />
 
       {error && (
         <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
@@ -210,35 +203,38 @@ export default function AdminTimelinePage() {
       ) : (
         <div className="space-y-3">
           {events.map((event) => (
-            <div key={event.id} className="glass-card flex items-center gap-4 p-4">
-              <div className="flex-1 min-w-0">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-mono text-sm text-accent">{event.year}</span>
-                  <span className="font-semibold">{event.title}</span>
-                  <span className="rounded-full bg-accent/10 px-2 py-0.5 text-xs text-accent">
-                    {TYPE_LABELS[event.type]}
-                  </span>
-                </div>
-                <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">
-                  {event.description}
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => setEditing({ ...event })}>
-                  <Pencil className="h-4 w-4" />
-                  Editar
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleDelete(event)}
-                  className="text-red-400 hover:text-red-300"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  Quitar
-                </Button>
-              </div>
-            </div>
+            <AdminListCard
+              key={event.id}
+              title={
+                <>
+                  <span className="mr-2 font-mono text-sm text-accent">{event.year}</span>
+                  {event.title}
+                </>
+              }
+              badges={
+                <span className="shrink-0 rounded-full bg-accent/10 px-2.5 py-0.5 text-xs text-accent">
+                  {TYPE_LABELS[event.type]}
+                </span>
+              }
+              meta={event.description ? <p className="line-clamp-2">{event.description}</p> : null}
+              actions={
+                <>
+                  <Button variant="outline" size="sm" onClick={() => setEditing({ ...event })}>
+                    <Pencil className="h-4 w-4" />
+                    Editar
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleDelete(event)}
+                    className="text-red-400 hover:text-red-300"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Quitar
+                  </Button>
+                </>
+              }
+            />
           ))}
         </div>
       )}

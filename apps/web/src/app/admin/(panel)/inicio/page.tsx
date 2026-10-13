@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
-import { ArrowLeft, ArrowDown, ArrowUp, Pencil, Plus, Save, Trash2, X } from 'lucide-react';
+import { ArrowDown, ArrowUp, Pencil, Plus, Save, Trash2, X } from 'lucide-react';
 import { ChipInput } from '@/components/admin/chip-input';
+import { AdminPageHeader } from '@/components/admin/admin-page-header';
 import { Button } from '@/components/ui/button';
 import { api, type ApiSiteHero, type ApiTechCategory } from '@/lib/api/client';
 
@@ -135,19 +135,10 @@ export default function AdminInicioPage() {
 
   return (
     <>
-      <div className="mb-6">
-        <Link
-          href="/admin"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-accent"
-        >
-          <ArrowLeft className="h-4 w-4" /> Dashboard
-        </Link>
-        <h1 className="mt-2 text-2xl font-bold">Inicio</h1>
-        <p className="text-sm text-muted-foreground">
-          Hero del inicio (subtítulo, nombre, roles animados, descripción) y stack de tecnologías
-          por categorías.
-        </p>
-      </div>
+      <AdminPageHeader
+        title="Inicio"
+        subtitle="Hero del inicio (subtítulo, nombre, roles animados, descripción) y stack de tecnologías por categorías."
+      />
 
       {error && (
         <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
