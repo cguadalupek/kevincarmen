@@ -58,8 +58,9 @@ const navItems: NavItem[] = [
   { label: 'Proyectos', href: '/admin/projects', icon: FolderOpen },
   { label: 'Cursos', href: '/admin/courses', icon: GraduationCap },
   // Lab usa el mismo icono que el menú del sitio público (`Server`), con una
-  // leve inclinación a la derecha para distinguirlo del resto de secciones.
-  { label: 'Lab', href: '/admin/lab', icon: Server, iconClassName: 'rotate-12' },
+  // inclinación leve a la derecha (8°) como acento de identidad: se lee deliberada
+  // a 16 px sin ensuciar el trazo ni desalinearse del resto del panel.
+  { label: 'Lab', href: '/admin/lab', icon: Server, iconClassName: 'rotate-[8deg]' },
   { label: 'Recursos', href: '/admin/recursos', icon: Download },
   { label: 'Timeline', href: '/admin/timeline', icon: Clock },
   { label: 'Configuración', href: '/admin/settings', icon: Settings },
