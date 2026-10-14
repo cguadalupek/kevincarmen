@@ -232,15 +232,37 @@ export interface ApiLabExperiment {
   updatedAt: string;
 }
 
+/** Enum legado del tipo de recurso (los recursos nuevos usan `resourceType`). */
 export type ApiResourceType =
   'SCRIPT' | 'TEMPLATE' | 'DOCKER' | 'CHECKLIST' | 'GUIDE' | 'DATASET' | 'OTHER';
+
+/** Referencia del tipo editable incluida en un recurso. */
+export interface ApiResourceTypeRef {
+  id: string;
+  name: string;
+  slug: string;
+  icon: string;
+}
+
+/** Tipo de recurso editable del panel (Recursos › Tipos). */
+export interface ApiResourceTypeItem extends ApiResourceTypeRef {
+  description: string | null;
+  position: number;
+  /** Cuántos recursos usan este tipo. */
+  resourcesCount: number;
+}
 
 export interface ApiResource {
   id: string;
   title: string;
   slug: string;
   description: string;
+  /** @deprecated enum legado: la fuente de verdad es `resourceType`. */
   type: ApiResourceType;
+  /** Tipo editable (tabla `resource_types`). `null` si aún no tiene. */
+  resourceType?: ApiResourceTypeRef | null;
+  /** Id del tipo editable: lo que se manda al crear/editar ('' = sin tipo). */
+  resourceTypeId?: string | null;
   fileUrl: string | null;
   fileName: string | null;
   fileSize: number | null;
@@ -503,6 +525,35 @@ export const api = {
     apiFetch<ApiResource>(`/resources/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteResource: (id: string) =>
     apiFetch<{ success: boolean }>(`/resources/${id}`, { method: 'DELETE' }),
+
+  // ── Tipos de recurso (subsección «Tipos») ──
+  getResourceTypes: () => apiFetch<ApiResourceTypeItem[]>('/resources/types'),
+  createResourceType: (data: {
+    name: string;
+    slug?: string;
+    description?: string;
+    icon?: string;
+    position?: number;
+  }) =>
+    apiFetch<ApiResourceTypeItem>('/resources/types', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  updateResourceType: (
+    id: string,
+    data: { name?: string; slug?: string; description?: string; icon?: string; position?: number },
+  ) =>
+    apiFetch<ApiResourceTypeItem>(`/resources/types/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  deleteResourceType: (id: string) =>
+    apiFetch<{ success: boolean }>(`/resources/types/${id}`, { method: 'DELETE' }),
+  reorderResourceTypes: (typeIds: string[]) =>
+    apiFetch<ApiResourceTypeItem[]>('/resources/types/reorder', {
+      method: 'PUT',
+      body: JSON.stringify({ typeIds }),
+    }),
 
   getProjects: () => apiFetch<ApiProject[]>('/projects/admin/all'),
   createProject: (data: Partial<ApiProject>) =>

@@ -8,6 +8,8 @@ export interface ApiSubcategory {
   name: string;
   description: string | null;
   position: number;
+  /** Artículos PUBLICADOS en la subcategoría (píldora del filtro del blog). */
+  postsCount?: number;
 }
 
 /** Un nodo del árbol que devuelve `GET /categories`. `value` = slug (va en la URL). */
@@ -21,6 +23,8 @@ export interface CategoryTreeNode {
   position: number;
   /** Clave de color de la paleta (emerald, cyan, ...). */
   color: string;
+  /** Artículos PUBLICADOS en la categoría (píldora del filtro del blog). */
+  postsCount?: number;
   subcategories: ApiSubcategory[];
 }
 

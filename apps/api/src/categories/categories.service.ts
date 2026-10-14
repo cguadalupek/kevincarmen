@@ -17,6 +17,8 @@ export interface SubcategoryView {
   name: string;
   description: string | null;
   position: number;
+  /** Artículos publicados en la subcategoría (lo pintan los filtros del blog). */
+  postsCount?: number;
 }
 
 export interface MainCategoryView {
@@ -28,6 +30,8 @@ export interface MainCategoryView {
   position: number;
   /** Clave de color de la paleta (elegida al crear la categoría). */
   color: string;
+  /** Artículos publicados en la categoría (lo pintan los filtros del blog). */
+  postsCount?: number;
   subcategories: SubcategoryView[];
 }
 
@@ -42,17 +46,40 @@ export class CategoriesService {
    * Como son editables, esto refleja siempre el estado actual.
    */
   async findTree(): Promise<MainCategoryView[]> {
-    const [mains, subs] = await Promise.all([
+    const [mains, subs, mainCounts, subCounts] = await Promise.all([
       this.prisma.mainCategory.findMany({ orderBy: ORDER }),
       this.prisma.subcategory.findMany({
         orderBy: [{ position: 'asc' }, { name: 'asc' }],
       }),
+      /*
+       * Cuántos artículos PUBLICADOS tiene cada categoría y subcategoría: es lo que
+       * muestran los desplegables del blog (mismo criterio que `projectsCount` en las
+       * clasificaciones de proyectos). Se cuenta aquí y no en el cliente porque el
+       * listado de /blog llega ya filtrado por la categoría activa.
+       */
+      this.prisma.post.groupBy({
+        by: ['mainCategoryId'],
+        where: { status: 'PUBLISHED' },
+        _count: { _all: true },
+      }),
+      this.prisma.post.groupBy({
+        by: ['subCategoryId'],
+        where: { status: 'PUBLISHED' },
+        _count: { _all: true },
+      }),
     ]);
+
+    const mainPostCount = new Map(mainCounts.map((row) => [row.mainCategoryId, row._count._all]));
+    const subPostCount = new Map(
+      subCounts
+        .filter((row) => row.subCategoryId)
+        .map((row) => [row.subCategoryId as string, row._count._all]),
+    );
 
     const subsByMain = new Map<string, SubcategoryView[]>();
     for (const sub of subs) {
       const list = subsByMain.get(sub.mainCategoryId) ?? [];
-      list.push(this.toView(sub));
+      list.push({ ...this.toView(sub), postsCount: subPostCount.get(sub.id) ?? 0 });
       subsByMain.set(sub.mainCategoryId, list);
     }
 
@@ -63,6 +90,7 @@ export class CategoriesService {
       description: main.description,
       position: main.position,
       color: main.color,
+      postsCount: mainPostCount.get(main.id) ?? 0,
       subcategories: subsByMain.get(main.id) ?? [],
     }));
   }

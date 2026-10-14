@@ -1,4 +1,4 @@
-import { ResourceType } from '@prisma/client';
+import { LegacyResourceType } from '@prisma/client';
 import {
   IsArray,
   IsBoolean,
@@ -13,7 +13,10 @@ export class UpdateResourceDto {
   @IsOptional() @IsString() @MaxLength(160) title?: string;
   @IsOptional() @IsString() @MaxLength(160) slug?: string;
   @IsOptional() @IsString() @MaxLength(500) description?: string;
-  @IsOptional() @IsEnum(ResourceType) type?: ResourceType;
+  /** @deprecated tipo legado del enum: usar `resourceTypeId`. */
+  @IsOptional() @IsEnum(LegacyResourceType) type?: LegacyResourceType;
+  /** Id del tipo editable (tabla `resource_types`). Vacío = sin tipo enlazado. */
+  @IsOptional() @IsString() resourceTypeId?: string;
   @IsOptional() @IsString() fileUrl?: string;
   @IsOptional() @IsString() fileName?: string;
   @IsOptional() @IsInt() fileSize?: number;

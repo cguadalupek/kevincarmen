@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ArrowUpRight, Clock, FlaskConical, Play, Search } from 'lucide-react';
 import type { PublicLabExperiment, ExperimentStatus } from '@/lib/api/lab';
 import { Pagination } from '@/components/ui/pagination';
+import { FilterList } from '@/components/ui/filter-list';
 import { cn } from '@/lib/utils';
 
 const PAGE_SIZE = 6;
@@ -19,6 +20,15 @@ const STATUS = {
 } satisfies Record<ExperimentStatus, [string, string]>;
 
 type Filter = 'ALL' | ExperimentStatus;
+
+/** Estados en el orden del filtro de la lista (el «todos» lo añade `FilterList`). */
+const STATUSES: ExperimentStatus[] = [
+  'IN_PROGRESS',
+  'SUCCESS',
+  'PARTIAL',
+  'FAILED',
+  'ABANDONED',
+];
 
 export function LabExplorer({ experiments }: { experiments: PublicLabExperiment[] }) {
   const [filter, setFilter] = useState<Filter>('ALL');
@@ -64,36 +74,36 @@ export function LabExplorer({ experiments }: { experiments: PublicLabExperiment[
 
   return (
     <div>
-      <div className="mt-10 flex flex-wrap items-center gap-3">
-        <div className="relative">
+      {/*
+        Buscador + estado: el estado va en la MISMA lista estructurada de filtro que
+        Proyectos y Recursos (`components/ui/filter-list`), en vez de la fila de fichas.
+      */}
+      <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-end">
+        <div className="relative w-full sm:max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Buscar experimento o tecnología…"
-            className="w-72 rounded-lg border border-border bg-muted/40 py-2 pl-9 pr-3 text-sm focus:border-accent focus:outline-none"
+            aria-label="Buscar experimentos"
+            className="h-11 w-full rounded-xl border border-border bg-card/60 py-2 pl-9 pr-3 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
           />
         </div>
-        <div className="flex flex-wrap gap-1.5">
-          {(['ALL', 'IN_PROGRESS', 'SUCCESS', 'PARTIAL', 'FAILED', 'ABANDONED'] as Filter[]).map(
-            (status) => (
-              <button
-                key={status}
-                type="button"
-                onClick={() => setFilter(status)}
-                className={cn(
-                  'rounded-full border px-3 py-1 text-xs transition-colors',
-                  filter === status
-                    ? 'border-accent/60 bg-accent/10 text-accent'
-                    : 'border-border text-muted-foreground hover:border-accent/40 hover:text-foreground',
-                )}
-              >
-                {status === 'ALL' ? 'Todos' : STATUS[status][0]}
-                <span className="ml-1.5 text-muted-foreground/70">{counts[status] ?? 0}</span>
-              </button>
-            ),
-          )}
-        </div>
+        <FilterList
+          className="w-full sm:w-72"
+          label="Estado"
+          icon={<FlaskConical className="h-3.5 w-3.5" />}
+          value={filter}
+          allValue="ALL"
+          allLabel="Todos los estados"
+          allCount={experiments.length}
+          options={STATUSES.map((status) => ({
+            value: status,
+            label: STATUS[status][0],
+            count: counts[status] ?? 0,
+          }))}
+          onSelect={(value) => setFilter(value as Filter)}
+        />
       </div>
 
       {filtered.length === 0 ? (

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { FolderArchive } from 'lucide-react';
 import { FadeIn } from '@/components/motion/fade-in';
-import { getResources } from '@/lib/api/resources';
+import { getResourceTypes, getResources } from '@/lib/api/resources';
 import { ResourceExplorer } from '@/components/lab/resource-explorer';
 
 export const dynamic = 'force-dynamic';
@@ -14,7 +14,8 @@ export const metadata: Metadata = {
 };
 
 export default async function ResourcesPage() {
-  const resources = await getResources();
+  // Los tipos se piden aparte: el filtro lista los que están EN USO, en el orden del panel.
+  const [resources, resourceTypes] = await Promise.all([getResources(), getResourceTypes()]);
 
   return (
     <div className="py-16">
@@ -31,7 +32,7 @@ export default async function ResourcesPage() {
           </p>
         </FadeIn>
 
-        <ResourceExplorer resources={resources} />
+        <ResourceExplorer resources={resources} types={resourceTypes} />
 
         {resources.length === 0 && (
           <div className="mt-12 rounded-xl border border-border bg-card/40 p-10 text-center text-muted-foreground">

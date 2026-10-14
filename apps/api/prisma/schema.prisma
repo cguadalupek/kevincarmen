@@ -52,7 +52,11 @@ enum ExperimentStatus {
   ABANDONED
 }
 
-enum ResourceType {
+/// Tipo LEGADO de un recurso (columna `resources.type`).
+/// La fuente de verdad es `Resource.resourceTypeId` (tabla `resource_types`).
+/// Se conserva como valor denormalizado/por compatibilidad de los recursos
+/// antiguos; el @@map mantiene el nombre del tipo en la base de datos.
+enum LegacyResourceType {
   SCRIPT
   TEMPLATE
   DOCKER
@@ -60,6 +64,8 @@ enum ResourceType {
   GUIDE
   DATASET
   OTHER
+
+  @@map("ResourceType")
 }
 
 enum TimelineEventType {
@@ -424,7 +430,11 @@ model Resource {
   title       String
   slug        String       @unique
   description String
-  type        ResourceType @default(OTHER)
+  /** @deprecated tipo legado (enum fijo): la fuente de verdad es `resourceTypeId`. */
+  type          LegacyResourceType @default(OTHER)
+  /** Tipo editable (tabla `resource_types`, gestionada en el panel). */
+  resourceTypeId String?           @map("resource_type_id")
+  resourceType   ResourceType?     @relation(fields: [resourceTypeId], references: [id], onDelete: SetNull)
   /** URL pública del archivo subido o del enlace externo. */
   fileUrl     String?      @map("file_url")
   /** Nombre original del archivo (para la descarga). */
@@ -443,7 +453,29 @@ model Resource {
   updatedAt   DateTime     @updatedAt @map("updated_at")
 
   @@index([published, position])
+  @@index([resourceTypeId])
   @@map("resources")
+}
+
+/// Tipos de recurso EDITABLES del panel (Recursos › Tipos).
+/// Antes eran un enum fijo en el formulario; ahora son filas de tabla, igual que
+/// `project_categories` o las categorías del blog.
+model ResourceType {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  /// Clave del icono del listado público (ver `RESOURCE_ICONS` en la web).
+  icon        String   @default("file")
+  /** Orden: menor número = primero (múltiplos de 10 para insertar entre dos). */
+  position    Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  resources   Resource[]
+
+  @@index([position])
+  @@map("resource_types")
 }
 
 model Media {

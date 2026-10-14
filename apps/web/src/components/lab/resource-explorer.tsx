@@ -1,29 +1,28 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { Download, FileCode, Search, type LucideIcon } from 'lucide-react';
 import {
-  BookOpen,
-  Container,
-  Database,
-  Download,
-  FileCode,
-  FileText,
-  ListChecks,
-  File as FileIcon,
-  Search,
-} from 'lucide-react';
-import type { PublicResource, ResourceTypeValue } from '@/lib/api/resources';
-import { cn } from '@/lib/utils';
+  LEGACY_RESOURCE_TYPE_ICONS,
+  LEGACY_RESOURCE_TYPE_LABELS,
+  type PublicResource,
+  type PublicResourceType,
+} from '@/lib/api/resources';
+import { FilterList } from '@/components/ui/filter-list';
+import { resourceIcon } from '@/lib/resource-icons';
 
-const TYPE_META: Record<ResourceTypeValue, { label: string; icon: typeof FileCode }> = {
-  SCRIPT: { label: 'Script', icon: FileCode },
-  TEMPLATE: { label: 'Plantilla', icon: FileText },
-  DOCKER: { label: 'Docker / Compose', icon: Container },
-  CHECKLIST: { label: 'Checklist', icon: ListChecks },
-  GUIDE: { label: 'Guía / PDF', icon: BookOpen },
-  DATASET: { label: 'Dataset', icon: Database },
-  OTHER: { label: 'Otro', icon: FileIcon },
-};
+/** Clave del filtro de un recurso: su tipo editable o, si no lo tiene, el enum legado. */
+function typeKey(resource: PublicResource): string {
+  return resource.resourceType?.id ?? `legacy:${resource.type}`;
+}
+
+function typeLabel(resource: PublicResource): string {
+  return resource.resourceType?.name ?? LEGACY_RESOURCE_TYPE_LABELS[resource.type];
+}
+
+function typeIcon(resource: PublicResource): LucideIcon {
+  return resourceIcon(resource.resourceType?.icon ?? LEGACY_RESOURCE_TYPE_ICONS[resource.type]);
+}
 
 function formatBytes(bytes: number | null) {
   if (!bytes) return '';
@@ -32,64 +31,89 @@ function formatBytes(bytes: number | null) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function ResourceExplorer({ resources }: { resources: PublicResource[] }) {
-  const [type, setType] = useState<'ALL' | ResourceTypeValue>('ALL');
+export function ResourceExplorer({
+  resources,
+  types,
+}: {
+  resources: PublicResource[];
+  /** Tipos creados en el panel, en su orden (`position`). */
+  types: PublicResourceType[];
+}) {
+  const [type, setType] = useState<string>('ALL');
   const [query, setQuery] = useState('');
 
-  const counts = useMemo(() => {
-    const result: Record<string, number> = { ALL: resources.length };
-    for (const resource of resources) result[resource.type] = (result[resource.type] ?? 0) + 1;
-    return result;
-  }, [resources]);
+  /**
+   * Opciones del filtro: sólo los tipos que TIENEN recursos publicados (una opción
+   * que lleva a «no hay nada» es un callejón sin salida), en el orden del panel.
+   * Los recursos antiguos sin tipo enlazado se agrupan por su valor de enum.
+   */
+  const options = useMemo(() => {
+    const seen = new Map<string, { count: number; label: string }>();
+    for (const resource of resources) {
+      const key = typeKey(resource);
+      const current = seen.get(key);
+      seen.set(key, {
+        count: (current?.count ?? 0) + 1,
+        label: current?.label ?? typeLabel(resource),
+      });
+    }
+
+    const ranked = types
+      .filter((entry) => seen.has(entry.id))
+      .map((entry) => ({ value: entry.id, label: entry.name, count: seen.get(entry.id)?.count ?? 0 }));
+
+    const known = new Set(ranked.map((entry) => entry.value));
+    const leftovers = Array.from(seen.entries())
+      .filter(([key]) => !known.has(key))
+      .map(([value, entry]) => ({ value, label: entry.label, count: entry.count }))
+      .sort((a, b) => a.label.localeCompare(b.label, 'es'));
+
+    return [...ranked, ...leftovers];
+  }, [resources, types]);
+
+  // Si el tipo activo desaparece (se borró o se quedó sin recursos), vuelve a «Todos».
+  const activeValue = type !== 'ALL' && !options.some((option) => option.value === type) ? 'ALL' : type;
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return resources.filter((resource) => {
-      if (type !== 'ALL' && resource.type !== type) return false;
+      if (activeValue !== 'ALL' && typeKey(resource) !== activeValue) return false;
       if (!q) return true;
       return (
         resource.title.toLowerCase().includes(q) ||
         resource.description.toLowerCase().includes(q) ||
+        typeLabel(resource).toLowerCase().includes(q) ||
         resource.tags.some((tag) => tag.toLowerCase().includes(q))
       );
     });
-  }, [resources, type, query]);
-
-  const filters: ('ALL' | ResourceTypeValue)[] = [
-    'ALL',
-    ...(Object.keys(TYPE_META) as ResourceTypeValue[]),
-  ];
+  }, [resources, activeValue, query]);
 
   return (
     <div>
-      <div className="mt-10 flex flex-wrap items-center gap-3">
-        <div className="relative">
+      {/* Buscador + tipo: la lista estructurada de filtro del resto del sitio. */}
+      <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-end">
+        <div className="relative w-full sm:max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Buscar recurso…"
-            className="w-64 rounded-lg border border-border bg-muted/40 py-2 pl-9 pr-3 text-sm focus:border-accent focus:outline-none"
+            aria-label="Buscar recursos"
+            className="h-11 w-full rounded-xl border border-border bg-card/60 py-2 pl-9 pr-3 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
           />
         </div>
-        <div className="flex flex-wrap gap-1.5">
-          {filters.map((value) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => setType(value)}
-              className={cn(
-                'rounded-full border px-3 py-1 text-xs transition-colors',
-                type === value
-                  ? 'border-accent/60 bg-accent/10 text-accent'
-                  : 'border-border text-muted-foreground hover:border-accent/40 hover:text-foreground',
-              )}
-            >
-              {value === 'ALL' ? 'Todos' : TYPE_META[value].label}
-              <span className="ml-1.5 text-muted-foreground/70">{counts[value] ?? 0}</span>
-            </button>
-          ))}
-        </div>
+        <FilterList
+          className="w-full sm:w-80"
+          label="Tipo"
+          icon={<FileCode className="h-3.5 w-3.5" />}
+          value={activeValue}
+          allValue="ALL"
+          allLabel="Todos los tipos"
+          allCount={resources.length}
+          options={options.map(({ value, label, count }) => ({ value, label, count }))}
+          onSelect={setType}
+          emptyLabel="Sin tipos"
+        />
       </div>
 
       {filtered.length === 0 ? (
@@ -99,8 +123,8 @@ export function ResourceExplorer({ resources }: { resources: PublicResource[] })
       ) : (
         <div className="mt-8 grid gap-6 sm:grid-cols-2">
           {filtered.map((resource) => {
-            const meta = TYPE_META[resource.type];
-            const Icon = meta.icon;
+            const label = typeLabel(resource);
+            const Icon = typeIcon(resource);
             const downloadUrl = `/api/v1/resources/${resource.slug}/download`;
             return (
               <article key={resource.id} className="glass-card group p-6 hover-lift">
@@ -112,7 +136,7 @@ export function ResourceExplorer({ resources }: { resources: PublicResource[] })
                     <div className="flex flex-wrap items-center gap-2">
                       <h2 className="font-semibold">{resource.title}</h2>
                       <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
-                        {meta.label}
+                        {label}
                       </span>
                       {resource.version && (
                         <span className="rounded-full bg-accent/10 px-2 py-0.5 font-mono text-xs text-accent">

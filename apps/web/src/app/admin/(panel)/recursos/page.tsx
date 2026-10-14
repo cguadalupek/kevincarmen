@@ -1,55 +1,16 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import {
-  Check,
-  Copy,
-  Download,
-  ExternalLink,
-  Pencil,
-  Plus,
-  Save,
-  Trash2,
-  Upload,
-  X,
-} from 'lucide-react';
-import { slugify } from '@kevincarmen/utils';
+import { useCallback, useEffect, useState } from 'react';
+import { Check, Copy, Download, FileCode, FolderArchive, Pencil, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AdminListCard } from '@/components/admin/admin-list-card';
 import { AdminPageHeader } from '@/components/admin/admin-page-header';
-import { ChipInput } from '@/components/admin/chip-input';
-import { api, type ApiResource, type ApiResourceType } from '@/lib/api/client';
+import { AdminSubNav } from '@/components/admin/admin-subnav';
+import { ResourceEditorModal } from '@/components/admin/resource-editor';
+import { api, type ApiResource, type ApiResourceTypeItem } from '@/lib/api/client';
+import { LEGACY_RESOURCE_TYPE_ICONS, LEGACY_RESOURCE_TYPE_LABELS } from '@/lib/api/resources';
+import { resourceIcon } from '@/lib/resource-icons';
 import { formatDate } from '@kevincarmen/utils';
-import { cn } from '@/lib/utils';
-
-const TYPE_OPTIONS: { value: ApiResourceType; label: string }[] = [
-  { value: 'SCRIPT', label: 'Script' },
-  { value: 'TEMPLATE', label: 'Plantilla' },
-  { value: 'DOCKER', label: 'Docker / Compose' },
-  { value: 'CHECKLIST', label: 'Checklist' },
-  { value: 'GUIDE', label: 'Guía / PDF' },
-  { value: 'DATASET', label: 'Dataset' },
-  { value: 'OTHER', label: 'Otro' },
-];
-
-const fieldClass =
-  'w-full rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent';
-
-function emptyResource(): Partial<ApiResource> {
-  return {
-    title: '',
-    description: '',
-    type: 'SCRIPT',
-    fileUrl: '',
-    fileName: '',
-    fileSize: null,
-    version: '',
-    tags: [],
-    published: true,
-    featured: false,
-    position: 0,
-  };
-}
 
 function formatBytes(bytes: number | null) {
   if (!bytes) return '';
@@ -60,105 +21,30 @@ function formatBytes(bytes: number | null) {
 
 export default function AdminResourcesPage() {
   const [resources, setResources] = useState<ApiResource[]>([]);
+  const [types, setTypes] = useState<ApiResourceTypeItem[]>([]);
+  /**
+   * Editor en vista superpuesta (`ResourceEditorModal`): `undefined` = cerrado,
+   * `null` = recurso nuevo, un recurso = edición del existente.
+   */
+  const [editor, setEditor] = useState<ApiResource | null | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [editing, setEditing] = useState<Partial<ApiResource> | null>(null);
-  const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [autoSlug, setAutoSlug] = useState(true);
   const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
-  const fileRef = useRef<HTMLInputElement>(null);
 
-  function load() {
+  const load = useCallback(() => {
     setLoading(true);
-    api
-      .getResources()
-      .then(setResources)
+    Promise.all([api.getResources(), api.getResourceTypes()])
+      .then(([resourceList, typeList]) => {
+        setResources(resourceList);
+        setTypes(typeList);
+      })
       .catch((err) => setError(err instanceof Error ? err.message : 'Error al cargar recursos'))
       .finally(() => setLoading(false));
-  }
+  }, []);
 
   useEffect(() => {
     load();
-  }, []);
-
-  function openCreate() {
-    setEditing(emptyResource());
-    setAutoSlug(true);
-    setError('');
-  }
-
-  function openEdit(resource: ApiResource) {
-    setEditing({ ...resource });
-    setAutoSlug(false);
-    setError('');
-  }
-
-  function closeForm() {
-    setEditing(null);
-    setError('');
-  }
-
-  function update(key: keyof ApiResource, value: unknown) {
-    setEditing((current) => (current ? { ...current, [key]: value } : current));
-  }
-
-  function handleTitleChange(value: string) {
-    update('title', value);
-    if (autoSlug) update('slug', slugify(value));
-  }
-
-  async function handleFile(file: File) {
-    setUploading(true);
-    setError('');
-    try {
-      const result = await api.uploadFile(file);
-      update('fileUrl', result.url);
-      update('fileName', result.fileName);
-      update('fileSize', result.size);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al subir el archivo');
-    } finally {
-      setUploading(false);
-    }
-  }
-
-  async function handleSubmit(event: React.FormEvent) {
-    event.preventDefault();
-    if (!editing) return;
-    setSaving(true);
-    setError('');
-
-    const payload: Partial<ApiResource> = {
-      title: (editing.title ?? '').trim(),
-      slug: (editing.slug ?? '').trim() || undefined,
-      description: (editing.description ?? '').trim(),
-      type: editing.type ?? 'SCRIPT',
-      fileUrl: (editing.fileUrl ?? '').trim() || null,
-      fileName: (editing.fileName ?? '').trim() || null,
-      fileSize: editing.fileSize ?? null,
-      version: (editing.version ?? '').trim() || null,
-      tags: editing.tags ?? [],
-      published: editing.published ?? true,
-      featured: editing.featured ?? false,
-      position: editing.position ?? 0,
-    };
-
-    try {
-      if (editing.id) {
-        await api.updateResource(editing.id, payload);
-      } else {
-        await api.createResource(payload);
-      }
-      await api.revalidateSite();
-      closeForm();
-      load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al guardar');
-    } finally {
-      setSaving(false);
-    }
-  }
+  }, [load]);
 
   async function handleDelete(resource: ApiResource) {
     if (!window.confirm(`¿Eliminar el recurso "${resource.title}"?`)) return;
@@ -179,8 +65,9 @@ export default function AdminResourcesPage() {
     setTimeout(() => setCopiedSlug(null), 1500);
   }
 
-  const typeLabel = (type: ApiResourceType) =>
-    TYPE_OPTIONS.find((option) => option.value === type)?.label ?? type;
+  /** Nombre del tipo: el editable o, en recursos antiguos, el del enum legado. */
+  const typeLabel = (resource: ApiResource) =>
+    resource.resourceType?.name ?? LEGACY_RESOURCE_TYPE_LABELS[resource.type];
 
   return (
     <>
@@ -188,10 +75,31 @@ export default function AdminResourcesPage() {
         title="Recursos"
         subtitle="Scripts, plantillas y descargas de la sección pública /recursos."
         action={
-          <Button variant="accent" onClick={openCreate} disabled={!!editing}>
+          <Button variant="accent" onClick={() => setEditor(null)} disabled={editor !== undefined}>
             <Plus className="h-4 w-4" /> Nuevo recurso
           </Button>
         }
+      />
+
+      <AdminSubNav
+        ariaLabel="Subsecciones de recursos"
+        items={[
+          {
+            key: 'recursos',
+            label: 'Recursos',
+            icon: <FolderArchive className="h-4 w-4 shrink-0" />,
+            href: '/admin/recursos',
+            active: true,
+            badge: resources.length,
+          },
+          {
+            key: 'tipos',
+            label: 'Tipos',
+            icon: <FileCode className="h-4 w-4 shrink-0" />,
+            href: '/admin/recursos/tipos',
+            badge: types.length,
+          },
+        ]}
       />
 
       {error && (
@@ -200,172 +108,17 @@ export default function AdminResourcesPage() {
         </div>
       )}
 
-      {editing && (
-        <form onSubmit={handleSubmit} className="glass-card mb-6 space-y-4 p-5">
-          <div className="flex items-center justify-between">
-            <h2 className="font-semibold">{editing.id ? 'Editar recurso' : 'Nuevo recurso'}</h2>
-            <button
-              type="button"
-              onClick={closeForm}
-              aria-label="Cerrar"
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <label className="block text-sm font-medium">
-              Título
-              <input
-                value={editing.title ?? ''}
-                onChange={(e) => handleTitleChange(e.target.value)}
-                required
-                placeholder="Ej: Backup script de Proxmox"
-                className={cn(fieldClass, 'mt-1')}
-              />
-            </label>
-            <label className="block text-sm font-medium">
-              Slug
-              <input
-                value={editing.slug ?? ''}
-                onChange={(e) => {
-                  setAutoSlug(false);
-                  update('slug', e.target.value);
-                }}
-                placeholder="Auto"
-                className={cn(fieldClass, 'mt-1 font-mono')}
-              />
-            </label>
-          </div>
-
-          <label className="block text-sm font-medium">
-            Descripción
-            <textarea
-              value={editing.description ?? ''}
-              onChange={(e) => update('description', e.target.value)}
-              required
-              rows={2}
-              className={cn(fieldClass, 'mt-1 resize-none')}
-            />
-          </label>
-
-          <div className="grid gap-4 sm:grid-cols-3">
-            <label className="block text-sm font-medium">
-              Tipo
-              <select
-                value={editing.type ?? 'SCRIPT'}
-                onChange={(e) => update('type', e.target.value as ApiResourceType)}
-                className={cn(fieldClass, 'mt-1')}
-              >
-                {TYPE_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label className="block text-sm font-medium">
-              Versión
-              <input
-                value={editing.version ?? ''}
-                onChange={(e) => update('version', e.target.value)}
-                placeholder="1.0"
-                className={cn(fieldClass, 'mt-1')}
-              />
-            </label>
-            <label className="block text-sm font-medium">
-              Posición
-              <input
-                type="number"
-                value={editing.position ?? 0}
-                onChange={(e) => update('position', Number.parseInt(e.target.value, 10) || 0)}
-                className={cn(fieldClass, 'mt-1')}
-              />
-            </label>
-          </div>
-
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div>
-              <p className="mb-1 text-sm font-medium">Archivo descargable</p>
-              <div className="flex gap-2">
-                <input
-                  value={editing.fileUrl ?? ''}
-                  onChange={(e) => update('fileUrl', e.target.value)}
-                  placeholder="/uploads/… o https://…"
-                  className={fieldClass}
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => fileRef.current?.click()}
-                  disabled={uploading}
-                >
-                  <Upload className="h-4 w-4" />
-                  {uploading ? '…' : 'Subir'}
-                </Button>
-              </div>
-              <input
-                ref={fileRef}
-                type="file"
-                className="hidden"
-                onChange={(e) => e.target.files?.[0] && handleFile(e.target.files[0])}
-              />
-              {(editing.fileName || editing.fileSize) && (
-                <p className="mt-1.5 text-xs text-muted-foreground">
-                  {editing.fileName} {editing.fileSize ? `· ${formatBytes(editing.fileSize)}` : ''}
-                </p>
-              )}
-            </div>
-            <label className="block text-sm font-medium">
-              Nombre visible del archivo
-              <input
-                value={editing.fileName ?? ''}
-                onChange={(e) => update('fileName', e.target.value)}
-                placeholder="backup-proxmox.sh"
-                className={cn(fieldClass, 'mt-1 font-mono')}
-              />
-            </label>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-4 text-sm">
-            <label className="inline-flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={editing.published ?? true}
-                onChange={(e) => update('published', e.target.checked)}
-                className="h-4 w-4 rounded border-border bg-muted/50"
-              />
-              Publicado (visible en /recursos)
-            </label>
-            <label className="inline-flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={editing.featured ?? false}
-                onChange={(e) => update('featured', e.target.checked)}
-                className="h-4 w-4 rounded border-border bg-muted/50"
-              />
-              Destacado (aparece primero)
-            </label>
-          </div>
-
-          <ChipInput
-            label="Tags"
-            value={editing.tags ?? []}
-            onChange={(tags) => update('tags', tags)}
-            placeholder="proxmox, backup…"
-          />
-
-          <div className="flex gap-3">
-            <Button type="submit" variant="accent" disabled={saving}>
-              <Save className="h-4 w-4" />
-              {saving ? 'Guardando…' : editing.id ? 'Actualizar recurso' : 'Crear recurso'}
-            </Button>
-            <Button type="button" variant="outline" onClick={closeForm}>
-              Cancelar
-            </Button>
-          </div>
-        </form>
+      {/* El alta y la edición se hacen en la vista superpuesta, sin tapar la lista. */}
+      {editor !== undefined && (
+        <ResourceEditorModal
+          resource={editor}
+          types={types}
+          onClose={() => setEditor(undefined)}
+          onSaved={() => {
+            setEditor(undefined);
+            load();
+          }}
+        />
       )}
 
       {loading ? (
@@ -373,87 +126,97 @@ export default function AdminResourcesPage() {
       ) : resources.length === 0 ? (
         <div className="rounded-xl border border-border bg-card/40 p-14 text-center text-muted-foreground">
           <p>Aún no hay recursos.</p>
-          <Button variant="accent" className="mt-4" onClick={openCreate}>
+          <Button variant="accent" className="mt-4" onClick={() => setEditor(null)}>
             Crear el primero
           </Button>
         </div>
       ) : (
         <div className="space-y-3">
-          {resources.map((resource) => (
-            <AdminListCard
-              key={resource.id}
-              title={resource.title}
-              badges={
-                <>
-                  <span className="shrink-0 rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
-                    {typeLabel(resource.type)}
+          {resources.map((resource) => {
+            const Icon = resourceIcon(
+              resource.resourceType?.icon ?? LEGACY_RESOURCE_TYPE_ICONS[resource.type],
+            );
+            return (
+              <AdminListCard
+                key={resource.id}
+                leading={
+                  <span className="flex h-14 w-14 items-center justify-center rounded-lg bg-muted sm:h-16 sm:w-16">
+                    <Icon className="h-5 w-5 text-accent" />
                   </span>
-                  {resource.featured && (
-                    <span className="shrink-0 rounded-full bg-accent/10 px-2.5 py-0.5 text-xs text-accent">
-                      Destacado
-                    </span>
-                  )}
-                  {!resource.published && (
+                }
+                title={resource.title}
+                badges={
+                  <>
                     <span className="shrink-0 rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
-                      Oculto
+                      {typeLabel(resource)}
                     </span>
-                  )}
-                  <span className="shrink-0 rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
-                    {resource.downloads} descargas
-                  </span>
-                  {resource.fileSize ? (
-                    <span className="shrink-0 rounded-full bg-muted px-2.5 py-0.5 font-mono text-xs text-muted-foreground">
-                      {formatBytes(resource.fileSize)}
-                    </span>
-                  ) : null}
-                </>
-              }
-              meta={
-                <>
-                  {resource.description ? (
-                    <p className="line-clamp-2">{resource.description}</p>
-                  ) : null}
-                  <p className="truncate font-mono">
-                    /recursos · actualizado {formatDate(resource.updatedAt)}
-                  </p>
-                </>
-              }
-              actions={
-                <>
-                  <Button variant="outline" size="sm" onClick={() => copyDownloadLink(resource)}>
-                    {copiedSlug === resource.id ? (
-                      <Check className="h-4 w-4 text-emerald-400" />
-                    ) : (
-                      <Copy className="h-4 w-4" />
+                    {resource.featured && (
+                      <span className="shrink-0 rounded-full bg-accent/10 px-2.5 py-0.5 text-xs text-accent">
+                        Destacado
+                      </span>
                     )}
-                    {copiedSlug === resource.id ? 'Copiado' : 'Enlace'}
-                  </Button>
-                  {resource.fileUrl && (
-                    <Button variant="outline" size="sm" asChild>
-                      <a
-                        href={`/api/v1/resources/${resource.slug}/download`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <Download className="h-4 w-4" /> Probar
-                      </a>
+                    {!resource.published && (
+                      <span className="shrink-0 rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
+                        Oculto
+                      </span>
+                    )}
+                    <span className="shrink-0 rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
+                      {resource.downloads} descargas
+                    </span>
+                    {resource.fileSize ? (
+                      <span className="shrink-0 rounded-full bg-muted px-2.5 py-0.5 font-mono text-xs text-muted-foreground">
+                        {formatBytes(resource.fileSize)}
+                      </span>
+                    ) : null}
+                  </>
+                }
+                meta={
+                  <>
+                    {resource.description ? (
+                      <p className="line-clamp-2">{resource.description}</p>
+                    ) : null}
+                    <p className="truncate font-mono">
+                      /recursos · actualizado {formatDate(resource.updatedAt)}
+                    </p>
+                  </>
+                }
+                actions={
+                  <>
+                    <Button variant="outline" size="sm" onClick={() => copyDownloadLink(resource)}>
+                      {copiedSlug === resource.id ? (
+                        <Check className="h-4 w-4 text-emerald-400" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                      {copiedSlug === resource.id ? 'Copiado' : 'Enlace'}
                     </Button>
-                  )}
-                  <Button variant="outline" size="sm" onClick={() => openEdit(resource)}>
-                    <Pencil className="h-4 w-4" /> Editar
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDelete(resource)}
-                    className="text-red-400 hover:text-red-300"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </>
-              }
-            />
-          ))}
+                    {resource.fileUrl && (
+                      <Button variant="outline" size="sm" asChild>
+                        <a
+                          href={`/api/v1/resources/${resource.slug}/download`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          <Download className="h-4 w-4" /> Probar
+                        </a>
+                      </Button>
+                    )}
+                    <Button variant="outline" size="sm" onClick={() => setEditor(resource)}>
+                      <Pencil className="h-4 w-4" /> Editar
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDelete(resource)}
+                      className="text-red-400 hover:text-red-300"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </>
+                }
+              />
+            );
+          })}
         </div>
       )}
     </>

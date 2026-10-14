@@ -16,6 +16,11 @@ import { join, basename } from 'path';
 import { ResourcesService } from './resources.service';
 import { CreateResourceDto } from './dto/create-resource.dto';
 import { UpdateResourceDto } from './dto/update-resource.dto';
+import {
+  CreateResourceTypeDto,
+  ReorderResourceTypesDto,
+  UpdateResourceTypeDto,
+} from './dto/resource-type.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 const UPLOAD_DIR =
@@ -40,6 +45,40 @@ export class ResourcesController {
   @UseGuards(JwtAuthGuard)
   findById(@Param('id') id: string) {
     return this.resourcesService.findById(id);
+  }
+
+  // ── Tipos de recurso (Recursos › Tipos) ──────────────────────────────────
+  // Todas las rutas con nombre fijo van ANTES de `:id` / `:slug`: Nest resuelve
+  // por orden y `types` se interpretaría como un id si estuvieran después.
+
+  /** Público: tipos editables (los usa el panel y el filtro de /recursos). */
+  @Get('types')
+  findTypes() {
+    return this.resourcesService.findAllTypes();
+  }
+
+  @Put('types/reorder')
+  @UseGuards(JwtAuthGuard)
+  reorderTypes(@Body() dto: ReorderResourceTypesDto) {
+    return this.resourcesService.reorderTypes(dto.typeIds);
+  }
+
+  @Post('types')
+  @UseGuards(JwtAuthGuard)
+  createType(@Body() dto: CreateResourceTypeDto) {
+    return this.resourcesService.createType(dto);
+  }
+
+  @Put('types/:id')
+  @UseGuards(JwtAuthGuard)
+  updateType(@Param('id') id: string, @Body() dto: UpdateResourceTypeDto) {
+    return this.resourcesService.updateType(id, dto);
+  }
+
+  @Delete('types/:id')
+  @UseGuards(JwtAuthGuard)
+  deleteType(@Param('id') id: string) {
+    return this.resourcesService.deleteType(id);
   }
 
   @Post()
