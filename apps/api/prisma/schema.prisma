@@ -212,6 +212,25 @@ model Page {
   @@map("pages")
 }
 
+/// Clasificación de proyectos (editable desde /admin/projects/clasificacion).
+/// Antes eran valores fijos en el formulario; ahora es una tabla como
+/// `MainCategory`, para poder crear/renombrar/reordenar sin tocar código.
+model ProjectCategory {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  slug        String   @unique
+  description String?
+  /** Orden: menor número = primero (múltiplos de 10 para insertar entre dos). */
+  position    Int      @default(0)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  projects    Project[]
+
+  @@index([position])
+  @@map("project_categories")
+}
+
 model Project {
   id              String        @id @default(cuid())
   title           String
@@ -221,7 +240,12 @@ model Project {
     /** Cuerpo del proyecto en Markdown (mismo formato que los artículos). */
     content           String?
     technologies      String[]
+  /** Nombre de la clasificación (denormalizado desde `projectCategory`). */
   category          String?
+  /** Clasificación editable del proyecto. */
+  projectCategoryId String?       @map("project_category_id")
+  /** Orden manual: menor número = primero en el sitio público. */
+  position          Int           @default(0)
   tags              String[]
   projectYear       Int?          @map("project_year")
   repository        String?
@@ -244,6 +268,10 @@ model Project {
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @updatedAt @map("updated_at")
 
+  projectCategory ProjectCategory? @relation(fields: [projectCategoryId], references: [id], onDelete: SetNull)
+
+  @@index([position])
+  @@index([projectCategoryId])
   @@map("projects")
 }
 

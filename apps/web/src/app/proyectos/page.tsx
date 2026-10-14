@@ -1,8 +1,12 @@
 import type { Metadata } from 'next';
-import { getPublishedProjects } from '@/lib/api/projects';
+import { getProjectCategories, getPublishedProjects } from '@/lib/api/projects';
 import { FolderKanban } from 'lucide-react';
 import { ProjectsFilter } from '@/components/projects/projects-filter';
 import { FadeIn } from '@/components/motion/fade-in';
+
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+export const revalidate = 0;
 
 export const metadata: Metadata = {
   title: 'Proyectos',
@@ -11,7 +15,10 @@ export const metadata: Metadata = {
 };
 
 export default async function ProjectsPage() {
-  const projects = await getPublishedProjects();
+  const [projects, categories] = await Promise.all([
+    getPublishedProjects(),
+    getProjectCategories(),
+  ]);
 
   return (
     <div className="py-16">
@@ -25,7 +32,7 @@ export default async function ProjectsPage() {
         </FadeIn>
 
         {projects.length > 0 ? (
-          <ProjectsFilter projects={projects} />
+          <ProjectsFilter projects={projects} categories={categories} />
         ) : (
           <div className="mt-12 rounded-xl border border-border bg-card/40 p-10 text-center text-muted-foreground">Aún no hay proyectos publicados.</div>
         )}

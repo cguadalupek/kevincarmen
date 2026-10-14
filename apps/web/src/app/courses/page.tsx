@@ -7,7 +7,7 @@ import { CourseCard } from '@/components/courses/course-card';
 export const metadata: Metadata = {
   title: 'Cursos',
   description:
-    'Cursos estructurados en módulos y clases con progreso: desarrollo, infraestructura y administración de sistemas.',
+    'Cursos estructurados en módulos y clases de desarrollo, infraestructura y administración de sistemas.',
   alternates: { canonical: '/cursos' },
 };
 
@@ -24,8 +24,8 @@ export default async function CoursesPage() {
           </div>
           <h1 className="section-title mt-3">Cursos</h1>
           <p className="section-subtitle">
-            Formación estructurada en módulos y clases, con tu progreso guardado. Entra a un
-            curso y continúa donde lo dejaste.
+            Formación estructurada en módulos y clases. Entra a un curso y sigue el temario
+            en el orden que quieras.
           </p>
         </FadeIn>
 

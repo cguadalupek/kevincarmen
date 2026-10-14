@@ -2,9 +2,13 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import {
+  ArrowDown,
+  ArrowUp,
   ExternalLink,
   FolderKanban,
+  FolderTree,
   Pencil,
   Plus,
   Save,
@@ -16,8 +20,9 @@ import { slugify } from '@kevincarmen/utils';
 import { Button } from '@/components/ui/button';
 import { AdminListCard } from '@/components/admin/admin-list-card';
 import { AdminPageHeader } from '@/components/admin/admin-page-header';
+import { AdminSubNav } from '@/components/admin/admin-subnav';
 import { PostEditor } from '@/components/admin/post-editor';
-import { api, type ApiProject } from '@/lib/api/client';
+import { api, type ApiProject, type ApiProjectCategory } from '@/lib/api/client';
 
 const STATUS_LABELS = {
   IN_PROGRESS: 'En desarrollo',
@@ -25,15 +30,7 @@ const STATUS_LABELS = {
   ARCHIVED: 'Archivado',
   ACTIVE: 'Activo',
 } as const;
-const CATEGORIES = [
-  'Software',
-  'Web',
-  'Infraestructura',
-  'Automatización',
-  'IA',
-  'Homelab',
-  'Otros',
-];
+
 const IMAGE_ACCEPT = 'image/jpeg,image/png,image/gif,image/webp';
 
 const inputClass =
@@ -50,7 +47,9 @@ interface ProjectDraft {
   featured: boolean;
   projectYear: number | null;
   technologies: string[];
-  category: string;
+  /** Id de la clasificación elegida ('' = sin clasificación). */
+  projectCategoryId: string;
+  position: number | null;
   tags: string[];
   repository: string;
   demo: string;
@@ -69,7 +68,8 @@ function emptyProject(): ProjectDraft {
     featured: false,
     projectYear: new Date().getFullYear(),
     technologies: [],
-    category: '',
+    projectCategoryId: '',
+    position: null,
     tags: [],
     repository: '',
     demo: '',
@@ -90,7 +90,8 @@ function toDraft(item: ApiProject): ProjectDraft {
     featured: item.featured,
     projectYear: item.projectYear,
     technologies: item.technologies,
-    category: item.category ?? '',
+    projectCategoryId: item.projectCategory?.id ?? '',
+    position: item.position ?? null,
     tags: item.tags,
     repository: item.repository ?? '',
     demo: item.demo ?? '',
@@ -100,13 +101,24 @@ function toDraft(item: ApiProject): ProjectDraft {
   };
 }
 
+/** Mueve el elemento `index` una posición arriba/abajo; `null` si se sale de la lista. */
+function move<T>(list: T[], index: number, delta: -1 | 1): T[] | null {
+  const target = index + delta;
+  if (target < 0 || target >= list.length) return null;
+  const next = [...list];
+  [next[index], next[target]] = [next[target], next[index]];
+  return next;
+}
+
 export default function AdminProjectsPage() {
   const [projects, setProjects] = useState<ApiProject[]>([]);
+  const [categories, setCategories] = useState<ApiProjectCategory[]>([]);
   const [draft, setDraft] = useState<ProjectDraft | null>(null);
   const [techInput, setTechInput] = useState('');
   const [tagsInput, setTagsInput] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [reordering, setReordering] = useState(false);
   const [coverUploading, setCoverUploading] = useState(false);
   const [galleryUploading, setGalleryUploading] = useState(false);
   const [autoSlug, setAutoSlug] = useState(false);
@@ -116,9 +128,11 @@ export default function AdminProjectsPage() {
 
   function load() {
     setLoading(true);
-    api
-      .getProjects()
-      .then(setProjects)
+    Promise.all([api.getProjects(), api.getProjectCategories()])
+      .then(([projectList, categoryList]) => {
+        setProjects(projectList);
+        setCategories(categoryList);
+      })
       .catch((e) => setError(e instanceof Error ? e.message : 'Error al cargar proyectos'))
       .finally(() => setLoading(false));
   }
@@ -205,7 +219,8 @@ export default function AdminProjectsPage() {
       featured: draft.featured,
       projectYear: draft.projectYear ? Number(draft.projectYear) : undefined,
       technologies: list(techInput),
-      category: draft.category.trim() || undefined,
+      projectCategoryId: draft.projectCategoryId,
+      position: draft.position ?? undefined,
       tags: list(tagsInput),
       repository: draft.repository.trim() || undefined,
       demo: draft.demo.trim() || undefined,
@@ -235,6 +250,27 @@ export default function AdminProjectsPage() {
     }
   }
 
+  /**
+   * Reordenar con las flechas ↑↓: se manda el array COMPLETO ya intercambiado y el API
+   * renumera (`position` 10, 20, 30…). El mismo orden es el que ve el visitante en
+   * /proyectos y el que decide qué destacados entran primero en la portada.
+   */
+  async function moveProject(index: number, delta: -1 | 1) {
+    const next = move(projects, index, delta);
+    if (!next) return;
+    setReordering(true);
+    setError('');
+    try {
+      setProjects(await api.reorderProjects(next.map((project) => project.id)));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al reordenar');
+    } finally {
+      setReordering(false);
+    }
+  }
+
+  const categoryName = (item: ApiProject) => item.projectCategory?.name ?? item.category ?? null;
+
   return (
     <>
       <AdminPageHeader
@@ -245,6 +281,27 @@ export default function AdminProjectsPage() {
             <Plus className="h-4 w-4" /> Nuevo proyecto
           </Button>
         }
+      />
+
+      <AdminSubNav
+        ariaLabel="Subsecciones de proyectos"
+        items={[
+          {
+            key: 'proyectos',
+            label: 'Proyectos',
+            icon: <FolderKanban className="h-4 w-4 shrink-0" />,
+            href: '/admin/projects',
+            active: true,
+            badge: projects.length,
+          },
+          {
+            key: 'clasificacion',
+            label: 'Clasificación',
+            icon: <FolderTree className="h-4 w-4 shrink-0" />,
+            href: '/admin/projects/clasificacion',
+            badge: categories.length,
+          },
+        ]}
       />
 
       {error && (
@@ -371,24 +428,40 @@ export default function AdminProjectsPage() {
                   />
                   Proyecto destacado
                 </label>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  La portada muestra hasta 6 destacados, en el orden de la lista.
+                </p>
               </section>
 
               <section className="glass-card p-5">
-                <h3 className="mb-4 font-semibold">Clasificación</h3>
+                <div className="mb-4 flex items-start justify-between gap-2">
+                  <h3 className="font-semibold">Clasificación</h3>
+                  <Link
+                    href="/admin/projects/clasificacion"
+                    className="shrink-0 text-xs text-accent hover:underline"
+                  >
+                    Gestionar
+                  </Link>
+                </div>
                 <label htmlFor="project-category" className={labelClass}>
-                  Categoría
+                  Clasificación del proyecto
                 </label>
                 <select
                   id="project-category"
-                  value={draft.category}
-                  onChange={(e) => update('category', e.target.value)}
+                  value={draft.projectCategoryId}
+                  onChange={(e) => update('projectCategoryId', e.target.value)}
                   className={inputClass}
                 >
-                  <option value="">Sin categoría</option>
-                  {CATEGORIES.map((c) => (
-                    <option key={c}>{c}</option>
+                  <option value="">Sin clasificación</option>
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
                   ))}
                 </select>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Se crean y reordenan en «Clasificación». Alimentan el filtro de /proyectos.
+                </p>
                 <label htmlFor="project-tech" className={`${labelClass} mt-4`}>
                   Tecnologías
                 </label>
@@ -409,6 +482,24 @@ export default function AdminProjectsPage() {
                   placeholder="backend, despliegue"
                   className={inputClass}
                 />
+                <label htmlFor="project-position" className={`${labelClass} mt-4`}>
+                  Orden
+                </label>
+                <input
+                  id="project-position"
+                  type="number"
+                  min={0}
+                  step={10}
+                  value={draft.position ?? ''}
+                  onChange={(e) =>
+                    update('position', e.target.value === '' ? null : Number(e.target.value))
+                  }
+                  placeholder="Vacío = al final"
+                  className={inputClass}
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Menor número = primero. También puedes usar las flechas ↑ ↓ del listado.
+                </p>
               </section>
 
               <section className="glass-card p-5">
@@ -572,7 +663,10 @@ export default function AdminProjectsPage() {
         </div>
       ) : (
         <div className="space-y-3">
-          {projects.map((item) => (
+          {reordering && (
+            <p className="text-xs text-muted-foreground">Guardando el nuevo orden…</p>
+          )}
+          {projects.map((item, index) => (
             <AdminListCard
               key={item.id}
               leading={
@@ -587,7 +681,14 @@ export default function AdminProjectsPage() {
                   />
                 ) : null
               }
-              title={item.title}
+              title={
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className="shrink-0 font-mono text-xs text-muted-foreground">
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
+                  <span className="min-w-0">{item.title}</span>
+                </span>
+              }
               badges={
                 <>
                   <span className="shrink-0 rounded-full bg-accent/10 px-2.5 py-0.5 text-xs text-accent">
@@ -598,9 +699,9 @@ export default function AdminProjectsPage() {
                       Destacado
                     </span>
                   )}
-                  {item.category && (
+                  {categoryName(item) && (
                     <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
-                      <FolderKanban className="h-3 w-3" /> {item.category}
+                      <FolderKanban className="h-3 w-3" /> {categoryName(item)}
                     </span>
                   )}
                 </>
@@ -610,6 +711,26 @@ export default function AdminProjectsPage() {
               }
               actions={
                 <>
+                  <button
+                    type="button"
+                    onClick={() => moveProject(index, -1)}
+                    disabled={index === 0 || reordering}
+                    className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/60 hover:text-accent disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
+                    aria-label={`Mover ${item.title} antes`}
+                    title="Mover antes"
+                  >
+                    <ArrowUp className="h-4 w-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => moveProject(index, 1)}
+                    disabled={index === projects.length - 1 || reordering}
+                    className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-muted/60 hover:text-accent disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:bg-transparent"
+                    aria-label={`Mover ${item.title} después`}
+                    title="Mover después"
+                  >
+                    <ArrowDown className="h-4 w-4" />
+                  </button>
                   <Button variant="outline" size="sm" onClick={() => editProject(item)}>
                     <Pencil className="h-4 w-4" /> Editar
                   </Button>
@@ -627,6 +748,31 @@ export default function AdminProjectsPage() {
           ))}
         </div>
       )}
+
+      <div className="mt-10 rounded-lg border border-border/60 bg-muted/20 p-4 text-xs text-muted-foreground">
+        <p className="flex items-center gap-2 text-foreground">
+          <FolderTree className="h-3.5 w-3.5" /> Cómo funciona el orden
+        </p>
+        <ul className="mt-2 list-inside list-disc space-y-1">
+          <li>
+            Las flechas ↑ ↓ reordenan el listado y ese mismo orden es el del sitio público
+            (/proyectos) y el de la sección «Proyectos destacados» de la portada.
+          </li>
+          <li>
+            El número de la izquierda de cada fila es su posición real. Se renumera en múltiplos
+            de 10 para poder insertar entre dos sin tocar el resto.
+          </li>
+          <li>
+            «Destacado» decide si el proyecto entra en la portada (hasta 6, los primeros de la
+            lista).
+          </li>
+          <li>
+            Las clasificaciones («Software», «Web»…) ya no son fijas: se crean, renombran y
+            reordenan en la subsección «Clasificación»; renombrar una actualiza los proyectos que
+            la usan.
+          </li>
+        </ul>
+      </div>
     </>
   );
 }

@@ -18,7 +18,14 @@ const toolButtonClass = cn(
  * - overflow-x-auto + botones con shrink-0: en pantallas estrechas la barra NO se rompe a
  *   varias filas ni encoge los iconos; los botones que no caben se deslizan horizontalmente.
  */
-export function FormattingToolbar({ editor }: { editor: Editor }) {
+export function FormattingToolbar({
+  editor,
+  topClass = 'top-14 md:top-0',
+}: {
+  editor: Editor;
+  /** Clase de anclaje del `sticky`. Las vistas superpuestas usan `top-0`. */
+  topClass?: string;
+}) {
   const items = [
     { label: 'Negrita', icon: Bold, active: editor.isActive('bold'), run: () => editor.chain().focus().toggleBold().run() },
     { label: 'Cursiva', icon: Italic, active: editor.isActive('italic'), run: () => editor.chain().focus().toggleItalic().run() },
@@ -32,7 +39,10 @@ export function FormattingToolbar({ editor }: { editor: Editor }) {
 
   return (
     <div
-      className="sticky top-14 z-20 flex items-center gap-1 overflow-x-auto rounded-t-xl border-b border-border bg-card px-2 py-1.5 shadow-sm thin-scrollbar md:top-0"
+      className={cn(
+        'sticky z-20 flex items-center gap-1 overflow-x-auto rounded-t-xl border-b border-border bg-card px-2 py-1.5 shadow-sm thin-scrollbar',
+        topClass,
+      )}
       role="toolbar"
       aria-label="Formato del artículo"
     >

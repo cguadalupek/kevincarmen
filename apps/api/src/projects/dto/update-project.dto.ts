@@ -11,6 +11,8 @@ export class UpdateProjectDto {
   @IsOptional() @IsString() longDescription?: string;
   @IsOptional() @IsArray() @IsString({ each: true }) technologies?: string[];
   @IsOptional() @IsString() category?: string;
+  @IsOptional() @IsString() projectCategoryId?: string;
+  @IsOptional() @IsInt() @Min(0) position?: number;
   @IsOptional() @IsArray() @IsString({ each: true }) tags?: string[];
   @IsOptional() @IsInt() @Min(1900) projectYear?: number;
   @IsOptional() @IsString() repository?: string;

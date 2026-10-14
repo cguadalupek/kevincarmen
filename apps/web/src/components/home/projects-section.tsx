@@ -12,6 +12,12 @@ interface ProjectsSectionProps {
   projects: PublicProject[];
 }
 
+/**
+ * Tope de destacados en la portada: con más de 6 la sección se vuelve un listado
+ * largo y empuja el resto de la home demasiado abajo. El resto vive en /proyectos.
+ */
+const MAX_FEATURED_PROJECTS = 6;
+
 const statusLabels = {
   ACTIVE: 'Activo',
   COMPLETED: 'Completado',
@@ -27,7 +33,15 @@ const statusColors = {
 } as const;
 
 export function ProjectsSection({ projects }: ProjectsSectionProps) {
-  const featuredProjects = projects.filter((project) => project.featured);
+  // El API ya los devuelve en el orden manual del panel (position asc): el tope se
+  // aplica al final, sin reordenar.
+  const featuredProjects = projects
+    .filter((project) => project.featured)
+    .slice(0, MAX_FEATURED_PROJECTS);
+
+  const hasMore =
+    projects.filter((project) => project.featured).length > MAX_FEATURED_PROJECTS ||
+    projects.length > MAX_FEATURED_PROJECTS;
 
   return (
     <section className="py-20" id="proyectos">
@@ -40,7 +54,7 @@ export function ProjectsSection({ projects }: ProjectsSectionProps) {
             </p>
           </div>
           <Link
-            href="/projects"
+            href="/proyectos"
             className="hidden items-center gap-1 text-sm text-accent transition-colors hover:text-accent/80 sm:flex"
           >
             Ver todos
@@ -105,11 +119,13 @@ export function ProjectsSection({ projects }: ProjectsSectionProps) {
           ))}
         </StaggerContainer>
 
-        <FadeIn className="mt-8 text-center sm:hidden">
+        {hasMore && (
+          <FadeIn className="mt-8 text-center sm:hidden">
             <Link href="/proyectos" className="text-sm text-accent">
-            Ver todos los proyectos →
-          </Link>
-        </FadeIn>
+              Ver todos los proyectos →
+            </Link>
+          </FadeIn>
+        )}
       </div>
     </section>
   );

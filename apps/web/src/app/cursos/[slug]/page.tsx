@@ -259,8 +259,7 @@ export default async function CoursePage({ params }: CoursePageProps) {
         <section className="mt-14 rounded-2xl border border-accent/25 bg-gradient-to-br from-accent/10 via-card/60 to-card p-8 text-center sm:p-12">
           <h2 className="text-2xl font-bold">Listo para empezar</h2>
           <p className="mx-auto mt-2 max-w-xl text-sm text-muted-foreground">
-            Tu progreso se guarda automáticamente en este navegador. Puedes ir y volver cuando
-            quieras.
+            Todo el material es abierto: entra a cualquier clase cuando quieras, sin registro.
           </p>
           <div className="mt-6 flex justify-center">
             <CourseCta course={course} />

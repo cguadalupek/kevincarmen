@@ -10,7 +10,12 @@ export class CreateProjectDto {
   @IsOptional() @IsString() content?: string;
   @IsOptional() @IsString() longDescription?: string;
   @IsOptional() @IsArray() @IsString({ each: true }) technologies?: string[];
+  /** Nombre de la clasificación (compatibilidad: normalmente se manda `projectCategoryId`). */
   @IsOptional() @IsString() category?: string;
+  /** Id de la clasificación del proyecto (tabla `project_categories`). */
+  @IsOptional() @IsString() projectCategoryId?: string;
+  /** Orden manual; vacío = se coloca al final. */
+  @IsOptional() @IsInt() @Min(0) position?: number;
   @IsOptional() @IsArray() @IsString({ each: true }) tags?: string[];
   @IsOptional() @IsInt() @Min(1900) projectYear?: number;
   @IsOptional() @IsString() repository?: string;

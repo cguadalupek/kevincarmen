@@ -3,6 +3,20 @@ const API_URL =
 
 export type PublicProjectStatus = 'ACTIVE' | 'COMPLETED' | 'ARCHIVED' | 'IN_PROGRESS';
 
+/** Clasificación del proyecto (tabla editable desde el panel). */
+export interface PublicProjectCategory {
+  id: string;
+  name: string;
+  slug: string;
+  position: number;
+}
+
+/** Clasificación con el número de proyectos publicados que la usan. */
+export interface ProjectCategoryOption extends PublicProjectCategory {
+  description: string | null;
+  projectsCount: number;
+}
+
 export interface PublicProject {
   id: string;
   title: string;
@@ -12,6 +26,8 @@ export interface PublicProject {
   content: string | null;
   technologies: string[];
   category: string | null;
+  projectCategory: PublicProjectCategory | null;
+  position: number;
   tags: string[];
   projectYear: number | null;
   repository: string | null;
@@ -52,6 +68,21 @@ export async function getPublishedProjects(): Promise<PublicProject[]> {
     if (!response.ok) return [];
     const data: unknown = await response.json();
     return Array.isArray(data) ? (data as PublicProject[]) : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Clasificaciones creadas en el panel (ordenadas por `position`). */
+export async function getProjectCategories(): Promise<ProjectCategoryOption[]> {
+  try {
+    const response = await fetch(`${API_URL}/projects/categories`, {
+      cache: 'no-store',
+      headers: { Accept: 'application/json' },
+    });
+    if (!response.ok) return [];
+    const data: unknown = await response.json();
+    return Array.isArray(data) ? (data as ProjectCategoryOption[]) : [];
   } catch {
     return [];
   }

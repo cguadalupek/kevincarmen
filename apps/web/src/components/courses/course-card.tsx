@@ -1,9 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { BookOpen, CheckCircle2, Clock, GraduationCap, Layers, Signal } from 'lucide-react';
+import { BookOpen, Clock, GraduationCap, Layers, Signal } from 'lucide-react';
 import type { PublicCourse } from '@/lib/api/courses';
-import { useCourseProgress } from '@/lib/course-progress';
 import { cn } from '@/lib/utils';
 
 const levelLabels = {
@@ -19,9 +18,11 @@ const statusLabels = {
   ARCHIVED: 'Archivado',
 } as const;
 
+/**
+ * Tarjeta de curso del catálogo. Sin barra de progreso: los cursos son abiertos,
+ * no hay seguimiento del alumno (se retiró junto con la lógica de progreso).
+ */
 export function CourseCard({ course }: { course: PublicCourse }) {
-  const { percent, completedCount } = useCourseProgress(course.slug, course.lessonIds);
-
   return (
     <article className="glass-card flex h-full flex-col overflow-hidden hover-lift">
       <Link href={`/cursos/${course.slug}`} className="group flex h-full flex-col">
@@ -76,25 +77,8 @@ export function CourseCard({ course }: { course: PublicCourse }) {
             </span>
           </div>
 
-          {completedCount > 0 && (
-            <div className="mt-4">
-              <div className="mb-1 flex items-center justify-between text-[11px] text-muted-foreground">
-                <span className="flex items-center gap-1 text-accent">
-                  <CheckCircle2 className="h-3 w-3" /> En progreso
-                </span>
-                <span className="font-mono">{percent}%</span>
-              </div>
-              <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-accent/70 to-accent shadow-[0_0_8px_rgb(var(--accent)/0.5)] transition-all"
-                  style={{ width: `${percent}%` }}
-                />
-              </div>
-            </div>
-          )}
-
           <span className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-accent">
-            {completedCount > 0 ? 'Continuar curso' : 'Ver curso'}
+            Ver curso
             <BookOpen className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
           </span>
         </div>

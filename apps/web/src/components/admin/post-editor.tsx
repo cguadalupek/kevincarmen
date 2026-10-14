@@ -30,6 +30,12 @@ interface PostEditorProps {
   onChange: (markdown: string) => void;
   videoUrl?: string;
   onVideoPaste?: (url: string) => void;
+  /**
+   * Clase de anclaje de la barra de formato. Dentro de una vista superpuesta (modal)
+   * el contenedor de scroll arranca bajo la cabecera, así que se pasa `top-0` para
+   * que la barra quede pegada al borde superior y no deje un hueco de 56 px.
+   */
+  toolbarTopClass?: string;
 }
 
 async function insertImageFiles(editor: Editor, files: FileList | File[]) {
@@ -44,7 +50,7 @@ async function insertImageFiles(editor: Editor, files: FileList | File[]) {
   }
 }
 
-export function PostEditor({ content, onChange, onVideoPaste }: PostEditorProps) {
+export function PostEditor({ content, onChange, onVideoPaste, toolbarTopClass }: PostEditorProps) {
   const editorRef = useRef<Editor | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const onChangeRef = useRef(onChange);
@@ -230,7 +236,7 @@ if (text && /^https?:\/\//i.test(text)) {
         onChange={handleImageInput}
       />
 
-      <FormattingToolbar editor={editor} />
+      <FormattingToolbar editor={editor} {...(toolbarTopClass ? { topClass: toolbarTopClass } : {})} />
       <CodeBlockToolbar editor={editor} />
 
       <EditorContent editor={editor} />

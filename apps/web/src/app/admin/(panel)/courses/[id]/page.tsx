@@ -13,17 +13,21 @@ import {
   EyeOff,
   FolderPlus,
   GripVertical,
+  Image as ImageIcon,
   ListVideo,
   Loader2,
   Pencil,
   Plus,
   Save,
+  Settings2,
   Trash2,
   Upload,
   X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { MarkdownContent } from '@/components/blog/markdown-content';
+import { AdminModal } from '@/components/admin/admin-modal';
+import { AdminSubNav } from '@/components/admin/admin-subnav';
+import { PostEditor } from '@/components/admin/post-editor';
 import {
   api,
   type ApiCourse,
@@ -38,8 +42,13 @@ interface CourseStudioPageProps {
   params: Promise<{ id: string }>;
 }
 
-type Selection =
-  { kind: 'settings' } | { kind: 'module'; id: string } | { kind: 'lesson'; id: string };
+/** Subsecciones del editor del curso. */
+type StudioTab = 'contenido' | 'ajustes';
+
+interface LessonTarget {
+  moduleIndex: number;
+  lessonIndex: number;
+}
 
 const DRAFT_KEY_PREFIX = 'kc:admin:course:';
 
@@ -83,8 +92,12 @@ export default function CourseStudio({ params }: CourseStudioPageProps) {
   const [dirty, setDirty] = useState(false);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ kind: 'ok' | 'err'; text: string } | null>(null);
-  const [sel, setSel] = useState<Selection>({ kind: 'settings' });
+  const [tab, setTab] = useState<StudioTab>('contenido');
   const [draftBanner, setDraftBanner] = useState(false);
+  /** Clase abierta en la vista superpuesta (null = cerrada). */
+  const [lessonTarget, setLessonTarget] = useState<LessonTarget | null>(null);
+  /** Módulo abierto en la vista superpuesta (null = cerrado). */
+  const [moduleTarget, setModuleTarget] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -92,7 +105,7 @@ export default function CourseStudio({ params }: CourseStudioPageProps) {
       const data = await api.getCourseAdmin(id);
       setCourse(data);
       setDirty(false);
-      setSel({ kind: 'settings' });
+      setTab('contenido');
       // ¿Hay un borrador de una sesión anterior?
       try {
         const raw = localStorage.getItem(DRAFT_KEY_PREFIX + id);
@@ -185,7 +198,7 @@ export default function CourseStudio({ params }: CourseStudioPageProps) {
       updatedAt: '',
     };
     patch((c) => ({ ...c, modules: [...c.modules, mod] }));
-    setSel({ kind: 'module', id: mod.id });
+    setModuleTarget(course?.modules.length ?? 0);
   };
 
   const addLesson = (moduleIndex: number) => {
@@ -214,7 +227,7 @@ export default function CourseStudio({ params }: CourseStudioPageProps) {
       );
       return { ...c, modules };
     });
-    setSel({ kind: 'lesson', id: lesson.id });
+    setLessonTarget({ moduleIndex, lessonIndex: course?.modules[moduleIndex]?.lessons.length ?? 0 });
   };
 
   const duplicateLesson = (moduleIndex: number, lessonIndex: number) => {
@@ -247,7 +260,7 @@ export default function CourseStudio({ params }: CourseStudioPageProps) {
         i === moduleIndex ? { ...m, lessons: m.lessons.filter((_, j) => j !== lessonIndex) } : m,
       ),
     }));
-    setSel({ kind: 'module', id: course!.modules[moduleIndex].id });
+    setLessonTarget(null);
   };
 
   const removeModule = (moduleIndex: number) => {
@@ -260,7 +273,7 @@ export default function CourseStudio({ params }: CourseStudioPageProps) {
         : `¿Eliminar el módulo "${mod.title}"?`;
     if (!window.confirm(confirmText)) return;
     patch((c) => ({ ...c, modules: c.modules.filter((_, i) => i !== moduleIndex) }));
-    setSel({ kind: 'settings' });
+    setModuleTarget(null);
   };
 
   const duplicateModule = (moduleIndex: number) => {
@@ -379,7 +392,8 @@ export default function CourseStudio({ params }: CourseStudioPageProps) {
           content: l.content || null,
           duration: l.duration || 0,
           resources: l.resources,
-          isFree: l.isFree,
+          // Sin cursos de pago: todas las clases quedan abiertas.
+          isFree: true,
           published: l.published,
         })),
       }));
@@ -390,7 +404,8 @@ export default function CourseStudio({ params }: CourseStudioPageProps) {
       setCourse(fresh);
       setDirty(false);
       localStorage.removeItem(DRAFT_KEY_PREFIX + course.id);
-      setSel({ kind: 'settings' });
+      setLessonTarget(null);
+      setModuleTarget(null);
       toastOk('Curso guardado ✔');
     } catch (err) {
       toastErr(err instanceof Error ? err.message : 'Error al guardar');
@@ -401,20 +416,6 @@ export default function CourseStudio({ params }: CourseStudioPageProps) {
 
   /* ───────────── render ───────────── */
 
-  const selModuleIndex = useMemo(() => {
-    if (!course || sel.kind !== 'module') return -1;
-    return course.modules.findIndex((m) => m.id === sel.id);
-  }, [course, sel]);
-
-  const selLesson = useMemo(() => {
-    if (!course || sel.kind !== 'lesson') return null;
-    for (let i = 0; i < course.modules.length; i += 1) {
-      const found = course.modules[i].lessons.findIndex((l) => l.id === sel.id);
-      if (found >= 0) return { moduleIndex: i, lessonIndex: found };
-    }
-    return null;
-  }, [course, sel]);
-
   const publishedCount = course?.modules.reduce(
     (sum, m) => sum + m.lessons.filter((l) => l.published).length,
     0,
@@ -422,6 +423,14 @@ export default function CourseStudio({ params }: CourseStudioPageProps) {
   const totalMinutes = course?.modules.reduce(
     (sum, m) => sum + m.lessons.reduce((s, l) => s + (l.duration || 0), 0),
     0,
+  );
+
+  const openLesson = useMemo(
+    () =>
+      lessonTarget && course
+        ? course.modules[lessonTarget.moduleIndex]?.lessons[lessonTarget.lessonIndex] ?? null
+        : null,
+    [lessonTarget, course],
   );
 
   return (
@@ -440,25 +449,25 @@ export default function CourseStudio({ params }: CourseStudioPageProps) {
       ) : (
         <div className="flex min-h-full flex-col">
           {/* barra superior sticky */}
-          <div className="sticky top-0 z-20 border-b border-border bg-background/90 backdrop-blur-md">
-            <div className="flex items-center gap-3 px-6 py-3">
+          <div className="sticky top-14 z-20 border-b border-border bg-background/90 backdrop-blur-md md:top-0">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 sm:px-6">
               <Link
                 href="/admin/courses"
-                className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-accent"
+                className="inline-flex shrink-0 items-center gap-1 text-sm text-muted-foreground hover:text-accent"
               >
                 <ArrowLeft className="h-4 w-4" /> Cursos
               </Link>
-              <div className="h-5 w-px bg-border" />
-              <h1 className="truncate text-sm font-semibold">
+              <div className="hidden h-5 w-px shrink-0 bg-border sm:block" />
+              <h1 className="min-w-0 flex-1 truncate text-sm font-semibold">
                 {course.title || 'Curso sin título'}
               </h1>
               {dirty && (
-                <span className="flex items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-medium text-amber-400">
+                <span className="flex shrink-0 items-center gap-1 rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-medium text-amber-400">
                   <AlertTriangle className="h-3 w-3" /> Cambios sin guardar
                 </span>
               )}
-              <div className="ml-auto flex items-center gap-2">
-                <span className="hidden rounded-full bg-muted px-2.5 py-1 font-mono text-[11px] text-muted-foreground md:block">
+              <div className="flex w-full shrink-0 items-center gap-2 sm:ml-auto sm:w-auto">
+                <span className="hidden rounded-full bg-muted px-2.5 py-1 font-mono text-[11px] text-muted-foreground lg:block">
                   {course.modules.length} módulos · {publishedCount} clases ·{' '}
                   {Math.floor((totalMinutes ?? 0) / 60)} h{' '}
                   {(totalMinutes ?? 0) % 60 > 0 ? `${(totalMinutes ?? 0) % 60} m` : ''}
@@ -470,7 +479,7 @@ export default function CourseStudio({ params }: CourseStudioPageProps) {
                     </Link>
                   </Button>
                 )}
-                <Button variant="accent" size="sm" onClick={handleSave} disabled={saving}>
+                <Button variant="accent" size="sm" onClick={handleSave} disabled={saving} className="flex-1 sm:flex-none">
                   {saving ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
                   ) : (
@@ -482,9 +491,11 @@ export default function CourseStudio({ params }: CourseStudioPageProps) {
             </div>
 
             {draftBanner && (
-              <div className="flex items-center gap-3 border-t border-amber-500/20 bg-amber-500/10 px-6 py-2.5 text-sm text-amber-300">
+              <div className="flex flex-wrap items-center gap-3 border-t border-amber-500/20 bg-amber-500/10 px-4 py-2.5 text-sm text-amber-300 sm:px-6">
                 <AlertTriangle className="h-4 w-4 shrink-0" />
-                <span className="flex-1">Tienes un borrador sin guardar de tu última sesión.</span>
+                <span className="min-w-0 flex-1">
+                  Tienes un borrador sin guardar de tu última sesión.
+                </span>
                 <Button variant="outline" size="sm" onClick={restoreDraft}>
                   Restaurar borrador
                 </Button>
@@ -496,207 +507,240 @@ export default function CourseStudio({ params }: CourseStudioPageProps) {
           </div>
 
           {error && (
-            <div className="mx-6 mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+            <div className="mx-4 mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400 sm:mx-6">
               {error}
             </div>
           )}
 
-          {/* cuerpo: constructor + inspector */}
-          <div className="grid flex-1 gap-6 p-6 lg:grid-cols-[minmax(0,1fr)_400px]">
-            {/* ── izquierda: curriculum ── */}
-            <div className="min-w-0">
-              <div className="mb-4 flex items-center justify-between">
-                <h2 className="flex items-center gap-2 text-base font-bold">
-                  <ListVideo className="h-4 w-4 text-accent" /> Contenido del curso
-                </h2>
-                <span className="text-xs text-muted-foreground">
-                  Arrastra las clases para reordenarlas, o usa las flechas.
-                </span>
-              </div>
+          <div className="min-w-0 flex-1 p-4 sm:p-6">
+            <AdminSubNav
+              ariaLabel="Subsecciones del curso"
+              items={[
+                {
+                  key: 'contenido',
+                  label: 'Contenido del curso',
+                  icon: <ListVideo className="h-4 w-4 shrink-0" />,
+                  active: tab === 'contenido',
+                  badge: `${course.modules.length}M · ${publishedCount}C`,
+                  onClick: () => setTab('contenido'),
+                },
+                {
+                  key: 'ajustes',
+                  label: 'Ajustes del curso',
+                  icon: <Settings2 className="h-4 w-4 shrink-0" />,
+                  active: tab === 'ajustes',
+                  onClick: () => setTab('ajustes'),
+                },
+              ]}
+            />
 
-              <div className="space-y-4">
-                {course.modules.length === 0 && (
-                  <div className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
-                    Aún no hay módulos. Empieza creando el primero con el botón de abajo.
-                  </div>
-                )}
+            {tab === 'contenido' ? (
+              <div className="min-w-0">
+                <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                  <h2 className="flex items-center gap-2 text-base font-bold">
+                    <ListVideo className="h-4 w-4 text-accent" /> Módulos y clases
+                  </h2>
+                  <span className="text-xs text-muted-foreground">
+                    Arrastra o usa las flechas para ordenar · «Editar» abre la clase.
+                  </span>
+                </div>
 
-                {course.modules.map((module, m) => (
-                  <div
-                    key={module.id}
-                    draggable
-                    onDragStart={(e) => {
-                      setDragFrom({ m });
-                      e.dataTransfer.effectAllowed = 'move';
-                    }}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={() => onModuleDrop(m)}
-                    className={cn(
-                      'rounded-xl border bg-card/40 transition-colors',
-                      sel.kind === 'module' && sel.id === module.id
-                        ? 'border-accent/60'
-                        : 'border-border',
-                    )}
-                  >
-                    {/* cabecera del módulo */}
-                    <div className="flex items-center gap-2 border-b border-border/60 px-3 py-2.5">
-                      <GripVertical className="h-4 w-4 shrink-0 cursor-grab text-muted-foreground/50" />
-                      <button
-                        type="button"
-                        onClick={() => setSel({ kind: 'module', id: module.id })}
-                        className="flex min-w-0 flex-1 items-center gap-2 text-left"
-                      >
-                        <span
-                          className={cn(
-                            'flex h-6 w-6 shrink-0 items-center justify-center rounded-md font-mono text-[10px] font-bold',
-                            sel.kind === 'module' && sel.id === module.id
-                              ? 'bg-accent text-accent-foreground'
-                              : 'bg-accent/10 text-accent',
-                          )}
-                        >
-                          {m + 1}
-                        </span>
-                        <span className="truncate text-sm font-semibold hover:text-accent">
-                          {module.title || 'Módulo sin título'}
-                        </span>
-                        <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
-                          {module.lessons.length}
-                        </span>
-                      </button>
-                      <div className="flex shrink-0 items-center gap-0.5">
-                        <IconBtn
-                          title="Subir módulo"
-                          disabled={m === 0}
-                          onClick={() => moveModule(m, m - 1)}
-                        >
-                          <ArrowUp className="h-3.5 w-3.5" />
-                        </IconBtn>
-                        <IconBtn
-                          title="Bajar módulo"
-                          disabled={m === course.modules.length - 1}
-                          onClick={() => moveModule(m, m + 1)}
-                        >
-                          <ArrowDown className="h-3.5 w-3.5" />
-                        </IconBtn>
-                        <IconBtn title="Duplicar módulo" onClick={() => duplicateModule(m)}>
-                          <Copy className="h-3.5 w-3.5" />
-                        </IconBtn>
-                        <IconBtn title="Eliminar módulo" danger onClick={() => removeModule(m)}>
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </IconBtn>
-                      </div>
+                <div className="space-y-4">
+                  {course.modules.length === 0 && (
+                    <div className="rounded-xl border border-dashed border-border p-10 text-center text-sm text-muted-foreground">
+                      Aún no hay módulos. Empieza creando el primero con el botón de abajo.
                     </div>
+                  )}
 
-                    {/* clases */}
-                    <div className="p-2">
-                      {module.lessons.length === 0 && (
-                        <p className="px-3 py-2 text-xs text-muted-foreground">
-                          Sin clases todavía.
-                        </p>
+                  {course.modules.map((module, m) => (
+                    <div
+                      key={module.id}
+                      draggable
+                      onDragStart={(e) => {
+                        setDragFrom({ m });
+                        e.dataTransfer.effectAllowed = 'move';
+                      }}
+                      onDragOver={(e) => e.preventDefault()}
+                      onDrop={() => onModuleDrop(m)}
+                      className={cn(
+                        'min-w-0 rounded-xl border bg-card/40 transition-colors',
+                        moduleTarget === m ? 'border-accent/60' : 'border-border',
                       )}
-                      {module.lessons.map((lesson, l) => (
-                        <div
-                          key={lesson.id}
-                          draggable
-                          onDragStart={(e) => {
-                            setDragFrom({ m, l });
-                            e.dataTransfer.effectAllowed = 'move';
-                          }}
-                          onDragOver={(e) => e.preventDefault()}
-                          onDrop={() => onLessonDrop(m, l)}
-                          className={cn(
-                            'group flex cursor-grab items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-muted/40',
-                            sel.kind === 'lesson' && sel.id === lesson.id ? 'bg-accent/10' : '',
-                          )}
-                        >
-                          <GripVertical className="h-3.5 w-3.5 shrink-0 text-muted-foreground/50" />
-                          <button
-                            type="button"
-                            onClick={() => setSel({ kind: 'lesson', id: lesson.id })}
-                            className="flex min-w-0 flex-1 items-center gap-2 text-left"
-                          >
-                            <span
-                              className={cn(
-                                'flex h-5 w-5 shrink-0 items-center justify-center rounded-md font-mono text-[10px]',
-                                lesson.published
-                                  ? 'bg-accent/10 text-accent'
-                                  : 'bg-muted text-muted-foreground',
-                              )}
-                              title={lesson.published ? 'Publicada' : 'Oculta'}
-                            >
-                              {lesson.published ? '✓' : '·'}
-                            </span>
-                            <span className="w-8 shrink-0 font-mono text-[10px] text-muted-foreground/60">
-                              {m + 1}.{l + 1}
-                            </span>
-                            <span className="truncate text-[13px] hover:text-accent">
-                              {lesson.title || 'Clase sin título'}
-                            </span>
-                          </button>
-                          <span className="hidden shrink-0 font-mono text-[10px] text-muted-foreground/70 sm:block">
-                            {LESSON_TYPE_LABELS[lesson.type].split(' ')[1]}
-                            {lesson.duration > 0 ? ` · ${lesson.duration}m` : ''}
+                    >
+                      {/* cabecera del módulo */}
+                      <div className="flex flex-col gap-2 border-b border-border/60 px-3 py-2.5 sm:flex-row sm:items-center">
+                        <div className="flex min-w-0 flex-1 items-center gap-2">
+                          <GripVertical className="h-4 w-4 shrink-0 cursor-grab text-muted-foreground/50" />
+                          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-accent/10 font-mono text-[10px] font-bold text-accent">
+                            {m + 1}
                           </span>
-                          <IconBtn title="Duplicar clase" onClick={() => duplicateLesson(m, l)}>
-                            <Copy className="h-3 w-3" />
+                          <span className="min-w-0 flex-1 truncate text-sm font-semibold">
+                            {module.title || 'Módulo sin título'}
+                          </span>
+                          <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+                            {module.lessons.length}
+                          </span>
+                        </div>
+                        <div className="flex shrink-0 items-center justify-end gap-0.5 border-t border-border/50 pt-1.5 sm:border-0 sm:pt-0">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setModuleTarget(m)}
+                          >
+                            <Pencil className="h-3.5 w-3.5" /> Editar módulo
+                          </Button>
+                          <IconBtn
+                            title="Subir módulo"
+                            disabled={m === 0}
+                            onClick={() => moveModule(m, m - 1)}
+                          >
+                            <ArrowUp className="h-3.5 w-3.5" />
                           </IconBtn>
-                          <IconBtn title="Eliminar clase" danger onClick={() => removeLesson(m, l)}>
-                            <Trash2 className="h-3 w-3" />
+                          <IconBtn
+                            title="Bajar módulo"
+                            disabled={m === course.modules.length - 1}
+                            onClick={() => moveModule(m, m + 1)}
+                          >
+                            <ArrowDown className="h-3.5 w-3.5" />
+                          </IconBtn>
+                          <IconBtn title="Duplicar módulo" onClick={() => duplicateModule(m)}>
+                            <Copy className="h-3.5 w-3.5" />
+                          </IconBtn>
+                          <IconBtn title="Eliminar módulo" danger onClick={() => removeModule(m)}>
+                            <Trash2 className="h-3.5 w-3.5" />
                           </IconBtn>
                         </div>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() => addLesson(m)}
-                        className="mt-1 flex w-full items-center gap-2 rounded-lg border border-dashed border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:border-accent/50 hover:text-accent"
-                      >
-                        <Plus className="h-3.5 w-3.5" /> Añadir clase
-                      </button>
+                      </div>
+
+                      {/* clases */}
+                      <div className="p-2">
+                        {module.lessons.length === 0 && (
+                          <p className="px-3 py-2 text-xs text-muted-foreground">
+                            Sin clases todavía.
+                          </p>
+                        )}
+                        {module.lessons.map((lesson, l) => (
+                          <div
+                            key={lesson.id}
+                            draggable
+                            onDragStart={(e) => {
+                              setDragFrom({ m, l });
+                              e.dataTransfer.effectAllowed = 'move';
+                            }}
+                            onDragOver={(e) => e.preventDefault()}
+                            onDrop={() => onLessonDrop(m, l)}
+                            className={cn(
+                              'group flex flex-wrap items-center gap-2 rounded-lg px-2 py-1.5 transition-colors hover:bg-muted/40',
+                              lessonTarget?.moduleIndex === m && lessonTarget?.lessonIndex === l
+                                ? 'bg-accent/10'
+                                : '',
+                            )}
+                          >
+                            <div className="flex min-w-0 flex-1 items-center gap-2">
+                              <GripVertical className="h-3.5 w-3.5 shrink-0 cursor-grab text-muted-foreground/50" />
+                              <span
+                                className={cn(
+                                  'flex h-5 w-5 shrink-0 items-center justify-center rounded-md font-mono text-[10px]',
+                                  lesson.published
+                                    ? 'bg-accent/10 text-accent'
+                                    : 'bg-muted text-muted-foreground',
+                                )}
+                                title={lesson.published ? 'Publicada' : 'Oculta'}
+                              >
+                                {lesson.published ? '✓' : '·'}
+                              </span>
+                              <span className="w-8 shrink-0 font-mono text-[10px] text-muted-foreground/60">
+                                {m + 1}.{l + 1}
+                              </span>
+                              <span className="min-w-0 flex-1 truncate text-[13px]">
+                                {lesson.title || 'Clase sin título'}
+                              </span>
+                              <span className="hidden shrink-0 font-mono text-[10px] text-muted-foreground/70 sm:block">
+                                {LESSON_TYPE_LABELS[lesson.type].split(' ')[1]}
+                                {lesson.duration > 0 ? ` · ${lesson.duration}m` : ''}
+                              </span>
+                            </div>
+                            <div className="flex w-full shrink-0 items-center justify-end gap-0.5 border-t border-border/50 pt-1.5 sm:w-auto sm:border-0 sm:pt-0">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setLessonTarget({ moduleIndex: m, lessonIndex: l })}
+                              >
+                                <Pencil className="h-3.5 w-3.5" /> Editar clase
+                              </Button>
+                              <IconBtn title="Duplicar clase" onClick={() => duplicateLesson(m, l)}>
+                                <Copy className="h-3 w-3" />
+                              </IconBtn>
+                              <IconBtn title="Eliminar clase" danger onClick={() => removeLesson(m, l)}>
+                                <Trash2 className="h-3 w-3" />
+                              </IconBtn>
+                            </div>
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => addLesson(m)}
+                          className="mt-1 flex w-full items-center gap-2 rounded-lg border border-dashed border-border px-3 py-1.5 text-xs text-muted-foreground transition-colors hover:border-accent/50 hover:text-accent"
+                        >
+                          <Plus className="h-3.5 w-3.5" /> Añadir clase
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={addModule}
+                  className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border py-3 text-sm font-medium text-muted-foreground transition-colors hover:border-accent/60 hover:bg-accent/5 hover:text-accent"
+                >
+                  <FolderPlus className="h-4 w-4" /> Añadir módulo
+                </button>
               </div>
-
-              <button
-                type="button"
-                onClick={addModule}
-                className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-border py-3 text-sm font-medium text-muted-foreground transition-colors hover:border-accent/60 hover:bg-accent/5 hover:text-accent"
-              >
-                <FolderPlus className="h-4 w-4" /> Añadir módulo
-              </button>
-            </div>
-
-            {/* ── derecha: inspector ── */}
-            <aside className="h-fit rounded-2xl border border-border bg-card/50 p-5 lg:sticky lg:top-[70px]">
-              {sel.kind === 'settings' && course && (
-                <SettingsInspector
-                  course={course}
-                  patch={(data) => patch((c) => ({ ...c, ...data }) as ApiCourse)}
-                />
-              )}
-              {sel.kind === 'module' && selModuleIndex >= 0 && (
-                <ModuleInspector
-                  module={course.modules[selModuleIndex]}
-                  patch={(data) => patchModule(selModuleIndex, data)}
-                />
-              )}
-              {sel.kind === 'lesson' && selLesson && (
-                <LessonInspector
-                  label={`Clase ${selLesson.moduleIndex + 1}.${selLesson.lessonIndex + 1}`}
-                  lesson={course.modules[selLesson.moduleIndex].lessons[selLesson.lessonIndex]}
-                  patch={(data) => patchLesson(selLesson.moduleIndex, selLesson.lessonIndex, data)}
-                />
-              )}
-            </aside>
+            ) : (
+              <SettingsPanel
+                course={course}
+                patch={(data) => patch((c) => ({ ...c, ...data }) as ApiCourse)}
+              />
+            )}
           </div>
         </div>
+      )}
+
+      {/* ── vista superpuesta: clase ── */}
+      {lessonTarget && openLesson && course && (
+        <LessonModal
+          key={openLesson.id}
+          lesson={openLesson}
+          label={`Clase ${lessonTarget.moduleIndex + 1}.${lessonTarget.lessonIndex + 1}`}
+          moduleTitle={course.modules[lessonTarget.moduleIndex]?.title ?? ''}
+          onClose={() => setLessonTarget(null)}
+          onSave={(data) => {
+            patchLesson(lessonTarget.moduleIndex, lessonTarget.lessonIndex, data);
+            setLessonTarget(null);
+          }}
+        />
+      )}
+
+      {/* ── vista superpuesta: módulo ── */}
+      {moduleTarget !== null && course?.modules[moduleTarget] && (
+        <ModuleModal
+          key={course.modules[moduleTarget].id}
+          module={course.modules[moduleTarget]}
+          label={`Módulo ${moduleTarget + 1}`}
+          onClose={() => setModuleTarget(null)}
+          onSave={(data) => {
+            patchModule(moduleTarget, data);
+            setModuleTarget(null);
+          }}
+        />
       )}
 
       {/* toast */}
       {toast && (
         <div
           className={cn(
-            'fixed bottom-6 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-xl border px-4 py-3 text-sm shadow-2xl backdrop-blur-md',
+            'fixed bottom-6 left-1/2 z-[70] flex -translate-x-1/2 items-center gap-2 rounded-xl border px-4 py-3 text-sm shadow-2xl backdrop-blur-md',
             toast.kind === 'ok'
               ? 'border-accent/40 bg-card/95 text-accent'
               : 'border-red-500/40 bg-card/95 text-red-400',
@@ -733,10 +777,11 @@ function IconBtn({
     <button
       type="button"
       title={title}
+      aria-label={title}
       disabled={disabled}
       onClick={onClick}
       className={cn(
-        'rounded-md p-1 text-muted-foreground transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-30',
+        'flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:text-foreground disabled:pointer-events-none disabled:opacity-30',
         danger ? 'hover:bg-red-500/10 hover:text-red-400' : 'hover:bg-muted',
       )}
     >
@@ -766,9 +811,9 @@ function TextareaList({
   );
 }
 
-/* ───────────── inspector: ajustes del curso ───────────── */
+/* ───────────── subsección: ajustes del curso ───────────── */
 
-function SettingsInspector({
+function SettingsPanel({
   course,
   patch,
 }: {
@@ -791,22 +836,21 @@ function SettingsInspector({
   };
 
   return (
-    <div className="space-y-4">
-      <h2 className="flex items-center gap-2 text-base font-bold">
-        <Pencil className="h-4 w-4 text-accent" /> Ajustes del curso
-      </h2>
-
-      <div>
-        <label className={labelCls}>Título</label>
-        <input
-          value={course.title}
-          onChange={(e) => patch({ title: e.target.value })}
-          className={inputCls}
-        />
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2">
+    <div className="grid min-w-0 gap-5 lg:grid-cols-2">
+      <section className="glass-card min-w-0 space-y-4 p-5">
+        <h2 className="flex items-center gap-2 font-semibold">
+          <Pencil className="h-4 w-4 text-accent" /> Información del curso
+        </h2>
         <div>
-          <label className={labelCls}>Slug</label>
+          <label className={labelCls}>Título</label>
+          <input
+            value={course.title}
+            onChange={(e) => patch({ title: e.target.value })}
+            className={inputCls}
+          />
+        </div>
+        <div>
+          <label className={labelCls}>Slug (URL)</label>
           <input
             value={course.slug}
             onChange={(e) => patch({ slug: e.target.value })}
@@ -815,81 +859,104 @@ function SettingsInspector({
           />
         </div>
         <div>
-          <label className={labelCls}>Posición</label>
+          <label className={labelCls}>Subtítulo (va bajo el título)</label>
           <input
-            type="number"
-            value={course.position ?? 0}
-            onChange={(e) => patch({ position: Number.parseInt(e.target.value, 10) || 0 })}
+            value={course.subtitle ?? ''}
+            onChange={(e) => patch({ subtitle: e.target.value })}
             className={inputCls}
           />
         </div>
-      </div>
-      <div>
-        <label className={labelCls}>Subtítulo (va bajo el título)</label>
-        <input
-          value={course.subtitle ?? ''}
-          onChange={(e) => patch({ subtitle: e.target.value })}
-          className={inputCls}
-        />
-      </div>
-      <div>
-        <label className={labelCls}>Descripción</label>
-        <textarea
-          value={course.description}
-          onChange={(e) => patch({ description: e.target.value })}
-          rows={3}
-          className={inputCls}
-        />
-      </div>
-
-      <div className="grid gap-3 sm:grid-cols-3">
         <div>
-          <label className={labelCls}>Nivel</label>
-          <select
-            value={course.level}
-            onChange={(e) => patch({ level: e.target.value as ApiCourse['level'] })}
-            className={inputCls}
-          >
-            {Object.entries(LEVEL_LABELS).map(([k, v]) => (
-              <option key={k} value={k}>
-                {v}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className={labelCls}>Estado</label>
-          <select
-            value={course.status}
-            onChange={(e) => patch({ status: e.target.value as ApiCourse['status'] })}
-            className={inputCls}
-          >
-            {Object.entries(STATUS_LABELS).map(([k, v]) => (
-              <option key={k} value={k}>
-                {v}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className={labelCls}>Duración (texto)</label>
-          <input
-            value={course.duration}
-            onChange={(e) => patch({ duration: e.target.value })}
-            placeholder="6 h 15 min"
+          <label className={labelCls}>Descripción</label>
+          <textarea
+            value={course.description}
+            onChange={(e) => patch({ description: e.target.value })}
+            rows={4}
             className={inputCls}
           />
         </div>
-      </div>
+      </section>
 
-      <div>
-        <label className={labelCls}>Portada</label>
-        <div className="flex gap-2">
+      <section className="glass-card min-w-0 space-y-4 p-5">
+        <h2 className="flex items-center gap-2 font-semibold">
+          <Settings2 className="h-4 w-4 text-accent" /> Publicación
+        </h2>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <label className={labelCls}>Nivel</label>
+            <select
+              value={course.level}
+              onChange={(e) => patch({ level: e.target.value as ApiCourse['level'] })}
+              className={inputCls}
+            >
+              {Object.entries(LEVEL_LABELS).map(([k, v]) => (
+                <option key={k} value={k}>
+                  {v}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className={labelCls}>Estado</label>
+            <select
+              value={course.status}
+              onChange={(e) => patch({ status: e.target.value as ApiCourse['status'] })}
+              className={inputCls}
+            >
+              {Object.entries(STATUS_LABELS).map(([k, v]) => (
+                <option key={k} value={k}>
+                  {v}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className={labelCls}>Duración (texto)</label>
+            <input
+              value={course.duration}
+              onChange={(e) => patch({ duration: e.target.value })}
+              placeholder="6 h 15 min"
+              className={inputCls}
+            />
+          </div>
+          <div>
+            <label className={labelCls}>Posición en el catálogo</label>
+            <input
+              type="number"
+              value={course.position ?? 0}
+              onChange={(e) => patch({ position: Number.parseInt(e.target.value, 10) || 0 })}
+              className={inputCls}
+            />
+          </div>
+        </div>
+        <p className="rounded-lg bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+          «Próximamente» y «En producción» ocultan el botón de reproducción del sitio; con
+          «Archivado» el curso sale del catálogo.
+        </p>
+      </section>
+
+      <section className="glass-card min-w-0 space-y-4 p-5">
+        <h2 className="flex items-center gap-2 font-semibold">
+          <ImageIcon className="h-4 w-4 text-accent" /> Portada
+        </h2>
+        {course.coverImage ? (
+          /* eslint-disable-next-line @next/next/no-img-element */
+          <img
+            src={course.coverImage}
+            alt="Portada del curso"
+            className="aspect-video w-full rounded-lg border border-border object-cover"
+          />
+        ) : (
+          <div className="flex aspect-video w-full items-center justify-center rounded-lg border border-dashed border-border text-xs text-muted-foreground">
+            Sin portada
+          </div>
+        )}
+        <div className="flex flex-col gap-2 sm:flex-row">
           <input
             value={course.coverImage ?? ''}
             onChange={(e) => patch({ coverImage: e.target.value })}
             placeholder="URL de la imagen"
-            className={inputCls}
+            className={cn(inputCls, 'min-w-0 flex-1')}
           />
           <Button
             type="button"
@@ -909,281 +976,333 @@ function SettingsInspector({
         <input
           ref={fileRef}
           type="file"
-          accept="image/*"
+          accept="image/jpeg,image/png,image/gif,image/webp"
           className="hidden"
           onChange={(e) => e.target.files?.[0] && uploadCover(e.target.files[0])}
         />
-      </div>
+      </section>
 
-      <div>
-        <label className={labelCls}>Lo que aprenderás (una por línea)</label>
-        <TextareaList
-          value={course.learningPoints}
-          onChange={(learningPoints) => patch({ learningPoints })}
-          placeholder={'Comandos esenciales de la terminal\nGestionar permisos y usuarios'}
-        />
-      </div>
-      <div>
-        <label className={labelCls}>Requisitos (una por línea)</label>
-        <TextareaList
-          value={course.requirements}
-          onChange={(requirements) => patch({ requirements })}
-          placeholder={'Ningún conocimiento previo\nUna computadora con 4 GB de RAM'}
-        />
-      </div>
-      <div>
-        <label className={labelCls}>A quién va dirigido</label>
-        <input
-          value={course.targetAudience ?? ''}
-          onChange={(e) => patch({ targetAudience: e.target.value })}
-          placeholder="Personas sin experiencia en Linux..."
-          className={inputCls}
-        />
-      </div>
+      <section className="glass-card min-w-0 space-y-4 p-5">
+        <h2 className="flex items-center gap-2 font-semibold">
+          <ListVideo className="h-4 w-4 text-accent" /> Detalle del curso
+        </h2>
+        <div>
+          <label className={labelCls}>Lo que aprenderás (una por línea)</label>
+          <TextareaList
+            value={course.learningPoints}
+            onChange={(learningPoints) => patch({ learningPoints })}
+            placeholder={'Comandos esenciales de la terminal\nGestionar permisos y usuarios'}
+          />
+        </div>
+        <div>
+          <label className={labelCls}>Requisitos (una por línea)</label>
+          <TextareaList
+            value={course.requirements}
+            onChange={(requirements) => patch({ requirements })}
+            placeholder={'Ningún conocimiento previo\nUna computadora con 4 GB de RAM'}
+          />
+        </div>
+        <div>
+          <label className={labelCls}>A quién va dirigido</label>
+          <input
+            value={course.targetAudience ?? ''}
+            onChange={(e) => patch({ targetAudience: e.target.value })}
+            placeholder="Personas sin experiencia en Linux..."
+            className={inputCls}
+          />
+        </div>
+      </section>
     </div>
   );
 }
 
-/* ───────────── inspector: módulo ───────────── */
+/* ───────────── vista superpuesta: módulo ───────────── */
 
-function ModuleInspector({
+function ModuleModal({
   module,
-  patch,
+  label,
+  onClose,
+  onSave,
 }: {
   module: ApiCourseModule;
-  patch: (data: Partial<ApiCourseModule>) => void;
+  label: string;
+  onClose: () => void;
+  onSave: (data: Partial<ApiCourseModule>) => void;
 }) {
+  const [draft, setDraft] = useState<ApiCourseModule>(module);
+
   return (
-    <div className="space-y-4">
-      <h2 className="flex items-center gap-2 text-base font-bold">
-        <FolderPlus className="h-4 w-4 text-accent" /> Módulo
-      </h2>
-      <div>
-        <label className={labelCls}>Título del módulo</label>
-        <input
-          value={module.title}
-          onChange={(e) => patch({ title: e.target.value })}
-          className={inputCls}
-        />
+    <AdminModal
+      title={`Editar ${label.toLowerCase()}`}
+      subtitle={`${module.lessons.length} clase${module.lessons.length === 1 ? '' : 's'} · los cambios se aplican al guardar el curso`}
+      onClose={onClose}
+      maxWidthClass="sm:max-w-lg"
+      footer={
+        <>
+          <Button type="button" variant="outline" onClick={onClose} className="w-full sm:w-auto">
+            Cancelar
+          </Button>
+          <Button
+            type="button"
+            variant="accent"
+            className="w-full sm:w-auto"
+            onClick={() =>
+              onSave({
+                title: draft.title.trim() || 'Módulo sin título',
+                description: draft.description ?? '',
+              })
+            }
+          >
+            <CheckCircle2 className="h-4 w-4" /> Aplicar cambios
+          </Button>
+        </>
+      }
+    >
+      <div className="space-y-4">
+        <div>
+          <label className={labelCls}>Título del módulo</label>
+          <input
+            value={draft.title}
+            onChange={(e) => setDraft({ ...draft, title: e.target.value })}
+            className={inputCls}
+          />
+        </div>
+        <div>
+          <label className={labelCls}>Descripción corta (opcional)</label>
+          <textarea
+            value={draft.description ?? ''}
+            onChange={(e) => setDraft({ ...draft, description: e.target.value })}
+            rows={4}
+            className={inputCls}
+            placeholder="Qué cubre este módulo, en una o dos frases."
+          />
+        </div>
       </div>
-      <div>
-        <label className={labelCls}>Descripción corta (opcional)</label>
-        <textarea
-          value={module.description ?? ''}
-          onChange={(e) => patch({ description: e.target.value })}
-          rows={3}
-          className={inputCls}
-        />
-      </div>
-      <p className="rounded-lg bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
-        Este módulo tiene <span className="font-semibold text-accent">{module.lessons.length}</span>{' '}
-        clases. Selecciona una clase del listado para editarla.
-      </p>
-    </div>
+    </AdminModal>
   );
 }
 
-/* ───────────── inspector: clase ───────────── */
+/* ───────────── vista superpuesta: clase ───────────── */
 
-function LessonInspector({
-  label,
+function LessonModal({
   lesson,
-  patch,
+  label,
+  moduleTitle,
+  onClose,
+  onSave,
 }: {
-  label: string;
   lesson: ApiLesson;
-  patch: (data: Partial<ApiLesson>) => void;
+  label: string;
+  moduleTitle: string;
+  onClose: () => void;
+  onSave: (data: Partial<ApiLesson>) => void;
 }) {
-  const [tab, setTab] = useState<'edit' | 'preview'>('edit');
+  const [draft, setDraft] = useState<ApiLesson>({
+    ...lesson,
+    resources: lesson.resources ?? [],
+  });
 
-  const resources = lesson.resources ?? [];
+  const resources = draft.resources ?? [];
 
   const setResource = (index: number, field: 'label' | 'url', value: string) => {
-    const next = resources.map((r, i) => (i === index ? { ...r, [field]: value } : r));
-    patch({ resources: next });
+    setDraft({
+      ...draft,
+      resources: resources.map((r, i) => (i === index ? { ...r, [field]: value } : r)),
+    });
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h2 className="flex items-center gap-2 text-base font-bold">
-          <ListVideo className="h-4 w-4 text-accent" /> {label}
-        </h2>
-        <div className="flex items-center gap-2 text-xs">
+    <AdminModal
+      title={`Editar ${label.toLowerCase()}`}
+      subtitle={`${moduleTitle || 'Módulo'} · el contenido se guarda al pulsar «Aplicar cambios»`}
+      onClose={onClose}
+      maxWidthClass="sm:max-w-3xl"
+      footer={
+        <>
+          <Button type="button" variant="outline" onClick={onClose} className="w-full sm:w-auto">
+            Cancelar
+          </Button>
+          <Button
+            type="button"
+            variant="accent"
+            className="w-full sm:w-auto"
+            onClick={() =>
+              onSave({
+                ...draft,
+                title: draft.title.trim() || 'Clase sin título',
+                resources: resources.filter((r) => r.label.trim() || r.url.trim()),
+              })
+            }
+          >
+            <CheckCircle2 className="h-4 w-4" /> Aplicar cambios
+          </Button>
+        </>
+      }
+    >
+      <div className="min-w-0 space-y-4">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-xs text-muted-foreground">
+            slug:{' '}
+            <span className="font-mono text-foreground">{draft.slug || 'auto'}</span>
+          </div>
           <button
             type="button"
-            onClick={() => patch({ published: !lesson.published })}
+            onClick={() => setDraft({ ...draft, published: !draft.published })}
             className={cn(
-              'flex items-center gap-1 rounded-full px-2.5 py-1 font-medium transition-colors',
-              lesson.published
+              'flex w-full items-center justify-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium transition-colors sm:w-auto',
+              draft.published
                 ? 'bg-accent/10 text-accent hover:bg-accent/20'
                 : 'bg-muted text-muted-foreground hover:bg-muted/70',
             )}
-            title={lesson.published ? 'Publicada: visible en el sitio' : 'Oculta: no visible'}
+            title={draft.published ? 'Publicada: visible en el sitio' : 'Oculta: no visible'}
           >
-            {lesson.published ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
-            {lesson.published ? 'Publicada' : 'Oculta'}
+            {draft.published ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3" />}
+            {draft.published ? 'Publicada' : 'Oculta'}
           </button>
         </div>
-      </div>
 
-      <div>
-        <label className={labelCls}>Título de la clase</label>
-        <input
-          value={lesson.title}
-          onChange={(e) => patch({ title: e.target.value })}
-          className={inputCls}
-        />
-      </div>
-      <div className="grid gap-3 sm:grid-cols-2">
         <div>
-          <label className={labelCls}>Tipo</label>
-          <select
-            value={lesson.type}
-            onChange={(e) => patch({ type: e.target.value as LessonTypeValue })}
-            className={inputCls}
-          >
-            {Object.entries(LESSON_TYPE_LABELS).map(([k, v]) => (
-              <option key={k} value={k}>
-                {v}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className={labelCls}>Duración (minutos)</label>
+          <label className={labelCls}>Título de la clase</label>
           <input
-            type="number"
-            min={0}
-            value={lesson.duration || 0}
-            onChange={(e) => patch({ duration: Number.parseInt(e.target.value, 10) || 0 })}
+            value={draft.title}
+            onChange={(e) => setDraft({ ...draft, title: e.target.value })}
             className={inputCls}
           />
         </div>
-      </div>
 
-      {lesson.type === 'VIDEO' && (
         <div>
-          <label className={labelCls}>URL del video (YouTube, Vimeo o MP4)</label>
+          <label className={labelCls}>Slug (URL de la clase)</label>
           <input
-            value={lesson.videoUrl ?? ''}
-            onChange={(e) => patch({ videoUrl: e.target.value })}
-            placeholder="https://www.youtube.com/watch?v=..."
+            value={draft.slug}
+            onChange={(e) => setDraft({ ...draft, slug: e.target.value })}
+            placeholder="Vacío = se genera del título"
             className={cn(inputCls, 'font-mono text-[13px]')}
           />
-          {lesson.videoUrl && (
-            <div className="mt-2 overflow-hidden rounded-lg border border-border bg-black">
-              <iframe
-                src={embedPreview(lesson.videoUrl)}
-                title="Vista previa"
-                className="aspect-video w-full"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              />
-            </div>
-          )}
         </div>
-      )}
 
-      <div>
-        <label className={labelCls}>Descripción corta (bajo el título)</label>
-        <input
-          value={lesson.description ?? ''}
-          onChange={(e) => patch({ description: e.target.value })}
-          className={inputCls}
-        />
-      </div>
-
-      <div>
-        <label className={labelCls}>Contenido (Markdown)</label>
-        <div className="mb-2 flex gap-1 rounded-lg border border-border bg-muted/40 p-1">
-          {(['edit', 'preview'] as const).map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setTab(t)}
-              className={cn(
-                'flex-1 rounded-md px-3 py-1 text-xs font-medium transition-colors',
-                tab === t
-                  ? 'bg-accent text-accent-foreground'
-                  : 'text-muted-foreground hover:text-foreground',
-              )}
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div>
+            <label className={labelCls}>Tipo</label>
+            <select
+              value={draft.type}
+              onChange={(e) => setDraft({ ...draft, type: e.target.value as LessonTypeValue })}
+              className={inputCls}
             >
-              {t === 'edit' ? 'Editar' : 'Vista previa'}
-            </button>
-          ))}
+              {Object.entries(LESSON_TYPE_LABELS).map(([k, v]) => (
+                <option key={k} value={k}>
+                  {v}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className={labelCls}>Duración (minutos)</label>
+            <input
+              type="number"
+              min={0}
+              value={draft.duration || 0}
+              onChange={(e) =>
+                setDraft({ ...draft, duration: Number.parseInt(e.target.value, 10) || 0 })
+              }
+              className={inputCls}
+            />
+          </div>
         </div>
-        {tab === 'edit' ? (
-          <textarea
-            value={lesson.content ?? ''}
-            onChange={(e) => patch({ content: e.target.value })}
-            rows={14}
-            placeholder={
-              '# Encabezado de la clase\n\nTexto con **negritas**, `código` y \n```bash\ncomandos\n```'
-            }
-            className={cn(inputCls, 'font-mono text-[13px] leading-relaxed')}
-          />
-        ) : (
-          <div className="thin-scrollbar max-h-[420px] overflow-y-auto rounded-lg border border-border bg-muted/30 p-4">
-            {lesson.content?.trim() ? (
-              <MarkdownContent content={lesson.content} />
-            ) : (
-              <p className="text-xs text-muted-foreground">Sin contenido todavía.</p>
+
+        {draft.type === 'VIDEO' && (
+          <div>
+            <label className={labelCls}>URL del video (YouTube, Vimeo o MP4)</label>
+            <input
+              value={draft.videoUrl ?? ''}
+              onChange={(e) => setDraft({ ...draft, videoUrl: e.target.value })}
+              placeholder="https://www.youtube.com/watch?v=..."
+              className={cn(inputCls, 'font-mono text-[13px]')}
+            />
+            {draft.videoUrl && (
+              <div className="mt-2 overflow-hidden rounded-lg border border-border bg-black">
+                <iframe
+                  src={embedPreview(draft.videoUrl)}
+                  title="Vista previa"
+                  className="aspect-video w-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
             )}
           </div>
         )}
-      </div>
 
-      <div>
-        <label className={labelCls}>Recursos (enlaces de la clase)</label>
-        {resources.map((resource, i) => (
-          <div key={i} className="mb-2 grid grid-cols-[1fr_1fr_auto] gap-2">
-            <input
-              value={resource.label}
-              onChange={(e) => setResource(i, 'label', e.target.value)}
-              placeholder="Etiqueta"
-              className={inputCls}
-            />
-            <input
-              value={resource.url}
-              onChange={(e) => setResource(i, 'url', e.target.value)}
-              placeholder="https://..."
-              className={cn(inputCls, 'font-mono text-[12px]')}
-            />
-            <button
-              type="button"
-              onClick={() => patch({ resources: resources.filter((_, j) => j !== i) })}
-              className="rounded-lg border border-border px-2 text-muted-foreground hover:border-red-500/50 hover:text-red-400"
-              title="Quitar recurso"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          </div>
-        ))}
-        <button
-          type="button"
-          onClick={() => patch({ resources: [...resources, { label: 'Documentación', url: '' }] })}
-          className="mt-1 flex items-center gap-1.5 text-xs text-accent hover:underline"
-        >
-          <Plus className="h-3.5 w-3.5" /> Añadir recurso
-        </button>
-      </div>
-
-      <div className="flex items-center justify-between">
-        <label className="flex cursor-pointer items-center gap-2 text-sm text-muted-foreground">
+        <div>
+          <label className={labelCls}>Descripción corta (bajo el título)</label>
           <input
-            type="checkbox"
-            checked={lesson.isFree}
-            onChange={(e) => patch({ isFree: e.target.checked })}
-            className="h-4 w-4 accent-[rgb(var(--accent))]"
+            value={draft.description ?? ''}
+            onChange={(e) => setDraft({ ...draft, description: e.target.value })}
+            className={inputCls}
           />
-          Clase gratuita
-        </label>
-        <span className="font-mono text-[11px] text-muted-foreground/60">
-          slug: {lesson.slug || 'auto'}
-        </span>
+        </div>
+
+        {/* Contenido: mismo editor enriquecido que artículos, proyectos y lab */}
+        <div className="min-w-0">
+          <div className="mb-2 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+            <label htmlFor="lesson-content" className="text-sm font-medium">
+              Contenido de la clase
+            </label>
+            <span className="text-xs text-muted-foreground">
+              Escribe <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono">/</kbd> para código
+              o imágenes · arrastra o pega capturas (Ctrl+V)
+            </span>
+          </div>
+          <PostEditor
+            key={`lesson-${lesson.id}`}
+            content={draft.content ?? ''}
+            toolbarTopClass="top-0"
+            onChange={(markdown) => setDraft((current) => ({ ...current, content: markdown }))}
+          />
+        </div>
+
+        <div>
+          <label className={labelCls}>Recursos (enlaces de la clase)</label>
+          {resources.map((resource: ApiLessonResource, i) => (
+            <div key={i} className="mb-2 flex flex-col gap-2 sm:flex-row">
+              <input
+                value={resource.label}
+                onChange={(e) => setResource(i, 'label', e.target.value)}
+                placeholder="Etiqueta"
+                className={cn(inputCls, 'sm:flex-1')}
+              />
+              <input
+                value={resource.url}
+                onChange={(e) => setResource(i, 'url', e.target.value)}
+                placeholder="https://..."
+                className={cn(inputCls, 'font-mono text-[12px] sm:flex-1')}
+              />
+              <button
+                type="button"
+                onClick={() =>
+                  setDraft({ ...draft, resources: resources.filter((_, j) => j !== i) })
+                }
+                className="flex h-10 shrink-0 items-center justify-center rounded-lg border border-border px-3 text-muted-foreground transition-colors hover:border-red-500/50 hover:text-red-400"
+                aria-label={`Quitar recurso ${i + 1}`}
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() =>
+              setDraft({
+                ...draft,
+                resources: [...resources, { label: 'Documentación', url: '' }],
+              })
+            }
+            className="mt-1 flex items-center gap-1.5 text-xs text-accent hover:underline"
+          >
+            <Plus className="h-3.5 w-3.5" /> Añadir recurso
+          </button>
+        </div>
       </div>
-    </div>
+    </AdminModal>
   );
 }
 

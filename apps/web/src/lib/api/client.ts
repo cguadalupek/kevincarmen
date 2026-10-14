@@ -254,6 +254,19 @@ export interface ApiResource {
   updatedAt: string;
 }
 
+export interface ApiProjectCategoryRef {
+  id: string;
+  name: string;
+  slug: string;
+  position: number;
+}
+
+/** Clasificación de proyectos del CMS (con cuántos proyectos la usan). */
+export interface ApiProjectCategory extends ApiProjectCategoryRef {
+  description: string | null;
+  projectsCount: number;
+}
+
 export interface ApiProject {
   id: string;
   title: string;
@@ -263,6 +276,10 @@ export interface ApiProject {
   content: string | null;
   technologies: string[];
   category: string | null;
+  /** Clasificación editable (tabla `project_categories`). */
+  projectCategory: ApiProjectCategoryRef | null;
+  /** Orden manual: menor número = primero en el sitio. */
+  position: number;
   tags: string[];
   projectYear: number | null;
   repository: string | null;
@@ -494,6 +511,40 @@ export const api = {
     apiFetch<ApiProject>(`/projects/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteProject: (id: string) =>
     apiFetch<{ success: boolean }>(`/projects/${id}`, { method: 'DELETE' }),
+  /** Reordena los proyectos del panel: el índice del array define la posición. */
+  reorderProjects: (projectIds: string[]) =>
+    apiFetch<ApiProject[]>('/projects/reorder', {
+      method: 'PUT',
+      body: JSON.stringify({ projectIds }),
+    }),
+
+  // ── Clasificaciones de proyectos (subsección «Clasificación») ──
+  getProjectCategories: () => apiFetch<ApiProjectCategory[]>('/projects/categories'),
+  createProjectCategory: (data: {
+    name: string;
+    slug?: string;
+    description?: string;
+    position?: number;
+  }) =>
+    apiFetch<ApiProjectCategory>('/projects/categories', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  updateProjectCategory: (
+    id: string,
+    data: { name?: string; slug?: string; description?: string; position?: number },
+  ) =>
+    apiFetch<ApiProjectCategory>(`/projects/categories/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  deleteProjectCategory: (id: string) =>
+    apiFetch<{ success: boolean }>(`/projects/categories/${id}`, { method: 'DELETE' }),
+  reorderProjectCategories: (categoryIds: string[]) =>
+    apiFetch<ApiProjectCategory[]>('/projects/categories/reorder', {
+      method: 'PUT',
+      body: JSON.stringify({ categoryIds }),
+    }),
   getTimelineEvents: () => apiFetch<ApiTimelineEvent[]>('/timeline/admin/all'),
   createTimelineEvent: (data: Partial<ApiTimelineEvent>) =>
     apiFetch<ApiTimelineEvent>('/timeline', { method: 'POST', body: JSON.stringify(data) }),
