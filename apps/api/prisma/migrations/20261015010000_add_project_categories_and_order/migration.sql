@@ -53,10 +53,14 @@ INSERT INTO "project_categories" ("id", "name", "slug", "position", "updated_at"
 ON CONFLICT DO NOTHING;
 
 -- Semilla: clasificaciones usadas en proyectos existentes que no estén ya arriba.
--- El slug replica el `slugify` del API (sin acentos, minúsculas, guiones).
+-- La comparación ignora mayúsculas Y acentos (`infraestructura` / `automatizacion`
+-- no deben duplicar a `Infraestructura` / `Automatización`) y el slug replica el
+-- `slugify` del API. `translate` va con las dos formas acentuada y sin acentuar
+-- porque la extensión `unaccent` no está garantizada en la base.
 INSERT INTO "project_categories" ("id", "name", "slug", "position", "updated_at")
 SELECT DISTINCT
-  'pc_' || substr(md5(p."category"), 1, 20),
+  'pc_' || substr(md5(
+    translate(lower(p."category"), 'áéíóúüñàèìòùâêîôûäëïöüç', 'aeiouunaeiouaeiouaeiouc')), 1, 20),
   p."category",
   trim(both '-' from regexp_replace(
     translate(lower(p."category"), 'áéíóúüñàèìòùâêîôûäëïöüç', 'aeiouunaeiouaeiouaeiouc'),
@@ -65,14 +69,21 @@ SELECT DISTINCT
   999,
   CURRENT_TIMESTAMP
 FROM "projects" p
-WHERE p."category" IS NOT NULL AND btrim(p."category") <> ''
+WHERE p."category" IS NOT NULL
+  AND btrim(p."category") <> ''
+  AND NOT EXISTS (
+    SELECT 1 FROM "project_categories" pc
+    WHERE translate(lower(pc."name"), 'áéíóúüñàèìòùâêîôûäëïöüç', 'aeiouunaeiouaeiouaeiouc')
+        = translate(lower(btrim(p."category")), 'áéíóúüñàèìòùâêîôûäëïöüç', 'aeiouunaeiouaeiouaeiouc')
+  )
 ON CONFLICT DO NOTHING;
 
--- Enlazar proyectos existentes con su clasificación por nombre.
+-- Enlazar proyectos existentes con su clasificación por nombre (sin caja ni acentos).
 UPDATE "projects" p
 SET "project_category_id" = pc."id"
 FROM "project_categories" pc
-WHERE p."category" = pc."name";
+WHERE translate(lower(btrim(p."category")), 'áéíóúüñàèìòùâêîôûäëïöüç', 'aeiouunaeiouaeiouaeiouc')
+    = translate(lower(pc."name"), 'áéíóúüñàèìòùâêîôûäëïöüç', 'aeiouunaeiouaeiouaeiouc');
 
 -- Renumerar clasificaciones: las más usadas primero (mismo orden que se veía antes:
 -- "Software", "Web", … en el orden de la lista fija).
