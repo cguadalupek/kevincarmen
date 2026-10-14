@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface PaginationProps {
@@ -13,8 +13,13 @@ interface PaginationProps {
 }
 
 /**
- * Paginación compacta: "Mostrando X–Y de Z" + controles anterior/números/siguiente.
+ * Paginación compacta: "Mostrando X–Y de Z" + controles
+ * primero / anterior / números / siguiente / último.
  * Genera una ventana de páginas con elipsis cuando hay muchas.
+ *
+ * Es el componente compartido de TODOS los listados paginados del sitio
+ * (Proyectos, Lab y Artículos del blog): no duplicar esta fila en un componente
+ * propio — cualquier cambio de diseño tiene que verse igual en los tres.
  */
 export function Pagination({
   page,
@@ -31,6 +36,10 @@ export function Pagination({
 
   const pages = pageWindow(page, totalPages);
 
+  /** Botón de borde (primero/anterior/siguiente/último): icono suelto en móvil. */
+  const edgeButtonClass =
+    'inline-flex h-9 w-9 shrink-0 items-center justify-center gap-1 rounded-lg border border-border text-sm text-muted-foreground transition-colors hover:border-accent/50 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto sm:px-3';
+
   return (
     <nav
       aria-label={`Paginación de ${label}`}
@@ -43,13 +52,28 @@ export function Pagination({
         </span>{' '}
         de <span className="font-medium text-foreground">{totalItems}</span> {label}
       </p>
-      <div className="flex items-center gap-1.5">
+      {/* `flex-wrap`: con cinco botones + contador en pantallas de 390 px la fila
+          no puede desbordar; si no cabe, el contador baja a su propia línea. */}
+      <div className="flex flex-wrap items-center justify-center gap-1.5">
+        <button
+          type="button"
+          onClick={() => onChange(1)}
+          disabled={page <= 1}
+          aria-label="Ir al primero"
+          title="Ir al primero"
+          className={edgeButtonClass}
+        >
+          <ChevronsLeft className="h-4 w-4" />
+          <span className="hidden sm:inline">Primero</span>
+        </button>
+
         <button
           type="button"
           onClick={() => onChange(page - 1)}
           disabled={page <= 1}
           aria-label="Página anterior"
-          className="inline-flex h-9 w-9 shrink-0 items-center justify-center gap-1 rounded-lg border border-border text-sm text-muted-foreground transition-colors hover:border-accent/50 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto sm:px-3"
+          title="Página anterior"
+          className={edgeButtonClass}
         >
           <ChevronLeft className="h-4 w-4" />
           <span className="hidden sm:inline">Anterior</span>
@@ -95,10 +119,23 @@ export function Pagination({
           onClick={() => onChange(page + 1)}
           disabled={page >= totalPages}
           aria-label="Página siguiente"
-          className="inline-flex h-9 w-9 shrink-0 items-center justify-center gap-1 rounded-lg border border-border text-sm text-muted-foreground transition-colors hover:border-accent/50 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto sm:px-3"
+          title="Página siguiente"
+          className={edgeButtonClass}
         >
           <span className="hidden sm:inline">Siguiente</span>
           <ChevronRight className="h-4 w-4" />
+        </button>
+
+        <button
+          type="button"
+          onClick={() => onChange(totalPages)}
+          disabled={page >= totalPages}
+          aria-label="Ir al último"
+          title="Ir al último"
+          className={edgeButtonClass}
+        >
+          <span className="hidden sm:inline">Último</span>
+          <ChevronsRight className="h-4 w-4" />
         </button>
       </div>
     </nav>

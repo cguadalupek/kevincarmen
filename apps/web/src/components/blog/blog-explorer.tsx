@@ -10,6 +10,7 @@ import type { CategoryTreeNode } from '@/lib/api/categories';
 import { LEGACY_CATEGORY_SLUG_MAP } from '@/lib/categories';
 import { FadeIn } from '@/components/motion/fade-in';
 import { CategoryBadge } from '@/components/blog/category-badge';
+import { Pagination } from '@/components/ui/pagination';
 import {
   ALL_CATEGORIES,
   ALL_SUBCATEGORIES,
@@ -109,9 +110,11 @@ export function BlogExplorer({
     ? filteredPosts.filter((post) => post.id !== featuredPost.id)
     : filteredPosts;
   const totalPages = Math.ceil(regularPosts.length / postsPerPage);
+  /** La página pedida puede quedar fuera del rango al filtrar/buscar. */
+  const safePage = Math.max(1, Math.min(currentPage, totalPages || 1));
   const paginatedPosts = useMemo(() => {
-    return regularPosts.slice((currentPage - 1) * postsPerPage, currentPage * postsPerPage);
-  }, [regularPosts, currentPage]);
+    return regularPosts.slice((safePage - 1) * postsPerPage, safePage * postsPerPage);
+  }, [regularPosts, safePage]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -358,46 +361,21 @@ export function BlogExplorer({
               </section>
             )}
 
-            {totalPages > 1 && (
-              <nav
-                aria-label="Paginación de artículos"
-                className="mt-10 flex items-center justify-center gap-2 pb-8"
-              >
-                <button
-                  type="button"
-                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-                  disabled={currentPage === 1}
-                  aria-label="Página anterior"
-                  className="rounded-md bg-muted/40 px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted/60 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  ←
-                </button>
-                {[...Array(totalPages)].map((_, i) => {
-                  const pageNumber = i + 1;
-                  return (
-                    <button
-                      key={pageNumber}
-                      type="button"
-                      onClick={() => setCurrentPage(pageNumber)}
-                      disabled={currentPage === pageNumber}
-                      aria-current={currentPage === pageNumber ? 'page' : undefined}
-                      className={`rounded-md px-3 py-2 text-sm font-medium ${currentPage === pageNumber ? 'bg-accent text-white' : 'bg-muted/40 text-muted-foreground hover:bg-muted/60'}`}
-                    >
-                      {pageNumber}
-                    </button>
-                  );
-                })}
-                <button
-                  type="button"
-                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-                  disabled={currentPage === totalPages}
-                  aria-label="Siguiente página"
-                  className="rounded-md bg-muted/40 px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted/60 disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  →
-                </button>
-              </nav>
-            )}
+            {/*
+              Mismo componente que Proyectos y Lab (`components/ui/pagination`): la
+              fila de números, «Mostrando X–Y de Z» y los botones
+              primero/anterior/siguiente/último son idénticos en los tres listados.
+            */}
+            <div className="pb-8">
+              <Pagination
+                page={safePage}
+                totalPages={totalPages}
+                totalItems={regularPosts.length}
+                pageSize={postsPerPage}
+                label="artículos"
+                onChange={setCurrentPage}
+              />
+            </div>
           </div>
         )}
       </div>
