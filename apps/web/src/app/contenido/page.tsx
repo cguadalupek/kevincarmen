@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { BookOpen, FileText, FlaskConical, FolderKanban, GraduationCap, Youtube } from 'lucide-react';
+import { BookOpen, FileText, FlaskConical, FolderKanban, GraduationCap, Layers, Youtube } from 'lucide-react';
 import { contentNav } from '@kevincarmen/config';
 import { getLatestVideos } from '@/lib/api/posts';
 import { YoutubeGrid } from '@/components/content/youtube-grid';
@@ -48,7 +48,11 @@ export default async function ContentPage() {
   return (
     <div className="py-16">
       <div className="section-container max-w-5xl">
-        <h1 className="section-title">Contenido</h1>
+        <div className="flex items-center gap-3 text-accent">
+          <Layers className="h-6 w-6" />
+          <span className="font-mono text-sm">/ contenido</span>
+        </div>
+        <h1 className="section-title mt-3">Contenido</h1>
         <p className="section-subtitle">
           Tutoriales, proyectos, recursos y experimentación desde mi homelab.
         </p>
