@@ -49,40 +49,56 @@ export function Pagination({
           onClick={() => onChange(page - 1)}
           disabled={page <= 1}
           aria-label="Página anterior"
-          className="inline-flex h-9 items-center gap-1 rounded-lg border border-border px-3 text-sm text-muted-foreground transition-colors hover:border-accent/50 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex h-9 w-9 shrink-0 items-center justify-center gap-1 rounded-lg border border-border text-sm text-muted-foreground transition-colors hover:border-accent/50 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto sm:px-3"
         >
-          <ChevronLeft className="h-4 w-4" /> Anterior
+          <ChevronLeft className="h-4 w-4" />
+          <span className="hidden sm:inline">Anterior</span>
         </button>
-        {pages.map((entry, index) =>
-          entry === '…' ? (
-            <span key={`e-${index}`} className="px-1 text-sm text-muted-foreground">
-              …
-            </span>
-          ) : (
-            <button
-              key={entry}
-              type="button"
-              onClick={() => onChange(entry)}
-              aria-current={entry === page ? 'page' : undefined}
-              className={cn(
-                'h-9 w-9 rounded-lg border text-sm transition-colors',
-                entry === page
-                  ? 'border-accent/60 bg-accent/15 font-medium text-accent'
-                  : 'border-border text-muted-foreground hover:border-accent/50 hover:text-foreground',
-              )}
-            >
-              {entry}
-            </button>
-          ),
-        )}
+
+        {/*
+          En pantallas estrechas la lista de números no cabe (con 5+ páginas la fila
+          desbordaba la pantalla): se cambia por un contador «Página X de Y» y los
+          números vuelven a partir de `sm`. Lo que se toca sigue siendo lo mismo.
+        */}
+        <span className="px-2 text-sm text-muted-foreground sm:hidden">
+          Página <span className="font-medium text-foreground">{page}</span> de {totalPages}
+        </span>
+
+        <div className="hidden items-center gap-1.5 sm:flex">
+          {pages.map((entry, index) =>
+            entry === '…' ? (
+              <span key={`e-${index}`} className="px-1 text-sm text-muted-foreground">
+                …
+              </span>
+            ) : (
+              <button
+                key={entry}
+                type="button"
+                onClick={() => onChange(entry)}
+                aria-label={`Página ${entry}`}
+                aria-current={entry === page ? 'page' : undefined}
+                className={cn(
+                  'h-9 w-9 rounded-lg border text-sm transition-colors',
+                  entry === page
+                    ? 'border-accent/60 bg-accent/15 font-medium text-accent'
+                    : 'border-border text-muted-foreground hover:border-accent/50 hover:text-foreground',
+                )}
+              >
+                {entry}
+              </button>
+            ),
+          )}
+        </div>
+
         <button
           type="button"
           onClick={() => onChange(page + 1)}
           disabled={page >= totalPages}
           aria-label="Página siguiente"
-          className="inline-flex h-9 items-center gap-1 rounded-lg border border-border px-3 text-sm text-muted-foreground transition-colors hover:border-accent/50 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex h-9 w-9 shrink-0 items-center justify-center gap-1 rounded-lg border border-border text-sm text-muted-foreground transition-colors hover:border-accent/50 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto sm:px-3"
         >
-          Siguiente <ChevronRight className="h-4 w-4" />
+          <span className="hidden sm:inline">Siguiente</span>
+          <ChevronRight className="h-4 w-4" />
         </button>
       </div>
     </nav>
