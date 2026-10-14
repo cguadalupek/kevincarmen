@@ -51,6 +51,7 @@ export function AdminModal({
       className="fixed inset-0 z-[60] flex items-end justify-center bg-slate-950/70 backdrop-blur-sm sm:items-center sm:p-6"
       role="dialog"
       aria-modal="true"
+      aria-label={typeof title === 'string' ? title : 'Ventana de edición'}
     >
       <button
         type="button"
@@ -82,8 +83,14 @@ export function AdminModal({
           </button>
         </div>
 
-        <div className="thin-scrollbar min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5 sm:py-5">
-          {children}
+        {/*
+          El área de scroll NO lleva padding: el relleno va en el wrapper interior
+          para que una barra `sticky top-0` (la del editor enriquecido) quede pegada
+          al borde superior al desplazarse y no deje una franja por la que se vea el
+          contenido pasando por detrás.
+        */}
+        <div className="thin-scrollbar min-h-0 flex-1 overflow-y-auto">
+          <div className="px-4 py-4 sm:px-5 sm:py-5">{children}</div>
         </div>
 
         {footer ? (
