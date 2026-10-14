@@ -10,12 +10,12 @@ import {
   Download,
   ExternalLink,
   FileText,
-  FlaskConical,
   FolderOpen,
   GraduationCap,
   Home,
   LayoutDashboard,
   LogOut,
+  Server,
   Settings,
   User,
   Video,
@@ -34,6 +34,8 @@ interface NavItem {
   label: string;
   href: string;
   icon: typeof LayoutDashboard;
+  /** Clases extra para el icono (p. ej. una leve inclinación). */
+  iconClassName?: string;
   disabled?: boolean;
   /** Si existe, el item actúa como grupo y se despliega un submenu. */
   children?: NavChild[];
@@ -55,7 +57,9 @@ const navItems: NavItem[] = [
   { label: 'Videos', href: '/admin/videos', icon: Video },
   { label: 'Proyectos', href: '/admin/projects', icon: FolderOpen },
   { label: 'Cursos', href: '/admin/courses', icon: GraduationCap },
-  { label: 'Lab', href: '/admin/lab', icon: FlaskConical },
+  // Lab usa el mismo icono que el menú del sitio público (`Server`), con una
+  // leve inclinación a la derecha para distinguirlo del resto de secciones.
+  { label: 'Lab', href: '/admin/lab', icon: Server, iconClassName: 'rotate-12' },
   { label: 'Recursos', href: '/admin/recursos', icon: Download },
   { label: 'Timeline', href: '/admin/timeline', icon: Clock },
   { label: 'Configuración', href: '/admin/settings', icon: Settings },
@@ -151,7 +155,7 @@ export function AdminSidebarPanel({ onNavigate, onClose }: AdminSidebarPanelProp
                   TOUCH_TARGET,
                 )}
               >
-                <Icon className="h-4 w-4" />
+                <Icon className={cn('h-4 w-4', item.iconClassName)} />
                 {item.label}
                 <span className="ml-auto text-xs">Pronto</span>
               </span>
@@ -178,7 +182,7 @@ export function AdminSidebarPanel({ onNavigate, onClose }: AdminSidebarPanelProp
                     }}
                     className={cn(rowClass(childActive), 'flex-1')}
                   >
-                    <Icon className="h-4 w-4 shrink-0" />
+                    <Icon className={cn('h-4 w-4 shrink-0', item.iconClassName)} />
                     {item.label}
                   </Link>
                   <button
@@ -228,7 +232,7 @@ export function AdminSidebarPanel({ onNavigate, onClose }: AdminSidebarPanelProp
               aria-current={active ? 'page' : undefined}
               className={rowClass(active)}
             >
-              <Icon className="h-4 w-4 shrink-0" />
+              <Icon className={cn('h-4 w-4 shrink-0', item.iconClassName)} />
               {item.label}
             </Link>
           );
