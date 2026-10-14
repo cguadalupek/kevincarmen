@@ -10,12 +10,12 @@ import {
   Download,
   ExternalLink,
   FileText,
+  FlaskConical,
   FolderOpen,
   GraduationCap,
   Home,
   LayoutDashboard,
   LogOut,
-  Server,
   Settings,
   User,
   Video,
@@ -57,10 +57,9 @@ const navItems: NavItem[] = [
   { label: 'Videos', href: '/admin/videos', icon: Video },
   { label: 'Proyectos', href: '/admin/projects', icon: FolderOpen },
   { label: 'Cursos', href: '/admin/courses', icon: GraduationCap },
-  // Lab usa el mismo icono que el menú del sitio público (`Server`), con una
-  // inclinación leve a la derecha (8°) como acento de identidad: se lee deliberada
-  // a 16 px sin ensuciar el trazo ni desalinearse del resto del panel.
-  { label: 'Lab', href: '/admin/lab', icon: Server, iconClassName: 'rotate-[8deg]' },
+  // Lab: frasco de pócima (mismo icono que el Lab del sitio) con una inclinación
+  // leve a la derecha (8°) como acento de identidad a 16 px.
+  { label: 'Lab', href: '/admin/lab', icon: FlaskConical, iconClassName: 'rotate-[8deg]' },
   { label: 'Recursos', href: '/admin/recursos', icon: Download },
   { label: 'Timeline', href: '/admin/timeline', icon: Clock },
   { label: 'Configuración', href: '/admin/settings', icon: Settings },
