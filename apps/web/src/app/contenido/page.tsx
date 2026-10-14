@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { BookOpen, FileText, FolderKanban, GraduationCap, Server, Youtube } from 'lucide-react';
+import { BookOpen, FileText, FlaskConical, FolderKanban, GraduationCap, Youtube } from 'lucide-react';
 import { contentNav } from '@kevincarmen/config';
 import { getLatestVideos } from '@/lib/api/posts';
 import { YoutubeGrid } from '@/components/content/youtube-grid';
@@ -29,7 +29,7 @@ const sectionMeta: Record<string, { icon: typeof BookOpen; description: string }
     description: 'Plantillas, scripts y herramientas útiles.',
   },
   '/lab': {
-    icon: Server,
+    icon: FlaskConical,
     description: 'Servidores, contenedores y operaciones de mi laboratorio.',
   },
 };

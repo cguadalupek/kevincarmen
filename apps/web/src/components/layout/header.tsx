@@ -8,12 +8,12 @@ import {
   ChevronsDownUp,
   ChevronsUpDown,
   FileText,
+  FlaskConical,
   FolderKanban,
   GraduationCap,
   Home,
   Layers,
   Menu,
-  Server,
   UserRound,
   Video,
   X,
@@ -32,7 +32,7 @@ export function Header() {
     '/proyectos': FolderKanban,
     '/cursos': GraduationCap,
     '/recursos': FileText,
-    '/lab': Server,
+    '/lab': FlaskConical,
     '/videos': Video,
   } as const;
   const mainIcons = {
