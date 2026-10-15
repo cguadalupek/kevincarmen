@@ -3,6 +3,7 @@ import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
 import { TableRow } from '@tiptap/extension-table-row';
 import { DOMSerializer, Fragment, type Node as ProseMirrorNode } from '@tiptap/pm/model';
+import type { EditorView } from '@tiptap/pm/view';
 
 /**
  * Serializa un nodo TipTap a una cadena HTML (incluye el <colgroup> del ancho
@@ -33,13 +34,25 @@ const borderlessCellAttr = {
  * actualiza el <colgroup>, así que el toggle de bordes redondeados no se veía).
  */
 export class KCTableView extends TableView {
+  constructor(
+    node: ProseMirrorNode,
+    cellMinWidth: number,
+    view?: EditorView,
+    HTMLAttributes: Record<string, unknown> = {},
+  ) {
+    super(node, cellMinWidth, view, HTMLAttributes);
+    // columnResizing crea el View con solo 3 args (sin HTMLAttributes), así que
+    // data-rounded hay que aplicarlo desde node.attrs también en la creación.
+    this.applyRounded(node);
+  }
   update(node: ProseMirrorNode) {
     const ok = super.update(node);
-    if (ok) {
-      if (node.attrs.rounded) this.table.setAttribute('data-rounded', 'true');
-      else this.table.removeAttribute('data-rounded');
-    }
+    if (ok) this.applyRounded(node);
     return ok;
+  }
+  private applyRounded(node: ProseMirrorNode) {
+    if (node.attrs.rounded) this.table.setAttribute('data-rounded', 'true');
+    else this.table.removeAttribute('data-rounded');
   }
 }
 
