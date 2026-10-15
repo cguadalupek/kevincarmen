@@ -27,6 +27,7 @@ function createStars(width: number, height: number, count: number): Star[] {
 export function UniverseBackground() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const starsRef = useRef<Star[]>([]);
+  const starRef = useRef<HTMLDivElement>(null);
   const frameRef = useRef(0);
 
   useEffect(() => {
@@ -100,6 +101,62 @@ export function UniverseBackground() {
     };
   }, []);
 
+  // Estrella fugaz periférica: aparece cada 15–30 s (aleatorio), solo por los
+  // bordes externos (tercio superior, laterales, esquinas) y nunca por el centro.
+  // Pausada por completo con prefers-reduced-motion: reduce.
+  useEffect(() => {
+    const starEl = starRef.current;
+    if (!starEl) return;
+    const star = starEl;
+
+    const reduceQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const FLIGHT_MS = 2400;
+    const paths = [
+      'shooting-star--star-top-lr',
+      'shooting-star--star-top-rl',
+      'shooting-star--star-ul-corner',
+      'shooting-star--star-ur-corner',
+      'shooting-star--star-ll-corner',
+      'shooting-star--star-lr-corner',
+    ];
+
+    let hideTimer: number | undefined;
+    let nextTimer: number | undefined;
+
+    function showStar() {
+      if (reduceQuery.matches) return;
+      const cls = paths[Math.floor(Math.random() * paths.length)];
+      star.className = `shooting-star ${cls}`;
+      hideTimer = window.setTimeout(() => {
+        star.className = 'shooting-star';
+        scheduleNext();
+      }, FLIGHT_MS);
+    }
+
+    function scheduleNext() {
+      nextTimer = window.setTimeout(showStar, 15000 + Math.random() * 15000);
+    }
+
+    function handleReduce(event: MediaQueryListEvent) {
+      if (event.matches) {
+        if (hideTimer !== undefined) window.clearTimeout(hideTimer);
+        if (nextTimer !== undefined) window.clearTimeout(nextTimer);
+        star.className = 'shooting-star';
+      } else {
+        scheduleNext();
+      }
+    }
+
+    scheduleNext();
+    reduceQuery.addEventListener('change', handleReduce);
+
+    return () => {
+      if (hideTimer !== undefined) window.clearTimeout(hideTimer);
+      if (nextTimer !== undefined) window.clearTimeout(nextTimer);
+      reduceQuery.removeEventListener('change', handleReduce);
+    };
+  }, []);
+
   return (
     <div className="universe-bg" aria-hidden="true">
       <div className="universe-nebula universe-nebula-1" />
@@ -107,17 +164,7 @@ export function UniverseBackground() {
       <div className="universe-nebula universe-nebula-3" />
       <canvas ref={canvasRef} className="universe-stars" />
 
-      <div className="pulsar-orbit">
-        <div className="pulsar-anchor">
-          <div className="pulsar">
-            <div className="pulsar-beam pulsar-beam-a" />
-            <div className="pulsar-beam pulsar-beam-b" />
-            <div className="pulsar-core" />
-            <div className="pulsar-glow" />
-            <div className="pulsar-ring" />
-          </div>
-        </div>
-      </div>
+      <div ref={starRef} className="shooting-star" />
 
       <div className="universe-vignette" />
     </div>

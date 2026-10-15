@@ -355,82 +355,44 @@
     background: radial-gradient(ellipse at center, transparent 40%, rgb(2 4 8 / 0.85) 100%);
   }
 
-  .pulsar-orbit {
-    @apply absolute left-1/2 top-1/2;
-    width: min(92vw, 920px);
-    height: min(92vw, 920px);
-    transform: translate(-50%, -50%);
-    animation: pulsar-orbit 90s linear infinite;
-  }
-
-  .pulsar-anchor {
-    @apply absolute left-1/2 top-0;
-    transform: translate(-50%, -50%);
-  }
-
-  .pulsar {
-    @apply relative;
-    width: 120px;
-    height: 120px;
-    animation: pulsar-spin 6s linear infinite;
-  }
-
-  .pulsar-core {
-    @apply absolute left-1/2 top-1/2 z-20 -translate-x-1/2 -translate-y-1/2 rounded-full;
-    width: 10px;
-    height: 10px;
-    background: #f8fafc;
-    box-shadow:
-      0 0 8px 2px rgb(248 250 252 / 0.95),
-      0 0 24px 6px rgb(34 211 238 / 0.75),
-      0 0 48px 12px rgb(30 58 138 / 0.45);
-    animation: pulsar-pulse 1.337s ease-in-out infinite;
-  }
-
-  .pulsar-glow {
-    @apply absolute left-1/2 top-1/2 z-10 -translate-x-1/2 -translate-y-1/2 rounded-full;
-    width: 36px;
-    height: 36px;
-    background: radial-gradient(circle, rgb(34 211 238 / 0.55) 0%, transparent 70%);
-    animation: pulsar-pulse 1.337s ease-in-out infinite;
-  }
-
-  .pulsar-ring {
-    @apply absolute left-1/2 top-1/2 z-0 -translate-x-1/2 -translate-y-1/2 rounded-full border;
-    width: 52px;
-    height: 52px;
-    border-color: rgb(34 211 238 / 0.25);
-    animation: pulsar-ring 2.674s ease-out infinite;
-  }
-
-  .pulsar-beam {
-    @apply absolute left-1/2 top-1/2 z-[5] origin-left;
-    height: 3px;
+  .shooting-star {
+    @apply pointer-events-none absolute left-0 top-0;
+    width: 150px;
+    height: 2px;
     border-radius: 9999px;
-    transform: translateY(-50%);
-  }
-
-  .pulsar-beam-a {
-    width: min(38vw, 360px);
+    opacity: 0;
     background: linear-gradient(
       90deg,
-      rgb(34 211 238 / 0.85) 0%,
-      rgb(34 211 238 / 0.25) 35%,
-      transparent 100%
+      transparent 0%,
+      rgb(34 211 238 / 0.55) 65%,
+      rgb(224 250 255 / 0.9) 100%
     );
-    box-shadow: 0 0 18px rgb(34 211 238 / 0.35);
+    box-shadow: 0 0 10px rgb(34 211 238 / 0.35);
+    will-change: transform, opacity;
   }
 
-  .pulsar-beam-b {
-    width: min(38vw, 360px);
-    transform: translateY(-50%) rotate(180deg);
-    background: linear-gradient(
-      90deg,
-      rgb(147 197 253 / 0.7) 0%,
-      rgb(147 197 253 / 0.2) 35%,
-      transparent 100%
-    );
-    box-shadow: 0 0 14px rgb(147 197 253 / 0.25);
+  .shooting-star--star-top-lr {
+    animation: star-top-lr 2.4s ease-out forwards;
+  }
+
+  .shooting-star--star-top-rl {
+    animation: star-top-rl 2.4s ease-out forwards;
+  }
+
+  .shooting-star--star-ul-corner {
+    animation: star-ul-corner 2.4s ease-out forwards;
+  }
+
+  .shooting-star--star-ur-corner {
+    animation: star-ur-corner 2.4s ease-out forwards;
+  }
+
+  .shooting-star--star-ll-corner {
+    animation: star-ll-corner 2.4s ease-out forwards;
+  }
+
+  .shooting-star--star-lr-corner {
+    animation: star-lr-corner 2.4s ease-out forwards;
   }
 
   @keyframes nebula-drift {
@@ -442,54 +404,112 @@
     }
   }
 
-  @keyframes pulsar-orbit {
-    from {
-      transform: translate(-50%, -50%) rotate(0deg);
-    }
-    to {
-      transform: translate(-50%, -50%) rotate(360deg);
-    }
-  }
-
-  @keyframes pulsar-spin {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
-  @keyframes pulsar-pulse {
-    0%,
-    100% {
-      opacity: 1;
-      transform: translate(-50%, -50%) scale(1);
-    }
-    50% {
-      opacity: 0.6;
-      transform: translate(-50%, -50%) scale(0.85);
-    }
-  }
-
-  @keyframes pulsar-ring {
+  /* Trayectorias periféricas: nunca cruzan el centro (zona de texto) */
+  @keyframes star-top-lr {
     0% {
-      opacity: 0.7;
-      transform: translate(-50%, -50%) scale(0.6);
+      transform: translate3d(12vw, 10vh, 0) rotate(-2deg);
+      opacity: 0;
+    }
+    12% {
+      opacity: 0.4;
+    }
+    78% {
+      opacity: 0.4;
     }
     100% {
+      transform: translate3d(80vw, 6vh, 0) rotate(-2deg);
       opacity: 0;
-      transform: translate(-50%, -50%) scale(1.8);
+    }
+  }
+
+  @keyframes star-top-rl {
+    0% {
+      transform: translate3d(88vw, 8vh, 0) rotate(178deg);
+      opacity: 0;
+    }
+    12% {
+      opacity: 0.4;
+    }
+    78% {
+      opacity: 0.4;
+    }
+    100% {
+      transform: translate3d(20vw, 12vh, 0) rotate(178deg);
+      opacity: 0;
+    }
+  }
+
+  @keyframes star-ul-corner {
+    0% {
+      transform: translate3d(8vw, 22vh, 0) rotate(32deg);
+      opacity: 0;
+    }
+    12% {
+      opacity: 0.4;
+    }
+    78% {
+      opacity: 0.4;
+    }
+    100% {
+      transform: translate3d(24vw, 40vh, 0) rotate(32deg);
+      opacity: 0;
+    }
+  }
+
+  @keyframes star-ur-corner {
+    0% {
+      transform: translate3d(92vw, 20vh, 0) rotate(148deg);
+      opacity: 0;
+    }
+    12% {
+      opacity: 0.4;
+    }
+    78% {
+      opacity: 0.4;
+    }
+    100% {
+      transform: translate3d(76vw, 40vh, 0) rotate(148deg);
+      opacity: 0;
+    }
+  }
+
+  @keyframes star-ll-corner {
+    0% {
+      transform: translate3d(10vw, 82vh, 0) rotate(-29deg);
+      opacity: 0;
+    }
+    12% {
+      opacity: 0.4;
+    }
+    78% {
+      opacity: 0.4;
+    }
+    100% {
+      transform: translate3d(24vw, 66vh, 0) rotate(-29deg);
+      opacity: 0;
+    }
+  }
+
+  @keyframes star-lr-corner {
+    0% {
+      transform: translate3d(90vw, 80vh, 0) rotate(-151deg);
+      opacity: 0;
+    }
+    12% {
+      opacity: 0.4;
+    }
+    78% {
+      opacity: 0.4;
+    }
+    100% {
+      transform: translate3d(76vw, 64vh, 0) rotate(-151deg);
+      opacity: 0;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
     .universe-nebula,
-    .pulsar-orbit,
-    .pulsar,
-    .pulsar-core,
-    .pulsar-glow,
-    .pulsar-ring {
+    .shooting-star {
       animation: none !important;
     }
   }
