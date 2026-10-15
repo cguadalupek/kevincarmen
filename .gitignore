@@ -13,3 +13,6 @@ apps/web/public/uploads/posts/*
 .DS_Store
 coverage
 .vercel
+
+# deploy artifact
+kc.bundle
