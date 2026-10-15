@@ -572,17 +572,6 @@ export function LabForm({ experiment }: LabFormProps) {
           </div>
 
           <div className="glass-card space-y-3 p-5">
-            <h3 className="flex items-center gap-2">
-              <Milestone className="h-4 w-4 text-accent" /> Hitos de la ficha
-            </h3>
-            <p className="text-xs text-muted-foreground">
-              Línea de tiempo interactiva de la ficha de laboratorio. Cada hito abre el panel
-              lateral derecho en la página pública.
-            </p>
-            <LabMilestoneEditor milestones={milestones} onChange={setMilestones} />
-          </div>
-
-          <div className="glass-card space-y-3 p-5">
             <h3 className={cardTitle}>Clasificación</h3>
             <ChipInput
               label="Stack / tecnologías"
@@ -738,6 +727,23 @@ export function LabForm({ experiment }: LabFormProps) {
             </Button>
           </div>
         </div>
+      </div>
+
+      {/* ─────────── Hitos de la ficha (ancho completo, fuera de la columna lateral) ─────────── */}
+      <div className="glass-card space-y-4 p-5 sm:p-6">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
+          <h3 className="flex items-center gap-2">
+            <Milestone className="h-4 w-4 text-accent" /> Hitos de la ficha
+          </h3>
+          <span className="text-xs text-muted-foreground">
+            {milestones.length} {milestones.length === 1 ? 'hito' : 'hitos'}
+          </span>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Línea de tiempo interactiva de la ficha de laboratorio. Cada hito abre el panel
+          lateral derecho en la página pública.
+        </p>
+        <LabMilestoneEditor milestones={milestones} onChange={setMilestones} />
       </div>
     </form>
   );
