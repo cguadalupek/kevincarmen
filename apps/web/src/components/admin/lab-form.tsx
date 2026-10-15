@@ -10,9 +10,9 @@ import {
   Clock,
   Copy,
   Eye,
-  FileText,
   ImageIcon,
   ListVideo,
+  Milestone,
   FolderKanban,
   Plus,
   Save,
@@ -26,8 +26,10 @@ import { slugify } from '@kevincarmen/utils';
 import { Button } from '@/components/ui/button';
 import { PostEditor } from '@/components/admin/post-editor';
 import { ChipInput } from '@/components/admin/chip-input';
+import { LabMilestoneEditor } from '@/components/admin/lab-milestone-editor';
 import { MarkdownContent } from '@/components/blog/markdown-content';
 import { api, type ApiLabExperiment } from '@/lib/api/client';
+import { normalizeMilestones, type LabMilestone } from '@/lib/lab-milestone';
 import { cn } from '@/lib/utils';
 
 interface LabFormProps {
@@ -100,10 +102,10 @@ export function LabForm({ experiment }: LabFormProps) {
   const [stack, setStack] = useState<string[]>(experiment?.stack ?? []);
   const [tags, setTags] = useState<string[]>(experiment?.tags ?? []);
 
-  // ── Ficha rápida ──
-  const [objective, setObjective] = useState(experiment?.objective ?? '');
-  const [hypothesis, setHypothesis] = useState(experiment?.hypothesis ?? '');
-  const [conclusion, setConclusion] = useState(experiment?.conclusion ?? '');
+  // ── Hitos (timeline de la ficha de laboratorio) ──
+  const [milestones, setMilestones] = useState<LabMilestone[]>(
+    experiment ? normalizeMilestones(experiment.milestones) : [],
+  );
 
   // ── Video largo ──
   const [videoUrl, setVideoUrl] = useState(experiment?.videoUrl ?? '');
@@ -248,9 +250,7 @@ export function LabForm({ experiment }: LabFormProps) {
       published,
       stack,
       tags,
-      objective: objective.trim() || null,
-      hypothesis: hypothesis.trim() || null,
-      conclusion: conclusion.trim() || null,
+      milestones,
       coverImage: coverImage.trim() || null,
       gallery,
       startedAt: startedAt || null,
@@ -573,38 +573,13 @@ export function LabForm({ experiment }: LabFormProps) {
 
           <div className="glass-card space-y-3 p-5">
             <h3 className="flex items-center gap-2">
-              <FileText className="h-4 w-4 text-accent" /> Ficha rápida (opcional)
+              <Milestone className="h-4 w-4 text-accent" /> Hitos de la ficha
             </h3>
             <p className="text-xs text-muted-foreground">
-              Aparecen como tarjetas destacadas arriba del contenido.
+              Línea de tiempo interactiva de la ficha de laboratorio. Cada hito abre el panel
+              lateral derecho en la página pública.
             </p>
-            <label className="block text-sm font-medium">
-              Objetivo
-              <textarea
-                rows={2}
-                value={objective}
-                onChange={(e) => setObjective(e.target.value)}
-                className={cn(fieldClass, 'mt-1 resize-none')}
-              />
-            </label>
-            <label className="block text-sm font-medium">
-              Hipótesis
-              <textarea
-                rows={2}
-                value={hypothesis}
-                onChange={(e) => setHypothesis(e.target.value)}
-                className={cn(fieldClass, 'mt-1 resize-none')}
-              />
-            </label>
-            <label className="block text-sm font-medium">
-              Conclusión
-              <textarea
-                rows={2}
-                value={conclusion}
-                onChange={(e) => setConclusion(e.target.value)}
-                className={cn(fieldClass, 'mt-1 resize-none')}
-              />
-            </label>
+            <LabMilestoneEditor milestones={milestones} onChange={setMilestones} />
           </div>
 
           <div className="glass-card space-y-3 p-5">

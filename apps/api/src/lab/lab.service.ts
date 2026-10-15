@@ -66,6 +66,28 @@ function parseChapters(value: unknown): Prisma.InputJsonValue {
     .filter((chapter) => chapter.time || chapter.title);
 }
 
+const MILESTONE_KINDS = new Set(['detail', 'terminal', 'comparison', 'metrics']);
+
+function parseMilestones(value: unknown): Prisma.InputJsonValue {
+  if (!Array.isArray(value)) return [];
+  return value
+    .filter((m): m is Record<string, unknown> => typeof m === 'object' && m !== null)
+    .map((m) => {
+      const id =
+        typeof m.id === 'string' && m.id
+          ? m.id
+          : `m_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
+      const title = typeof m.title === 'string' ? m.title.trim() : '';
+      const summary = typeof m.summary === 'string' ? m.summary.trim() : '';
+      const content =
+        typeof m.content === 'string' ? normalizeStoredContent(m.content) : '';
+      const kind =
+        typeof m.kind === 'string' && MILESTONE_KINDS.has(m.kind) ? m.kind : 'detail';
+      return { id, title, summary, kind, content };
+    })
+    .filter((m) => m.title || m.summary || m.content);
+}
+
 @Injectable()
 export class LabService {
   constructor(private prisma: PrismaService) {}
@@ -171,6 +193,7 @@ export class LabService {
         videoUrl: normalizeStoredUrl(dto.videoUrl) || null,
         videoDuration: dto.videoDuration ?? null,
         chapters: parseChapters(dto.chapters),
+        milestones: parseMilestones(dto.milestones),
         published: dto.published ?? false,
         readingTime: readingTimeOf(content),
       },
@@ -215,6 +238,7 @@ export class LabService {
     if (dto.videoUrl !== undefined) data.videoUrl = normalizeStoredUrl(dto.videoUrl) || null;
     if (dto.videoDuration !== undefined) data.videoDuration = dto.videoDuration ?? null;
     if (dto.chapters !== undefined) data.chapters = parseChapters(dto.chapters);
+    if (dto.milestones !== undefined) data.milestones = parseMilestones(dto.milestones);
     if (dto.published !== undefined) data.published = dto.published;
 
     return this.prisma.labExperiment.update({ where: { id }, data });

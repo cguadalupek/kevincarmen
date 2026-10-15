@@ -1,5 +1,7 @@
 const API_URL = process.env.API_INTERNAL_URL ?? process.env.NEXT_PUBLIC_API_URL ?? '/api/v1';
 
+import type { LabMilestone } from '@/lib/lab-milestone';
+
 export type ExperimentStatus = 'IN_PROGRESS' | 'SUCCESS' | 'PARTIAL' | 'FAILED' | 'ABANDONED';
 
 export interface PublicLabExperiment {
@@ -21,6 +23,7 @@ export interface PublicLabExperiment {
   videoUrl: string | null;
   videoDuration: number | null;
   chapters: { time: string; title: string }[];
+  milestones: LabMilestone[];
   readingTime: number;
   relatedPost: {
     id: string;

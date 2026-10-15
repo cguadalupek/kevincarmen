@@ -10,9 +10,6 @@ import {
   FlaskConical,
   FolderKanban,
   Play,
-  Target,
-  Lightbulb,
-  Flag,
 } from 'lucide-react';
 import { formatDate } from '@kevincarmen/utils';
 import { siteConfig } from '@kevincarmen/config';
@@ -20,6 +17,7 @@ import { getLabExperimentBySlug, type ExperimentStatus } from '@/lib/api/lab';
 import { MarkdownContent } from '@/components/blog/markdown-content';
 import { VideoEmbed } from '@/components/blog/video-embed';
 import { LabChapters } from '@/components/lab/chapters';
+import { LabMilestones } from '@/components/lab/lab-milestones';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -48,28 +46,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     },
     alternates: { canonical: `/lab/${experiment.slug}` },
   };
-}
-
-function InfoCard({
-  title,
-  icon: Icon,
-  text,
-  accent,
-}: {
-  title: string;
-  icon: typeof Target;
-  text?: string | null;
-  accent?: boolean;
-}) {
-  if (!text?.trim()) return null;
-  return (
-    <section className={`glass-card p-5 ${accent ? 'border-accent/30' : ''}`}>
-      <h2 className="mb-2 flex items-center gap-2 font-mono text-sm uppercase tracking-wider text-accent">
-        <Icon className="h-4 w-4" /> {title}
-      </h2>
-      <p className="whitespace-pre-wrap text-sm leading-7 text-muted-foreground">{text}</p>
-    </section>
-  );
 }
 
 export default async function LabExperimentPage({ params }: Props) {
@@ -168,12 +144,7 @@ export default async function LabExperimentPage({ params }: Props) {
           </div>
         )}
 
-        {(experiment.objective || experiment.hypothesis) && (
-          <div className="mt-10 grid gap-5 md:grid-cols-2">
-            <InfoCard title="Objetivo" icon={Target} text={experiment.objective} />
-            <InfoCard title="Hipótesis" icon={Lightbulb} text={experiment.hypothesis} />
-          </div>
-        )}
+        <LabMilestones milestones={experiment.milestones} />
 
         {hasVideo && (
           <div className="mt-10 grid gap-5 lg:grid-cols-3">
@@ -187,17 +158,6 @@ export default async function LabExperimentPage({ params }: Props) {
                 Video largo con la explicación completa.
               </div>
             )}
-          </div>
-        )}
-
-        {experiment.conclusion && (
-          <div className="mt-10 rounded-xl border border-accent/25 bg-accent/5 p-6">
-            <h2 className="flex items-center gap-2 font-mono text-sm uppercase tracking-wider text-accent">
-              <Flag className="h-4 w-4" /> Conclusión
-            </h2>
-            <p className="mt-3 whitespace-pre-wrap leading-7 text-muted-foreground">
-              {experiment.conclusion}
-            </p>
           </div>
         )}
 

@@ -407,6 +407,8 @@ model LabExperiment {
   videoDuration   Int?             @map("video_duration")
   /** Capítulos del video: [{ time: "00:00", title: "..." }] (para la descripción de YouTube). */
   chapters        Json             @default("[]")
+  /** Hitos interactivos de la ficha de laboratorio (timeline): [{ id, title, summary, kind, content }]. */
+  milestones      Json             @default("[]")
   /** Borrador/Publicado: solo los publicados aparecen en /lab. */
   published       Boolean          @default(false)
   /** Minutos de lectura estimados del cuerpo. */

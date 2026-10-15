@@ -1,4 +1,5 @@
 import { ExperimentStatus } from '@prisma/client';
+import { Type } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
@@ -9,8 +10,9 @@ import {
   IsString,
   MaxLength,
   Min,
+  ValidateNested,
 } from 'class-validator';
-import { ChapterDto } from './create-lab.dto';
+import { ChapterDto, LabMilestoneDto } from './create-lab.dto';
 
 export class UpdateLabDto {
   @IsOptional() @IsString() @MaxLength(160) title?: string;
@@ -36,5 +38,10 @@ export class UpdateLabDto {
   @IsOptional() @IsString() videoUrl?: string;
   @IsOptional() @IsInt() @Min(1) videoDuration?: number;
   @IsOptional() @IsArray() chapters?: ChapterDto[];
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => LabMilestoneDto)
+  milestones?: LabMilestoneDto[];
   @IsOptional() @IsBoolean() published?: boolean;
 }

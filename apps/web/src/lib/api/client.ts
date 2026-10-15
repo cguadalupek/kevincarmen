@@ -1,5 +1,7 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? '/api/v1';
 
+import type { LabMilestone } from '@/lib/lab-milestone';
+
 export function getToken(): string | null {
   if (typeof window === 'undefined') return null;
   return localStorage.getItem('kc_token');
@@ -212,6 +214,8 @@ export interface ApiLabExperiment {
   videoDuration: number | null;
   /** Capítulos del video: [{ time, title }]. */
   chapters: { time: string; title: string }[];
+  /** Hitos interactivos de la ficha de laboratorio (timeline). */
+  milestones: LabMilestone[];
   /** Borrador/Publicado: solo los publicados salen en /lab. */
   published: boolean;
   readingTime: number;

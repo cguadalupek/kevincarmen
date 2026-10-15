@@ -10,9 +10,11 @@ import { VideoEmbed } from '@/components/blog/video-embed';
 interface MarkdownContentProps {
   content: string;
   title?: string;
+  /** Clases extra para el contenedor (sustituye el margen superior por defecto `mt-12`). */
+  className?: string;
 }
 
-export function MarkdownContent({ content, title }: MarkdownContentProps) {
+export function MarkdownContent({ content, title, className }: MarkdownContentProps) {
   const visibleContent = removeRepeatedTitle(content, title);
   const normalizedContent = normalizeEmbeds(visibleContent);
 
@@ -20,7 +22,9 @@ export function MarkdownContent({ content, title }: MarkdownContentProps) {
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
       rehypePlugins={[rehypeRaw]}
-      className="prose prose-invert prose-accent mt-12 max-w-none prose-img:rounded-lg prose-img:border prose-img:border-border"
+      className={`prose prose-invert prose-accent max-w-none prose-img:rounded-lg prose-img:border prose-img:border-border ${
+        className ?? 'mt-12'
+      }`}
       components={{
         img: ({ src, alt, ...props }) => {
           if (!src || typeof src !== 'string') return null;

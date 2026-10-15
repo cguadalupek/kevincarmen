@@ -1,14 +1,17 @@
 import { ExperimentStatus } from '@prisma/client';
+import { Type } from 'class-transformer';
 import {
   IsArray,
   IsBoolean,
   IsDateString,
   IsEnum,
+  IsIn,
   IsInt,
   IsOptional,
   IsString,
   MaxLength,
   Min,
+  ValidateNested,
 } from 'class-validator';
 
 /** Capítulo del video: { time: "00:00", title: "..." } */
@@ -18,6 +21,18 @@ export class ChapterDto {
 
   @IsString()
   title!: string;
+}
+
+export const LAB_MILESTONE_KINDS = ['detail', 'terminal', 'comparison', 'metrics'] as const;
+export type LabMilestoneKind = (typeof LAB_MILESTONE_KINDS)[number];
+
+/** Hito de la ficha de laboratorio (timeline): { id, title, summary, kind, content }. */
+export class LabMilestoneDto {
+  @IsOptional() @IsString() id?: string;
+  @IsOptional() @IsString() title?: string;
+  @IsOptional() @IsString() summary?: string;
+  @IsOptional() @IsIn(LAB_MILESTONE_KINDS as unknown as string[]) kind?: LabMilestoneKind;
+  @IsOptional() @IsString() content?: string;
 }
 
 export class CreateLabDto {
@@ -59,6 +74,12 @@ export class CreateLabDto {
   @IsOptional() @IsInt() @Min(1) videoDuration?: number;
   /** Capítulos del video. */
   @IsOptional() @IsArray() chapters?: ChapterDto[];
+  /** Hitos interactivos de la ficha de laboratorio. */
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => LabMilestoneDto)
+  milestones?: LabMilestoneDto[];
   /** Borrador / Publicado. */
   @IsOptional() @IsBoolean() published?: boolean;
 }
