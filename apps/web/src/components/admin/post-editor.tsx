@@ -13,6 +13,8 @@ import { api } from '@/lib/api/client';
 import { SlashCommand } from './editor/slash-command';
 import { CodeBlockToolbar } from './editor/code-block-toolbar';
 import { FormattingToolbar } from './editor/formatting-toolbar';
+import { TableToolbar } from './editor/table-toolbar';
+import { KCTable, KCTableCell, KCTableHeader, TableRow } from './editor/table';
 import { Iframe } from './editor/iframe-node';
 
 const lowlight = createLowlight(common);
@@ -83,7 +85,7 @@ export function PostEditor({ content, onChange, onVideoPaste, toolbarTopClass }:
         maxWidth: 900,
       }),
       Placeholder.configure({
-        placeholder: 'Escribe tu artículo… Usa / para insertar código o imágenes.',
+        placeholder: 'Escribe tu artículo… Usa / para insertar código, tablas o imágenes.',
       }),
       Markdown.configure({
         html: true,
@@ -92,6 +94,10 @@ export function PostEditor({ content, onChange, onVideoPaste, toolbarTopClass }:
       }),
       Iframe,
       SlashCommand,
+      KCTable.configure({ resizable: true, cellMinWidth: 80 }),
+      TableRow,
+      KCTableHeader,
+      KCTableCell,
     ],
     content,
     editorProps: {
@@ -238,6 +244,7 @@ if (text && /^https?:\/\//i.test(text)) {
 
       <FormattingToolbar editor={editor} {...(toolbarTopClass ? { topClass: toolbarTopClass } : {})} />
       <CodeBlockToolbar editor={editor} />
+      <TableToolbar editor={editor} />
 
       <EditorContent editor={editor} />
 

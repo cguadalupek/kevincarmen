@@ -6,11 +6,8 @@ import { Button } from '@/components/ui/button';
 import { AdminModal } from '@/components/admin/admin-modal';
 import { PostEditor } from '@/components/admin/post-editor';
 import {
-  LAB_MILESTONE_KIND_LABELS,
-  LAB_MILESTONE_KINDS,
   newMilestoneId,
   type LabMilestone,
-  type LabMilestoneKind,
 } from '@/lib/lab-milestone';
 import { cn } from '@/lib/utils';
 
@@ -118,7 +115,7 @@ export function LabMilestoneEditor({ milestones, onChange }: LabMilestoneEditorP
                       </p>
                     )}
                     <span className="mt-1 inline-block rounded bg-muted px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground">
-                      {LAB_MILESTONE_KIND_LABELS[milestone.kind]}
+                      {milestone.summary ? 'Resumen' : 'Hito'}
                     </span>
                     <div className="mt-1.5 flex flex-wrap items-center gap-1">
                       <button
@@ -189,7 +186,7 @@ export function LabMilestoneEditor({ milestones, onChange }: LabMilestoneEditorP
             </>
           }
         >
-          <div className="space-y-4">
+          <div className="space-y-4 pt-1">
             {error && (
               <p className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-400">
                 {error}
@@ -222,34 +219,6 @@ export function LabMilestoneEditor({ milestones, onChange }: LabMilestoneEditorP
                 placeholder="Una frase que resuma este paso."
                 className={cn(fieldClass, 'resize-none')}
               />
-            </div>
-
-            <div>
-              <label htmlFor="milestone-kind" className="mb-2 block text-sm font-medium">
-                Tipo de panel
-              </label>
-              <select
-                id="milestone-kind"
-                value={draft.kind}
-                onChange={(e) => setDraft({ ...draft, kind: e.target.value as LabMilestoneKind })}
-                className={cn(fieldClass, 'mt-1')}
-              >
-                {LAB_MILESTONE_KINDS.map((kind) => (
-                  <option key={kind} value={kind}>
-                    {LAB_MILESTONE_KIND_LABELS[kind]}
-                  </option>
-                ))}
-              </select>
-              <p className="mt-1.5 text-xs text-muted-foreground">
-                {draft.kind === 'comparison' &&
-                  'Separa la hipótesis de la realidad con una línea `---` en el contenido.'}
-                {draft.kind === 'terminal' &&
-                  'Escribe el log línea a línea: se mostrará en una consola de estilo terminal.'}
-                {draft.kind === 'metrics' &&
-                  'Escribe una métrica por línea con el formato `Etiqueta: valor` (p. ej. «Latencia: 42 ms»).'}
-                {draft.kind === 'detail' &&
-                  'Texto enriquecido: encabezados, imágenes, bloques de código, tablas…'}
-              </p>
             </div>
 
             <div>

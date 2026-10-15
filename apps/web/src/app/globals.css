@@ -156,6 +156,35 @@
     @apply ring-2 ring-accent;
   }
 
+  /* Tablas del editor (TipTap) */
+  .post-editor-content .tableWrapper {
+    @apply my-4 overflow-x-auto;
+  }
+  .post-editor-content table {
+    @apply w-full border-collapse text-sm;
+  }
+  .post-editor-content th,
+  .post-editor-content td {
+    @apply border border-border px-3 py-2 text-left align-top;
+  }
+  .post-editor-content th {
+    @apply bg-accent/10 font-semibold;
+  }
+  .post-editor-content table[data-rounded] {
+    border-collapse: separate;
+    border-spacing: 0;
+    overflow: hidden;
+    border-radius: 10px;
+  }
+  .post-editor-content td[data-borderless],
+  .post-editor-content th[data-borderless] {
+    border: none;
+  }
+  .post-editor-content .column-resize-handle {
+    @apply absolute right-[-2px] top-0 z-10 h-full w-[5px] cursor-col-resize;
+    background: rgb(var(--accent) / 0.5);
+  }
+
   /* Slash command menu */
   .slash-menu {
     @apply w-72 overflow-hidden rounded-xl border border-border bg-card shadow-xl;
@@ -264,6 +293,18 @@
 
   .code-block-pre code {
     @apply block px-4 pb-2 pt-2.5 font-mono text-sm leading-[1.5];
+  }
+
+  /* Tablas en el contenido público (raw HTML con data-rounded / data-borderless) */
+  .prose table[data-rounded] {
+    border-collapse: separate;
+    border-spacing: 0;
+    overflow: hidden;
+    border-radius: 10px;
+  }
+  .prose th[data-borderless],
+  .prose td[data-borderless] {
+    border: none;
   }
 
   /* Syntax highlighting — tema oscuro alineado al sitio */

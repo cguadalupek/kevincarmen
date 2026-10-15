@@ -15,6 +15,7 @@ import {
   Minus,
   PlayCircle,
   Quote,
+  Table2,
   TerminalSquare,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -97,6 +98,19 @@ export const slashCommandItems: SlashCommandItem[] = [
     icon: <Minus className="h-4 w-4" />,
     command: ({ editor, range }) =>
       editor.chain().focus().deleteRange(range).setHorizontalRule().run(),
+  },
+  {
+    title: 'Tabla',
+    description: 'Insertar una tabla editable',
+    category: 'Bloques básicos',
+    icon: <Table2 className="h-4 w-4" />,
+    command: ({ editor, range }) =>
+      editor
+        .chain()
+        .focus()
+        .deleteRange(range)
+        .insertTable({ rows: 3, cols: 3, withHeaderRow: true })
+        .run(),
   },
   {
     title: 'Código en línea',
