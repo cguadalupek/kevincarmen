@@ -1,4 +1,4 @@
-import { Table } from '@tiptap/extension-table';
+import { Table, TableView } from '@tiptap/extension-table';
 import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
 import { TableRow } from '@tiptap/extension-table-row';
@@ -26,6 +26,22 @@ const borderlessCellAttr = {
       attrs.borderless ? { 'data-borderless': 'true' } : {},
   },
 };
+
+/**
+ * TableView del modo resizable que, además de refrescar las columnas, re-aplica
+ * el atributo `data-rounded` al <table> cuando cambia (el `update` base solo
+ * actualiza el <colgroup>, así que el toggle de bordes redondeados no se veía).
+ */
+export class KCTableView extends TableView {
+  update(node: ProseMirrorNode) {
+    const ok = super.update(node);
+    if (ok) {
+      if (node.attrs.rounded) this.table.setAttribute('data-rounded', 'true');
+      else this.table.removeAttribute('data-rounded');
+    }
+    return ok;
+  }
+}
 
 export const KCTableCell = TableCell.extend({
   addAttributes() {
