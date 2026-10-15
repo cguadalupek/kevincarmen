@@ -5,7 +5,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Copy, ExternalLink, Pencil, Plus, Search, Trash2, Video } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { AdminListCard } from '@/components/admin/admin-list-card';
 import { AdminPageHeader } from '@/components/admin/admin-page-header';
 import { api, type ApiLabExperiment } from '@/lib/api/client';
 import { formatDate } from '@kevincarmen/utils';
@@ -180,90 +179,135 @@ export default function AdminLabPage() {
           Ningún experimento coincide con el filtro.
         </div>
       ) : (
-        <div className="space-y-3">
-          {filtered.map((item) => {
-            const [statusLabel, statusClass] = STATUS_META[item.status];
-            return (
-              <AdminListCard
-                key={item.id}
-                leading={
-                  item.coverImage ? (
-                    <div className="relative h-14 w-24 overflow-hidden rounded-lg border border-border">
-                      <Image
-                        src={item.coverImage}
-                        alt={item.title || 'Portada'}
-                        fill
-                        className="object-cover"
-                        unoptimized
-                      />
-                    </div>
-                  ) : (
-                    <div className="flex h-14 w-24 items-center justify-center rounded-lg border border-border bg-muted/40 text-2xl">
-                      🧪
-                    </div>
-                  )
-                }
-                title={
-                  <Link href={`/admin/lab/${item.id}`} className="hover:text-accent">
-                    {item.title || 'Experimento legacy'}
-                  </Link>
-                }
-                badges={
-                  <>
-                    <span
-                      className={cn('shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium', statusClass)}
-                    >
-                      {statusLabel}
-                    </span>
-                    {!item.published && (
-                      <span className="shrink-0 rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
-                        Borrador
-                      </span>
-                    )}
-                    {item.videoUrl && (
-                      <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-accent/10 px-2.5 py-0.5 text-xs text-accent">
-                        <Video className="h-3 w-3" />
-                        {item.videoDuration ? `${item.videoDuration} min` : 'Video'}
-                      </span>
-                    )}
-                  </>
-                }
-                meta={
-                  <>
-                    <p className="truncate font-mono">/lab/{item.slug}</p>
-                    <p>Actualizado: {formatDate(item.updatedAt)}</p>
-                  </>
-                }
-                actions={
-                  <>
-                    {item.published && (
-                      <Button variant="outline" size="sm" asChild>
-                        <a href={`/lab/${item.slug}`} target="_blank" rel="noopener noreferrer">
-                          <ExternalLink className="h-4 w-4" /> Ver
-                        </a>
-                      </Button>
-                    )}
-                    <Button variant="outline" size="sm" asChild>
-                      <Link href={`/admin/lab/${item.id}`}>
-                        <Pencil className="h-4 w-4" /> Editar
-                      </Link>
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={() => handleDuplicate(item)}>
-                      <Copy className="h-4 w-4" /> Duplicar
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDelete(item)}
-                      className="text-red-400 hover:text-red-300"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </>
-                }
-              />
-            );
-          })}
+        <div className="overflow-hidden rounded-xl border border-border">
+          <table className="w-full border-collapse text-sm">
+            <thead className="border-b border-border bg-muted/40 text-left">
+              <tr>
+                <th className="px-4 py-2.5 text-xs font-medium text-muted-foreground">
+                  Experimento
+                </th>
+                <th className="hidden px-4 py-2.5 text-xs font-medium text-muted-foreground sm:table-cell">
+                  Estado
+                </th>
+                <th className="hidden px-4 py-2.5 text-xs font-medium text-muted-foreground md:table-cell">
+                  Actualizado
+                </th>
+                <th className="px-4 py-2.5 text-right text-xs font-medium text-muted-foreground">
+                  Acciones
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {filtered.map((item) => {
+                const [statusLabel, statusClass] = STATUS_META[item.status];
+                return (
+                  <tr key={item.id} className="transition-colors hover:bg-muted/30">
+                    <td className="max-w-0 px-4 py-3 align-middle">
+                      <div className="flex items-center gap-3">
+                        {item.coverImage ? (
+                          <div className="relative h-10 w-16 shrink-0 overflow-hidden rounded-md border border-border">
+                            <Image
+                              src={item.coverImage}
+                              alt={item.title || 'Portada'}
+                              fill
+                              className="object-cover"
+                              unoptimized
+                            />
+                          </div>
+                        ) : (
+                          <div className="flex h-10 w-16 shrink-0 items-center justify-center rounded-md border border-border bg-muted/40 text-lg">
+                            🧪
+                          </div>
+                        )}
+                        <div className="min-w-0">
+                          <Link
+                            href={`/admin/lab/${item.id}`}
+                            className="block truncate font-medium hover:text-accent"
+                          >
+                            {item.title || 'Experimento legacy'}
+                          </Link>
+                          <div className="mt-0.5 flex items-center gap-2 text-xs text-muted-foreground">
+                            <span className="truncate font-mono">/lab/{item.slug}</span>
+                            <span className="shrink-0 sm:hidden">
+                              · <span className={cn('font-medium', statusClass)}>{statusLabel}</span>
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="hidden px-4 py-3 align-middle sm:table-cell">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span
+                          className={cn(
+                            'inline-flex shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium',
+                            statusClass,
+                          )}
+                        >
+                          {statusLabel}
+                        </span>
+                        {!item.published && (
+                          <span className="inline-flex shrink-0 rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
+                            Borrador
+                          </span>
+                        )}
+                        {item.videoUrl && (
+                          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-accent/10 px-2.5 py-0.5 text-xs text-accent">
+                            <Video className="h-3 w-3" />
+                            {item.videoDuration ? `${item.videoDuration} min` : 'Video'}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="hidden px-4 py-3 align-middle text-muted-foreground md:table-cell">
+                      {formatDate(item.updatedAt)}
+                    </td>
+                    <td className="px-4 py-3 align-middle">
+                      <div className="flex items-center justify-end gap-0.5">
+                        {item.published && (
+                          <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+                            <a
+                              href={`/lab/${item.slug}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              aria-label="Ver en el sitio"
+                              title="Ver en el sitio"
+                            >
+                              <ExternalLink className="h-4 w-4" />
+                            </a>
+                          </Button>
+                        )}
+                        <Button variant="ghost" size="icon" className="h-8 w-8" asChild>
+                          <Link href={`/admin/lab/${item.id}`} aria-label="Editar" title="Editar">
+                            <Pencil className="h-4 w-4" />
+                          </Link>
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          aria-label="Duplicar"
+                          title="Duplicar"
+                          onClick={() => handleDuplicate(item)}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-red-400 hover:text-red-300"
+                          aria-label="Eliminar"
+                          title="Eliminar"
+                          onClick={() => handleDelete(item)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
     </>

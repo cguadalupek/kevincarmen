@@ -10,6 +10,7 @@ import {
   Clock,
   Copy,
   Eye,
+  FlaskConical,
   ImageIcon,
   ListVideo,
   Milestone,
@@ -27,6 +28,7 @@ import { Button } from '@/components/ui/button';
 import { PostEditor } from '@/components/admin/post-editor';
 import { ChipInput } from '@/components/admin/chip-input';
 import { LabMilestoneEditor } from '@/components/admin/lab-milestone-editor';
+import { AdminSubNav } from '@/components/admin/admin-subnav';
 import { MarkdownContent } from '@/components/blog/markdown-content';
 import { api, type ApiLabExperiment } from '@/lib/api/client';
 import { normalizeMilestones, type LabMilestone } from '@/lib/lab-milestone';
@@ -82,6 +84,7 @@ export function LabForm({ experiment }: LabFormProps) {
   const [error, setError] = useState('');
   const [savedSlug, setSavedSlug] = useState<string | null>(null);
   const [preview, setPreview] = useState(false);
+  const [tab, setTab] = useState<'experimento' | 'hitos'>('experimento');
 
   // ── Campos básicos ──
   const [title, setTitle] = useState(experiment?.title ?? '');
@@ -304,7 +307,7 @@ export function LabForm({ experiment }: LabFormProps) {
         </div>
       )}
 
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <Link
             href="/admin/lab"
@@ -316,11 +319,44 @@ export function LabForm({ experiment }: LabFormProps) {
             {experiment ? 'Editar experimento' : 'Nuevo experimento'}
           </h1>
         </div>
-        <Button type="button" variant="outline" onClick={() => setPreview((value) => !value)}>
-          <Eye className="h-4 w-4" />
-          {preview ? 'Ocultar vista previa' : 'Vista previa'}
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button type="button" variant="outline" onClick={() => setPreview((value) => !value)}>
+            <Eye className="h-4 w-4" />
+            {preview ? 'Ocultar vista previa' : 'Vista previa'}
+          </Button>
+          <Button type="button" variant="outline" onClick={() => router.push('/admin/lab')}>
+            Cancelar
+          </Button>
+          <Button type="submit" variant="accent" disabled={loading}>
+            <Save className="h-4 w-4" />
+            {loading ? 'Guardando…' : experiment ? 'Guardar cambios' : 'Crear experimento'}
+          </Button>
+        </div>
       </div>
+
+      <AdminSubNav
+        ariaLabel="Subsecciones del experimento"
+        items={[
+          {
+            key: 'experimento',
+            label: experiment ? 'Experimento' : 'Nuevo experimento',
+            icon: <FlaskConical className="h-4 w-4 shrink-0" />,
+            active: tab === 'experimento',
+            onClick: () => setTab('experimento'),
+          },
+          {
+            key: 'hitos',
+            label: 'Hitos de la ficha',
+            icon: <Milestone className="h-4 w-4 shrink-0" />,
+            active: tab === 'hitos',
+            badge: `${milestones.length}`,
+            onClick: () => setTab('hitos'),
+          },
+        ]}
+      />
+
+      {tab === 'experimento' ? (
+        <div className="space-y-6">
 
       {preview && (
         <div className="rounded-xl border border-border bg-background p-8">
@@ -717,34 +753,26 @@ export function LabForm({ experiment }: LabFormProps) {
             </Button>
           </div>
 
-          <div className="glass-card flex flex-col gap-2 p-5">
-            <Button type="submit" variant="accent" disabled={loading}>
-              <Save className="h-4 w-4" />
-              {loading ? 'Guardando…' : experiment ? 'Guardar cambios' : 'Crear experimento'}
-            </Button>
-            <Button type="button" variant="outline" onClick={() => router.push('/admin/lab')}>
-              Cancelar
-            </Button>
+        </div>
+      </div>
+        </div>
+      ) : (
+        <div className="glass-card space-y-4 p-5 sm:p-6">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h3 className="flex items-center gap-2">
+              <Milestone className="h-4 w-4 text-accent" /> Hitos de la ficha
+            </h3>
+            <span className="text-xs text-muted-foreground">
+              {milestones.length} {milestones.length === 1 ? 'hito' : 'hitos'}
+            </span>
           </div>
+          <p className="text-xs text-muted-foreground">
+            Línea de tiempo interactiva de la ficha de laboratorio. Cada hito abre el panel
+            lateral derecho en la página pública.
+          </p>
+          <LabMilestoneEditor milestones={milestones} onChange={setMilestones} />
         </div>
-      </div>
-
-      {/* ─────────── Hitos de la ficha (ancho completo, fuera de la columna lateral) ─────────── */}
-      <div className="glass-card space-y-4 p-5 sm:p-6">
-        <div className="flex flex-wrap items-baseline justify-between gap-2">
-          <h3 className="flex items-center gap-2">
-            <Milestone className="h-4 w-4 text-accent" /> Hitos de la ficha
-          </h3>
-          <span className="text-xs text-muted-foreground">
-            {milestones.length} {milestones.length === 1 ? 'hito' : 'hitos'}
-          </span>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          Línea de tiempo interactiva de la ficha de laboratorio. Cada hito abre el panel
-          lateral derecho en la página pública.
-        </p>
-        <LabMilestoneEditor milestones={milestones} onChange={setMilestones} />
-      </div>
+      )}
     </form>
   );
 }
