@@ -1,7 +1,8 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { ChevronDown, ListTree } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { ListTree, X } from 'lucide-react';
 import { cn } from '@kevincarmen/utils';
 import type { TocHeading } from '@/lib/blog/headings';
 
@@ -65,6 +66,17 @@ interface PostTocProps {
   headings: TocHeading[];
 }
 
+/** Clases compartidas por los enlaces de índice (escritorio y hoja móvil). */
+function linkClass(heading: TocHeading, active: string | null) {
+  return cn(
+    'block border-l-2 text-sm leading-snug transition-colors',
+    heading.level === 3 ? 'pl-6' : 'pl-3',
+    active === heading.id
+      ? 'border-accent font-medium text-accent'
+      : 'border-transparent text-muted-foreground hover:border-accent/40 hover:text-foreground',
+  );
+}
+
 /**
  * Tabla de contenidos flotante (escritorio): sidebar `sticky top-24` en el
  * espacio sobrante al lado de la columna de lectura de 768 px.
@@ -89,13 +101,7 @@ export function PostToc({ headings }: PostTocProps) {
               <a
                 href={`#${heading.id}`}
                 aria-current={active === heading.id ? 'true' : undefined}
-                className={cn(
-                  '-ml-px block border-l-2 py-1 text-sm leading-snug transition-colors',
-                  heading.level === 3 ? 'pl-6' : 'pl-3',
-                  active === heading.id
-                    ? 'border-accent font-medium text-accent'
-                    : 'border-transparent text-muted-foreground hover:border-accent/40 hover:text-foreground',
-                )}
+                className={cn('-ml-px py-1', linkClass(heading, active))}
               >
                 {heading.text}
               </a>
@@ -108,45 +114,133 @@ export function PostToc({ headings }: PostTocProps) {
 }
 
 /**
- * Tabla de contenidos en acordeón (`<details>`), justo antes del contenido:
- * sustituye al sidebar por debajo de `lg`. Se cierra al elegir una sección.
+ * Tabla de contenidos en móvil: botón flotante (FAB) abajo a la derecha que
+ * abre una hoja deslizante desde el borde inferior.
+ *
+ * Sustituye al antiguo acordeón estático bajo la portada: el índice ya no
+ * ocupa espacio en el flujo del artículo. La hoja se monta en un portal a
+ * `document.body` para quedar por encima del header fijo (que tiene su propio
+ * contexto de apilado) y se cierra con Escape, con el fondo o al elegir sección.
  */
-export function PostTocMobile({ headings }: PostTocProps) {
+export function PostTocFab({ headings }: PostTocProps) {
   const active = useActiveHeading(headings.map((heading) => heading.id));
-  const ref = useRef<HTMLDetailsElement>(null);
+  const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => setMounted(true), []);
+
+  const close = useCallback(() => setOpen(false), []);
+
+  // Escape, bloqueo del scroll de fondo y foco inicial (igual que el drawer del panel).
+  useEffect(() => {
+    if (!open) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') close();
+    };
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', onKeyDown);
+    panelRef.current?.focus();
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', onKeyDown);
+    };
+  }, [open, close]);
+
+  const goTo = useCallback(
+    (id: string) => {
+      const target = document.getElementById(id);
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      window.history.replaceState(null, '', `#${id}`);
+      // Cierra en el siguiente frame: si cerráramos antes, el desbloqueo del
+      // scroll del fondo puede cortar el desplazamiento suave recién arrancado.
+      requestAnimationFrame(() => setOpen(false));
+    },
+    [],
+  );
+
   if (headings.length === 0) return null;
 
   return (
-    <details ref={ref} className="glass-card group/anc mb-8 lg:hidden">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-medium [&::-webkit-details-marker]:hidden">
-        <span className="flex items-center gap-2">
-          <ListTree className="h-4 w-4 shrink-0 text-accent" />
-          Tabla de contenidos
-        </span>
-        <ChevronDown className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-open/anc:rotate-180" />
-      </summary>
-      <ul className="border-t border-border px-4 py-3">
-        {headings.map((heading) => (
-          <li key={heading.id}>
-            <a
-              href={`#${heading.id}`}
-              onClick={() => {
-                const element = ref.current;
-                if (element) element.open = false;
-              }}
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-expanded={open}
+        aria-controls="post-toc-sheet"
+        aria-label="Abrir tabla de contenidos"
+        className="fixed bottom-6 right-6 z-50 inline-flex items-center gap-2 rounded-full bg-accent px-5 py-3.5 text-sm font-semibold text-accent-foreground shadow-lg shadow-accent/40 ring-1 ring-accent/50 transition-transform hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-95 lg:hidden"
+      >
+        <ListTree className="h-4 w-4 shrink-0" />
+        Contenido
+      </button>
+
+      {mounted &&
+        createPortal(
+          <div
+            className={cn('fixed inset-0 z-[60] lg:hidden', !open && 'pointer-events-none')}
+            aria-hidden={!open}
+            inert={!open}
+          >
+            <div
+              onClick={close}
               className={cn(
-                'block border-l-2 py-1.5 text-sm leading-snug transition-colors',
-                heading.level === 3 ? 'pl-6' : 'pl-3',
-                active === heading.id
-                  ? 'border-accent font-medium text-accent'
-                  : 'border-transparent text-muted-foreground',
+                'absolute inset-0 bg-slate-950/70 backdrop-blur-sm transition-opacity duration-300 motion-reduce:transition-none',
+                open ? 'opacity-100' : 'opacity-0',
+              )}
+            />
+
+            <div
+              id="post-toc-sheet"
+              ref={panelRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Tabla de contenidos"
+              tabIndex={-1}
+              className={cn(
+                'absolute inset-x-0 bottom-0 flex max-h-[80vh] flex-col rounded-t-2xl border-t border-border bg-card pb-[env(safe-area-inset-bottom)] shadow-2xl outline-none transition-transform duration-300 ease-out motion-reduce:transition-none',
+                open ? 'translate-y-0' : 'translate-y-full',
               )}
             >
-              {heading.text}
-            </a>
-          </li>
-        ))}
-      </ul>
-    </details>
+              <div className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-border" />
+
+              <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 py-3">
+                <p className="flex items-center gap-2 text-sm font-semibold">
+                  <ListTree className="h-4 w-4 shrink-0 text-accent" />
+                  Tabla de contenidos
+                </p>
+                <button
+                  type="button"
+                  onClick={close}
+                  aria-label="Cerrar tabla de contenidos"
+                  className="rounded-lg p-1.5 text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              <ul className="thin-scrollbar overflow-y-auto px-4 py-2">
+                {headings.map((heading) => (
+                  <li key={heading.id}>
+                    <a
+                      href={`#${heading.id}`}
+                      aria-current={active === heading.id ? 'true' : undefined}
+                      onClick={(event) => {
+                        event.preventDefault();
+                        goTo(heading.id);
+                      }}
+                      className={cn('py-2', linkClass(heading, active))}
+                    >
+                      {heading.text}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>,
+          document.body,
+        )}
+    </>
   );
 }

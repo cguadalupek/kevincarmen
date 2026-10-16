@@ -14,7 +14,7 @@ import { VideoEmbed } from '@/components/blog/video-embed';
 import { CategoryBadge } from '@/components/blog/category-badge';
 import { AuthorBadge } from '@/components/blog/author-badge';
 import { AuthorCard } from '@/components/blog/author-card';
-import { PostToc, PostTocMobile } from '@/components/blog/post-toc';
+import { PostToc, PostTocFab } from '@/components/blog/post-toc';
 
 interface BlogPostPageProps {
   params: Promise<{ slug: string }>;
@@ -141,7 +141,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
               </figure>
             )}
 
-            <PostTocMobile headings={headings} />
+            <PostTocFab headings={headings} />
 
             <MarkdownContent content={post.content} title={post.title} headings={headings} />
 
