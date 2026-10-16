@@ -6,6 +6,7 @@ dist
 .env.*
 !.env.example
 !**/.env.example
+# .env.local y .env.*.local ya quedan cubiertos por la regla .env.* de arriba
 *.log
 *.tsbuildinfo
 apps/web/public/uploads/posts/*
@@ -16,3 +17,21 @@ coverage
 
 # deploy artifact
 kc.bundle
+
+# Builds (además de .next/ y dist/ ya listados arriba)
+build
+out
+
+# Bases de datos locales
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Volcados de base de datos
+*.dump
+*.sql.gz
+
+# Carpetas de logs (*.log ya se ignora arriba)
+logs/
+*.pid
