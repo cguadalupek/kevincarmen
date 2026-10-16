@@ -5,6 +5,7 @@ import { UpdateSiteDto } from './dto/update-site.dto';
 interface SiteDefaultsShape {
   hero: { name: string; tagline: string; roles: string[]; description: string };
   about: { bio: string[]; expertise: string[]; nowTitle: string; nowItems: string[] };
+  author: { name: string; bio: string; avatar: string };
 }
 
 /**
@@ -55,6 +56,11 @@ export const SITE_DEFAULTS: SiteDefaultsShape = {
       'Preparando material para un curso de Next.js Full Stack.',
     ],
   },
+  author: {
+    name: 'Kevin Carmen',
+    bio: 'Software Developer & SysAdmin. Apasionado por la infraestructura, Linux, contenedores y homelabs.',
+    avatar: '',
+  },
 };
 
 function parseList(value: string | undefined, fallback: string[]): string[] {
@@ -92,6 +98,16 @@ export class SiteService {
         expertise: parseList(map['about.expertise'], SITE_DEFAULTS.about.expertise),
         nowTitle: map['about.now_title'] || SITE_DEFAULTS.about.nowTitle,
         nowItems: parseList(map['about.now_items'], SITE_DEFAULTS.about.nowItems),
+      },
+      author: {
+        name: map['author.name'] || map['hero.name'] || SITE_DEFAULTS.author.name,
+        bio: map['author.bio'] || SITE_DEFAULTS.author.bio,
+        avatar: map['author.avatar'] || SITE_DEFAULTS.author.avatar,
+        links: {
+          github: map['social.github'] || '',
+          linkedin: map['social.linkedin'] || '',
+          twitter: map['social.twitter'] || '',
+        },
       },
     };
   }

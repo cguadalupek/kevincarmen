@@ -17,6 +17,17 @@ const SETTINGS_FIELDS: { key: string; label: string; placeholder?: string; multi
       placeholder: 'Descripción larga para SEO…',
     },
     { key: 'contact.email', label: 'Email de contacto', placeholder: 'contacto@kevincarmen.xyz' },
+    {
+      key: 'author.bio',
+      label: 'Bio del autor (tarjeta al final de cada artículo)',
+      multiline: true,
+      placeholder: 'Software Developer & SysAdmin. Apasionado por la infraestructura…',
+    },
+    {
+      key: 'author.avatar',
+      label: 'Avatar del autor',
+      placeholder: '/uploads/posts/… o URL absoluta',
+    },
     { key: 'social.youtube', label: 'YouTube URL', placeholder: 'https://www.youtube.com/@…' },
     { key: 'social.github', label: 'GitHub URL', placeholder: 'https://github.com/…' },
     { key: 'social.linkedin', label: 'LinkedIn URL', placeholder: 'https://linkedin.com/in/…' },

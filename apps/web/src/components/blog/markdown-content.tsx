@@ -6,22 +6,30 @@ import type { ComponentProps } from 'react';
 import { CodeBlock } from '@/components/blog/code-block';
 import { LightboxImage } from '@/components/blog/lightbox-image';
 import { VideoEmbed } from '@/components/blog/video-embed';
+import { extractHeadings, rehypeHeadingIds, type TocHeading } from '@/lib/blog/headings';
 
 interface MarkdownContentProps {
   content: string;
   title?: string;
   /** Clases extra para el contenedor (sustituye el margen superior por defecto `mt-12`). */
   className?: string;
+  /**
+   * Encabezados ya extraídos por quien pinta la tabla de contenidos. Si se
+   * omite, `id`s y `scroll-mt` se calculan igualmente aquí: los anchors del
+   * artículo funcionan sin tabla y sin JavaScript.
+   */
+  headings?: TocHeading[];
 }
 
-export function MarkdownContent({ content, title, className }: MarkdownContentProps) {
+export function MarkdownContent({ content, title, className, headings }: MarkdownContentProps) {
   const visibleContent = removeRepeatedTitle(content, title);
   const normalizedContent = normalizeEmbeds(visibleContent);
+  const headingList = headings ?? extractHeadings(visibleContent);
 
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
-      rehypePlugins={[rehypeRaw]}
+      rehypePlugins={[rehypeRaw, rehypeHeadingIds(headingList)]}
       className={`prose prose-invert prose-accent max-w-none prose-img:rounded-lg prose-img:border prose-img:border-border ${
         className ?? 'mt-12'
       }`}

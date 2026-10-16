@@ -30,9 +30,22 @@ export interface PublicTechCategory {
   items: PublicTechItem[];
 }
 
+export interface SiteAuthor {
+  name: string;
+  bio: string;
+  avatar: string;
+  links: {
+    github: string;
+    linkedin: string;
+    twitter: string;
+  };
+}
+
 export interface SiteContent {
   hero: SiteHero;
   about: SiteAbout;
+  /** Perfil del autor para los artículos (keys `author.*` / `social.*` de `settings`). */
+  author?: SiteAuthor;
 }
 
 async function fetchJson(url: string, init: RequestInit = {}) {
