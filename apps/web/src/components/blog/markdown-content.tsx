@@ -6,7 +6,7 @@ import type { ComponentProps } from 'react';
 import { CodeBlock } from '@/components/blog/code-block';
 import { LightboxImage } from '@/components/blog/lightbox-image';
 import { VideoEmbed } from '@/components/blog/video-embed';
-import { extractHeadings, rehypeHeadingIds, type TocHeading } from '@/lib/blog/headings';
+import { rehypeHeadingIds, type TocHeading } from '@/lib/blog/headings';
 
 interface MarkdownContentProps {
   content: string;
@@ -14,9 +14,12 @@ interface MarkdownContentProps {
   /** Clases extra para el contenedor (sustituye el margen superior por defecto `mt-12`). */
   className?: string;
   /**
-   * Encabezados ya extraídos por quien pinta la tabla de contenidos. Si se
-   * omite, `id`s y `scroll-mt` se calculan igualmente aquí: los anchors del
-   * artículo funcionan sin tabla y sin JavaScript.
+   * Encabezados que definen la tabla de contenidos. Al pasarlos, los h2/h3 del
+   * contenido reciben `id` + `scroll-mt-24` (anchors sin JavaScript) usando
+   * ESTA lista como fuente de ids.
+   *
+   * Es opt-in a propósito: una página que monta varios `MarkdownContent` (ficha
+   * de Lab, proyecto por secciones) repetiría ids de encabezados homónimos.
    */
   headings?: TocHeading[];
 }
@@ -24,12 +27,12 @@ interface MarkdownContentProps {
 export function MarkdownContent({ content, title, className, headings }: MarkdownContentProps) {
   const visibleContent = removeRepeatedTitle(content, title);
   const normalizedContent = normalizeEmbeds(visibleContent);
-  const headingList = headings ?? extractHeadings(visibleContent);
+  const rehypePlugins = headings ? [rehypeRaw, rehypeHeadingIds(headings)] : [rehypeRaw];
 
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
-      rehypePlugins={[rehypeRaw, rehypeHeadingIds(headingList)]}
+      rehypePlugins={rehypePlugins}
       className={`prose prose-invert prose-accent max-w-none prose-img:rounded-lg prose-img:border prose-img:border-border ${
         className ?? 'mt-12'
       }`}
