@@ -7,7 +7,20 @@
     },
     "dev": {
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "passThroughEnv": [
+        "DATABASE_URL",
+        "REDIS_URL",
+        "JWT_SECRET",
+        "REVALIDATE_SECRET",
+        "ALLOWED_ORIGINS",
+        "PUBLIC_SITE_HOSTS",
+        "PORT",
+        "UPLOAD_DIR",
+        "API_INTERNAL_URL",
+        "API_PROXY_TARGET",
+        "NEXT_PUBLIC_API_URL"
+      ]
     },
     "lint": {
       "dependsOn": ["^build"]

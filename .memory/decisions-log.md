@@ -80,6 +80,49 @@ idénticos a producción (verificado con `sha256sum` en ambos lados).
 **Regla a partir de ahora**: los tres archivos de `.memory/` se editan en el repo y llegan al
 servidor por el hook `post-receive`; no se editan a mano en producción.
 
+## 2026-10-17 · Entorno de desarrollo local contra la BD del 108
+
+Objetivo: `pnpm dev` local (web :3000 + api :4001) contra la base de datos real. El primer intento
+de crear una base `kevincarmen_dev` en el Postgres de producción se **canceló** a petición del
+usuario (se eliminó con `DROP DATABASE`; el host quedó solo con `kevincarmen`) y se pasó a usar la
+base de producción a través de un túnel SSH.
+
+Configuración que queda en la máquina de desarrollo (todo gitignored):
+
+- `.env.local` en la raíz del monorepo (borrado el `.env` que había, para no tener dos fuentes):
+  `DATABASE_URL=postgresql://kevincarmen:…@127.0.0.1:55432/kevincarmen`.
+- Túnel necesario porque el Postgres de producción solo escucha en `127.0.0.1` dentro del host:
+  `plink -batch -pw … -L 55432:127.0.0.1:5432 root@192.168.1.108 -N`.
+- **Ojo**: es la base de producción; lo que escriba el dev se escribe de verdad.
+
+**Receta verificada**:
+
+```bash
+set -a; . ./.env.local; set +a; pnpm dev
+```
+
+El `set -a; . ./.env.local` es obligatorio (ver bug-solutions): la API solo lee `process.env` y
+Turborepo no inyecta los `.env*` en las tareas. Además, `turbo.json` declara ahora los
+`passThroughEnv` de `dev`, porque el modo estricto de Turbo 2 descarta las variables exportadas
+que no estén declaradas — sin eso, `pnpm dev` arranca la web pero la API muere con P1012.
+
+Tres obstáculos encontrados y resueltos:
+
+1. **Los puertos 3000/4001 y 5432 de la máquina de desarrollo los tiene el reenvío de puertos de
+   Cursor (Remote-SSH al 108)**. Mientras estén ocupados, `pnpm dev` canónico no puede bindear: el
+   API muere con `EADDRINUSE`. Solución: parar ese reenvío en Cursor (pestaña Ports).
+2. **`apps/web/tailwind.config.ts` usaba `require()`** en un config que Node 24 carga como ESM:
+   `ReferenceError: require is not defined` y todas las páginas devolvían 000/500, mientras
+   `next build` seguía pasando. Corregido a `import`.
+3. Docker Desktop se usó un momento y se apagó después; los contenedores `kevincarmen-postgres` /
+   `-redis` que aparecieron al encenderlo **no son de este repo**: pertenecen al compose viejo de
+   `C:\proyectos\web_kevin_carmen` (proyecto `web_kevin_carmen`, su propio volumen) y ocupan
+   `0.0.0.0:5432`. No confundirlos con un Postgres de este proyecto.
+
+**Verificación final** (con la base de producción y sin Docker local): `pnpm dev` → web `:3000`
+(`✓ Ready in 2.4s`) y API `:4001` (`API listening on port 4001`); `/api/v1/health` 200;
+`/api/v1/posts` con los 9 posts reales; `/blog` 200 con títulos de la BD.
+
 ## 2026-10-17 · Skills `memory` y `deploy-check` + builds locales verificados
 
 - Skills instaladas en el entorno del agente (`skills/software-development/`), **no** en el repo:

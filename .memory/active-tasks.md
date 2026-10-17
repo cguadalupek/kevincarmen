@@ -7,5 +7,5 @@
 - [x] Versionar `.memory/active-tasks.md` y `.memory/bug-solutions.md` (commit `d636f8a`): antes solo existían en el host de despliegue.
 
 ## Siguientes Pasos
-- [ ] Probar el flujo completo de desarrollo local (`pnpm dev`): nunca se ha ejecutado en este entorno.
+- [x] Probar el flujo completo de desarrollo local (`pnpm dev`): validado el 2026-10-17 — web :3000 y api :4001 arriba, api `/api/v1/health` 200 y `/api/v1/posts` devolviendo los 9 posts de la BD del 108, web `/blog` 200 (138 KB) renderizando títulos reales. Receta: `set -a; . ./.env.local; set +a; pnpm dev` (con el túnel al Postgres del 108 y sin el reenvío de puertos de Cursor ocupando 3000/4001).
 - [x] Validar builds individuales de `apps/web` y `apps/api` (2026-10-17 UTC: ambos exit 0; la web compila, genera las 34 páginas y regenera `BUILD_ID`).
