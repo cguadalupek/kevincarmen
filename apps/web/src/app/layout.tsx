@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter, JetBrains_Mono } from 'next/font/google';
 import { siteConfig } from '@kevincarmen/config';
 import { RootShell } from '@/components/layout/root-shell';
@@ -23,6 +23,8 @@ export const metadata: Metadata = {
     template: `%s | ${siteConfig.name}`,
   },
   description: siteConfig.description,
+  applicationName: siteConfig.name,
+  manifest: '/manifest.webmanifest',
   authors: [{ name: siteConfig.author, url: siteConfig.url }],
   creator: siteConfig.author,
   icons: {
@@ -52,6 +54,11 @@ export const metadata: Metadata = {
   alternates: {
     canonical: siteConfig.url,
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#0f172a',
+  colorScheme: 'dark',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

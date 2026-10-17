@@ -5,17 +5,24 @@ import { siteConfig } from '@kevincarmen/config';
 import { Header } from '@/components/layout/header';
 import { Footer } from '@/components/layout/footer';
 import { UniverseBackground } from '@/components/background/universe-background';
+import { ServiceWorkerRegister } from '@/components/pwa/service-worker-register';
 
 export function RootShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isAdmin = pathname.startsWith('/admin');
 
   if (isAdmin) {
-    return <>{children}</>;
+    return (
+      <>
+        <ServiceWorkerRegister />
+        {children}
+      </>
+    );
   }
 
   return (
     <div className="relative flex min-h-screen flex-col">
+      <ServiceWorkerRegister />
       <UniverseBackground />
       <Header />
       <main className="relative z-10 flex-1 pb-16">{children}</main>
