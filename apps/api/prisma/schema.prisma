@@ -271,6 +271,8 @@ model Project {
   learnings         String?
   gallery           String[]
   publishedAt       DateTime?     @map("published_at")
+  /// Tiempo de lectura estimado, en minutos. Opcional: si está vacío la web lo calcula.
+  readingTime       Int?          @map("reading_time")
   createdAt       DateTime      @default(now()) @map("created_at")
   updatedAt       DateTime      @updatedAt @map("updated_at")
 

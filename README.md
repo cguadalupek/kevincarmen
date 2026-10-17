@@ -127,6 +127,7 @@ Las migraciones viven en `apps/api/prisma/migrations/` y se aplican en orden lex
 | `20261015010000_add_project_categories_and_order` | `project_categories` + orden |
 | `20261016000000_add_resource_types` | `resource_types` + vínculo en `resources` |
 | `20261017000000_add_lab_milestones` | `milestones` (JSONB) del lab |
+| `20261017010000_add_reading_time_to_projects` | `reading_time` (minutos, opcional) en proyectos |
 
 **Usuarios y seguridad**: `User`, `Role`, `Permission`.
 
@@ -149,6 +150,7 @@ Las migraciones viven en `apps/api/prisma/migrations/` y se aplican en orden lex
 **Portfolio y multiformato**:
 - `Project` (`projects`) — `content` (Markdown), `technologies[]`, `tags[]`, `gallery[]`,
   `technicalDecisions`/`challenges` (JSON), `status`, `projectYear`, `position`,
+  `readingTime` (minutos, opcional/nullable),
   y clasificación editable `projectCategoryId` (+ `category` denormalizado).
 - `ProjectCategory` (`project_categories`) — clasificaciones editables
   (`/admin/projects/clasificacion`), con `position` en múltiplos de 10.

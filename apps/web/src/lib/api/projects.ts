@@ -45,6 +45,8 @@ export interface PublicProject {
   learnings: string | null;
   gallery: string[];
   featured: boolean;
+  /** Tiempo de lectura estimado en minutos (nullable en la base de datos). */
+  readingTime: number | null;
   coverImage: string | null;
   publishedAt: string | null;
 }
