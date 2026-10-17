@@ -16,6 +16,7 @@ import { TimelineModule } from './timeline/timeline.module';
 import { SiteModule } from './site/site.module';
 import { ProjectsModule } from './projects/projects.module';
 import { ResourcesModule } from './resources/resources.module';
+import { NewsletterModule } from './newsletter/newsletter.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { ResourcesModule } from './resources/resources.module';
     TimelineModule,
     SiteModule,
     ProjectsModule,
+    NewsletterModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -75,6 +75,12 @@ enum TimelineEventType {
   ACHIEVEMENT
 }
 
+/// Estado de una suscripción a la newsletter.
+enum NewsletterStatus {
+  ACTIVE
+  UNSUBSCRIBED
+}
+
 model User {
   id           String    @id @default(cuid())
   email        String    @unique
@@ -559,4 +565,20 @@ model TechItem {
 
   @@index([categoryId, position])
   @@map("tech_items")
+}
+
+/// Suscriptores de la newsletter: una fila por email (único) y baja LÓGICA por
+/// `status`, para no perder el histórico de altas. La baja se registra también
+/// con `unsubscribedAt`; un alta posterior reactiva la misma fila.
+model NewsletterSubscriber {
+  id             String           @id @default(cuid())
+  email          String           @unique
+  name           String?
+  status         NewsletterStatus @default(ACTIVE)
+  unsubscribedAt DateTime?        @map("unsubscribed_at")
+  createdAt      DateTime         @default(now()) @map("created_at")
+  updatedAt      DateTime         @updatedAt @map("updated_at")
+
+  @@index([status, createdAt])
+  @@map("newsletter_subscribers")
 }

@@ -191,6 +191,12 @@ Las migraciones viven en `apps/api/prisma/migrations/` y se aplican en orden lex
   `Setting` (KV) bajo la clave del sitio, con los valores por defecto del API
   (`SITE_DEFAULTS`) como respaldo cuando la fila aún no existe.
 
+**Newsletter**:
+- `NewsletterSubscriber` (`newsletter_subscribers`) — suscriptores del boletín: una fila por
+  `email` (único, normalizado a minúsculas), `name` opcional, `status` (`NewsletterStatus`:
+  ACTIVE / UNSUBSCRIBED) y `unsubscribedAt`. La baja es **lógica** (la fila no se borra):
+  conserva el histórico de altas, y una alta posterior reactiva la misma fila.
+
 **Otros**: `Media` (subidas), `Setting` (KV de configuración), `TimelineEvent`.
 
 ---
@@ -288,6 +294,10 @@ y `ValidationPipe` global.
   `GET /lab/admin/:id`, CRUD. Los **hitos** van dentro de `milestones` (JSON).
 - **Timeline**: `GET /timeline`, `GET /timeline/admin/all`, `GET /timeline/admin/:id`, CRUD.
 - **Settings**: `GET /settings`, `GET /settings/:key` (públicos), `PUT /settings`, `DELETE /settings/:key` (JWT).
+- **Newsletter**: `POST /newsletter` (alta pública, idempotente por email),
+  `POST /newsletter/unsubscribe` (baja pública por email), `GET /newsletter/admin/all`,
+  `GET /newsletter/admin/:id`, `PUT /newsletter/:id`, `DELETE /newsletter/:id` (JWT).
+  La tabla nace con la migración `20261017030000_add_newsletter_subscribers`.
 - **Health**: `GET /health`.
 
 > La validación usa `ValidationPipe` global con `whitelist + forbidNonWhitelisted + transform`:
