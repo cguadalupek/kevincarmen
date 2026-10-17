@@ -79,3 +79,22 @@ idénticos a producción (verificado con `sha256sum` en ambos lados).
 
 **Regla a partir de ahora**: los tres archivos de `.memory/` se editan en el repo y llegan al
 servidor por el hook `post-receive`; no se editan a mano en producción.
+
+## 2026-10-17 · Skills `memory` y `deploy-check` + builds locales verificados
+
+- Skills instaladas en el entorno del agente (`skills/software-development/`), **no** en el repo:
+  - `memory`: qué archivo de `.memory/` se toca y cuándo, cómo marcar una tarea solo con evidencia
+    y cómo comprobar que producción y el repo coinciden (`sha256sum` del blob contra prod, no del
+    working copy con CRLF).
+  - `deploy-check`: pre-push (builds, árbol limpio, escaneo de secretos, migración commiteada),
+    push y post-deploy obligatorio (SHA del bare repo, contenedores, 200s, drift del árbol).
+- Hallazgo que justifica media skill: `git push` a secas desde Windows **se cuelga** en el prompt
+  de contraseña del `ssh` de MSYS y el tool muere por timeout; con
+  `GIT_SSH_COMMAND='plink -ssh -pw … -batch' git push origin master` tarda ~4 min y sale limpio.
+- Verificación de builds locales (2026-10-17 UTC): `pnpm --filter @kevincarmen/api build` y
+  `pnpm --filter @kevincarmen/web build`, ambos **exit 0** capturando el código sin tubería (`$?`
+  tras un pipe es el de `tail`). La web termina con la tabla de rutas y `BUILD_ID` nuevo; los
+  únicos mensajes son 4 avisos `@next/next/no-img-element` en el CMS.
+- Deploy del commit `d636f8a` a `origin` (docs: hace falta rebuild igualmente, ~4 min): bare repo
+  en `d636f8a`, `git status --untracked-files=no` vacío, `kevincarmen-api`/`-web` recreados y
+  `api:200` / `nginx:200`.
