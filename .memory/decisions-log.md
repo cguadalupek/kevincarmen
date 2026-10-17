@@ -69,3 +69,13 @@ No "arreglarlo" a ciegas sin comprobar los datos.
     absoluto: `-w` se resuelve contra el WORKDIR de la imagen (`/app/apps/api`), así que un `-w`
     dentro de `/tmp` rompe con "no such file or directory".
   - El throwaway se une a la red del stack (`--network <stack>_default`), sin publicar puertos.
+
+## 2026-10-17 · Archivos de memoria versionados en el repo
+
+`active-tasks.md` y `bug-solutions.md` vivían **solo** en `/var/www/kevincarmen/.memory/` del host
+de despliegue: no estaban trackeados en git ni existían en el clon local, así que un checkout
+limpio o un fallo del host los habría perdido sin copia. Se incorporan al repo, byte a byte
+idénticos a producción (verificado con `sha256sum` en ambos lados).
+
+**Regla a partir de ahora**: los tres archivos de `.memory/` se editan en el repo y llegan al
+servidor por el hook `post-receive`; no se editan a mano en producción.
