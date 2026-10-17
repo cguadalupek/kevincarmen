@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { usePathname } from 'next/navigation';
 import { ListTree, X } from 'lucide-react';
 import { cn } from '@kevincarmen/utils';
 import type { TocHeading } from '@/lib/blog/headings';
@@ -10,6 +11,8 @@ import type { TocHeading } from '@/lib/blog/headings';
 const HEADING_OFFSET = 96;
 /** Banda inferior del viewport en la que un encabezado ya no cuenta como "activo". */
 const BOTTOM_BAND = 60;
+/** Ruta de detalle de un artículo: la ÚNICA que monta la tabla de contenidos. */
+const ARTICLE_ROUTE = /^\/blog\/[^/]+\/?$/;
 
 /**
  * Scrollspy: resalta el encabezado que el usuario está leyendo.
@@ -121,18 +124,55 @@ export function PostToc({ headings }: PostTocProps) {
  * ocupa espacio en el flujo del artículo. La hoja se monta en un portal a
  * `document.body` para quedar por encima del header fijo (que tiene su propio
  * contexto de apilado) y se cierra con Escape, con el fondo o al elegir sección.
+ *
+ * Se renderiza SOLO en la vista de detalle de un artículo (`/blog/[slug]`): ni
+ * el inicio ni el listado del blog montan el FAB.
  */
 export function PostTocFab({ headings }: PostTocProps) {
+  const pathname = usePathname();
   const active = useActiveHeading(headings.map((heading) => heading.id));
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  // La hoja solo vive en el DOM mientras se abre o se cierra. Antes quedaba
+  // SIEMPRE montada (solo desplazada con `translate-y-full`) y, al hacer scroll
+  // en el móvil, la barra del navegador redimensiona el viewport dinámico y
+  // asomaban unos píxeles de la cabecera por el borde inferior.
+  const [present, setPresent] = useState(false);
+  const [slid, setSlid] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => setMounted(true), []);
 
+  // Ciclo de vida de la hoja: monta y luego desliza (doble frame para que el
+  // `translate-y-full` inicial llegue a pintarse y la transición se vea); al
+  // cerrar desliza hacia abajo y se desmonta del DOM por completo.
+  useEffect(() => {
+    if (open) {
+      setPresent(true);
+      let inner = 0;
+      const outer = requestAnimationFrame(() => {
+        inner = requestAnimationFrame(() => setSlid(true));
+      });
+      return () => {
+        cancelAnimationFrame(outer);
+        cancelAnimationFrame(inner);
+      };
+    }
+
+    setSlid(false);
+    const timer = window.setTimeout(() => setPresent(false), 300);
+    return () => window.clearTimeout(timer);
+  }, [open]);
+
   const close = useCallback(() => setOpen(false), []);
 
-  // Escape, bloqueo del scroll de fondo y foco inicial (igual que el drawer del panel).
+  // El foco inicial se aplica cuando la hoja YA está en el DOM (antes el panel
+  // estaba siempre montado; ahora nace al abrir, así que el foco va aquí).
+  useEffect(() => {
+    if (present) panelRef.current?.focus();
+  }, [present]);
+
+  // Escape y bloqueo del scroll de fondo (igual que el drawer del panel).
   useEffect(() => {
     if (!open) return;
     const onKeyDown = (event: KeyboardEvent) => {
@@ -141,26 +181,25 @@ export function PostTocFab({ headings }: PostTocProps) {
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     document.addEventListener('keydown', onKeyDown);
-    panelRef.current?.focus();
     return () => {
       document.body.style.overflow = previousOverflow;
       document.removeEventListener('keydown', onKeyDown);
     };
   }, [open, close]);
 
-  const goTo = useCallback(
-    (id: string) => {
-      const target = document.getElementById(id);
-      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      window.history.replaceState(null, '', `#${id}`);
-      // Cierra en el siguiente frame: si cerráramos antes, el desbloqueo del
-      // scroll del fondo puede cortar el desplazamiento suave recién arrancado.
-      requestAnimationFrame(() => setOpen(false));
-    },
-    [],
-  );
+  const goTo = useCallback((id: string) => {
+    const target = document.getElementById(id);
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    window.history.replaceState(null, '', `#${id}`);
+    // Cierra en el siguiente frame: si cerráramos antes, el desbloqueo del
+    // scroll del fondo puede cortar el desplazamiento suave recién arrancado.
+    requestAnimationFrame(() => setOpen(false));
+  }, []);
 
   if (headings.length === 0) return null;
+  // La tabla de contenidos es un elemento de la vista de detalle: en el inicio
+  // o en el listado del blog no debe existir ni el FAB ni la hoja.
+  if (pathname === null || !ARTICLE_ROUTE.test(pathname)) return null;
 
   return (
     <>
@@ -177,11 +216,13 @@ export function PostTocFab({ headings }: PostTocProps) {
       </button>
 
       {mounted &&
+        present &&
         createPortal(
           <div
             className={cn('fixed inset-0 z-[60] lg:hidden', !open && 'pointer-events-none')}
             aria-hidden={!open}
             inert={!open}
+            data-state={open ? 'open' : 'closed'}
           >
             <div
               onClick={close}
@@ -200,7 +241,7 @@ export function PostTocFab({ headings }: PostTocProps) {
               tabIndex={-1}
               className={cn(
                 'absolute inset-x-0 bottom-0 flex max-h-[80vh] flex-col rounded-t-2xl border-t border-border bg-card pb-[env(safe-area-inset-bottom)] shadow-2xl outline-none transition-transform duration-300 ease-out motion-reduce:transition-none',
-                open ? 'translate-y-0' : 'translate-y-full',
+                slid ? 'translate-y-0' : 'translate-y-full',
               )}
             >
               <div className="mx-auto mt-2 h-1 w-10 shrink-0 rounded-full bg-border" />
