@@ -148,6 +148,10 @@ model Post {
 
   @@index([status, publishedAt])
   @@index([mainCategoryId, subCategoryId])
+  /// La BD de producción ya tenía `posts_featured_idx` (creado a mano en
+  /// 202608230200) y el schema no lo declaraba: se declara aquí para que
+  /// `prisma migrate diff` no reporte drift.
+  @@index([featured])
   @@map("posts")
 }
 
@@ -252,7 +256,7 @@ model Project {
   projectCategoryId String?       @map("project_category_id")
   /** Orden manual: menor número = primero en el sitio público. */
   position          Int           @default(0)
-  tags              String[]
+  tags              String[]      @default([])
   projectYear       Int?          @map("project_year")
   repository        String?
   demo              String?
@@ -269,7 +273,7 @@ model Project {
   challenges        Json         @default("[]")
   results           String?
   learnings         String?
-  gallery           String[]
+  gallery           String[]      @default([])
   publishedAt       DateTime?     @map("published_at")
   /// Tiempo de lectura estimado, en minutos. Opcional: si está vacío la web lo calcula.
   readingTime       Int?          @map("reading_time")
@@ -394,9 +398,9 @@ model LabExperiment {
   result          String?
   conclusion      String?
   stack           String[]
-  tags            String[]
+  tags            String[]         @default([])
   coverImage      String?          @map("cover_image")
-  gallery         String[]
+  gallery         String[]         @default([])
   startedAt       DateTime?        @map("started_at")
   completedAt     DateTime?        @map("completed_at")
   relatedPostId   String?          @map("related_post_id")
@@ -416,7 +420,7 @@ model LabExperiment {
   /** Minutos de lectura estimados del cuerpo. */
   readingTime     Int              @default(0) @map("reading_time")
   // Legacy columns are retained during the data migration and are no longer exposed by the API.
-  name            String?
+  name            String
   icon            String?
   url             String?
   position        Int              @default(0)
