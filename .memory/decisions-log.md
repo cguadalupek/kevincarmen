@@ -182,3 +182,65 @@ ESLINT_USE_FLAT_CONFIG=false ./node_modules/.bin/eslint <archivo>          # exi
   fusiona con `cn()`.
 - El gate de build lo cubre el `docker build` del propio deploy (la imagen compila la web con
   typecheck): si el componente no compilara, el contenedor no se recrearía y el push fallaría.
+
+## 2026-10-17 · Módulo `newsletter` + modelo `NewsletterSubscriber` (migración `20261017030000`)
+
+Primer uso de la skill **`.agent/skills/nest-module.md`** (también solo en el árbol desplegado).
+El archivo está **truncado**: termina dentro del bloque de estructura de archivos, así que las
+reglas restantes se completaron desde `AGENTS.md` y los módulos reales del repo (referencia:
+`timeline`).
+
+- Modelo nuevo: `NewsletterSubscriber` (`newsletter_subscribers`) — `email` único normalizado a
+  minúsculas, `name?`, `status` (`NewsletterStatus`: ACTIVE/UNSUBSCRIBED), `unsubscribedAt?`,
+  `createdAt`/`updatedAt` e índice `[status, createdAt]`. Migración `20261017030000`.
+- **Decisión: la baja es lógica**, no borra la fila. Conserva el histórico de altas y permite
+  reactivar la MISMA fila; el `DELETE` del panel sí borra de verdad (limpieza manual).
+- **Decisión: el alta es idempotente por email** (mismo email activo → devuelve la fila existente
+  sin duplicar ni dar 409; si estaba de baja → la reactiva y limpia `unsubscribedAt`). Evita que un
+  doble clic en el formulario genere dos filas o un error visible.
+- **Decisión: no hay listado público.** Los suscriptores son datos personales: sólo el panel
+  (`GET /newsletter/admin/all`, `GET /newsletter/admin/:id`) los lee, con `JwtAuthGuard`. El alta y
+  la baja públicas (`POST /newsletter`, `POST /newsletter/unsubscribe`) no exponen listados.
+- DTOs como **clases** con `class-validator` (`CreateNewsletterDto`, `UpdateNewsletterDto`), con
+  `@IsOptional()` en todos los campos del update: con un type alias el `ValidationPipe` global
+  vaciaría el body y la edición sería un no-op silencioso. La baja reutiliza el DTO de alta (solo
+  se lee `email`), para no inventar un tercer archivo fuera de la estructura de la skill.
+- Rutas literales antes de `:id` (`admin/all` antes de `admin/:id`) y `NewsletterModule`
+  registrado en `app.module.ts`; README (§5 modelo de datos y §6 endpoints) actualizado en el
+  mismo cambio.
+
+**Verificación** (sin tocar producción):
+
+- SQL de la migración generado con `prisma migrate diff --from-schema-datamodel <HEAD> --to-schema-datamodel <nuevo>`,
+  no escrito a mano.
+- Postgres **desechable** con un dump real de producción restaurado (histórico `_prisma_migrations`
+  incluido): `prisma migrate deploy` aplica sólo la nueva (`steps=1`), la segunda pasada dice
+  `No pending migrations to apply`, y `migrate diff --from-schema-datasource --to-schema-datamodel`
+  devuelve **`-- This is an empty migration.`** (cero drift, tampoco el drift viejo: sigue
+  reconciliado). Estructura real comprobada con `\d newsletter_subscribers` (índices + enum).
+- `prisma generate` + `nest build` dentro de un contenedor de la imagen `kevincarmen-api` (mismo
+  toolchain que producción) → compila con el cliente regenerado.
+- **27 comprobaciones HTTP** contra ese api compilado y el Postgres desechable, todas OK: alta
+  (201, email normalizado, nombre recortado), idempotencia (misma fila, 1 fila en BD), validación
+  (400 «Introduce un email válido.» y `property role should not exist`), panel (401 sin token, 200
+  con JWT, 404 «Suscripción no encontrada.»), baja/reactivación (`UNSUBSCRIBED` + fecha, luego
+  `ACTIVE` + fecha limpia, sigue 1 fila), 404 «No hay ninguna suscripción con ese email.»,
+  `PUT` (200 + estado + fecha, 401 sin token, 400 estado inválido) y `DELETE` 200 + listado vacío.
+- `pnpm --filter @kevincarmen/api build` local: exit 0 (el `prisma generate` local falla con EPERM
+  —el dev server de :4001 retiene la DLL del motor—, pero los TIPOS del cliente sí se escriben
+  antes del rename, así que el typecheck local es válido).
+
+**Despliegue (commit `cabb87a`, push a `origin` → hook `post-receive` → `docker compose up -d --build`;
+el contenedor api aplicó `prisma migrate deploy` al arrancar):**
+
+- Bare repo en `cabb87a`; `kevincarmen-web`/`kevincarmen-api` recreados; `api:200` y `nginx:200`; árbol
+  desplegado sin drift (`status --untracked-files=no` vacío).
+- `_prisma_migrations` = **21 filas**, con `20261017030000_add_newsletter_subscribers steps=1
+  terminada=true`; `\d newsletter_subscribers` en producción con el enum y sus tres índices.
+- Circuito real por nginx: body vacío → 400 (el DTO valida), alta → 201 con la fila real, segunda alta
+  en MAYÚSCULAS → 201 (idempotente), `admin/all` sin token → 401 y con JWT (acuñado dentro del
+  contenedor) → 200 con 1 suscriptor, `DELETE` → `{success:true}`. La fila de prueba
+  (`verificacion-despliegue@ejemplo.com`) se BORRÓ: la tabla queda en **0 filas**.
+- El `P2021` del dev local contra la BD compartida desaparece: la tabla ya existe. Además, el push
+  despliega el commit con el módulo, así que no hace falta nada más para que el formulario funcione
+  cuando exista UI.
