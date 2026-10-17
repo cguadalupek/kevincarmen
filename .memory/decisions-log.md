@@ -141,3 +141,44 @@ Tres obstáculos encontrados y resueltos:
 - Deploy del commit `d636f8a` a `origin` (docs: hace falta rebuild igualmente, ~4 min): bare repo
   en `d636f8a`, `git status --untracked-files=no` vacío, `kevincarmen-api`/`-web` recreados y
   `api:200` / `nginx:200`.
+
+## 2026-10-17 · Componente `BlogStatsCard` (skill `component-gen` del repo)
+
+Primer uso de la skill **`.agent/skills/component-gen.md`**, que vive **solo en el árbol desplegado**
+(`/var/www/kevincarmen/.agent/skills/`): no está en git ni en un checkout limpio, así que hay que
+leerla del servidor. Sus reglas se aplicaron tal cual: Server Component sin `'use client'`, tokens
+semánticos del tema, `cn()` de `@kevincarmen/utils`, mobile-first con `min-h-[44px]` y datos vía
+`src/lib/api/`.
+
+- Nuevo `apps/web/src/components/blog/blog-stats-card.tsx`: Server Component `BlogStatsCard`
+  (archivo kebab-case, como el resto de `components/blog/`). Mide artículos publicados
+  (`getPublishedPosts`), lectura media (`readingTime`) y categorías/subcategorías (`getCategoryTree`),
+  los mismos fetches con `cache: 'no-store'` que usa `/blog`.
+- **Decisión: no se muestra "vistas"**. El sistema no registra visitas: `Post` no tiene contador, no
+  hay modelo de analítica ni endpoint de estadísticas. Se prefiere no pintar la métrica antes que
+  inventar un 0 que parezca real; la ausencia queda documentada en un comentario del propio
+  componente, para añadirla cuando exista el contador de verdad.
+- Bordes resueltos en el componente: si el API no responde (posts y árbol vacíos) devuelve `null` en
+  vez de una tarjeta con ceros; si ningún artículo tiene `readingTime`, la métrica de lectura se
+  omite sola. Nunca valores de relleno.
+- El componente **no se renderiza todavía en ninguna página** (decisión explícita): entra al repo
+  listo para usarse desde `/blog` o el panel.
+- Nota: la skill del agente `kevincarmen-web` (en Windows, fuera del repo) se actualizó con los
+  hallazgos de esta tarea — las skills del agente no se versionan en este repo.
+
+**Verificación** (sin `next build` local: hay un `next dev` sirviendo `:3000` por el reenvío de
+Cursor y el build reescribe `.next`):
+
+```bash
+pnpm --filter @kevincarmen/web exec tsc --noEmit -p tsconfig.json          # exit 0
+ESLINT_USE_FLAT_CONFIG=false ./node_modules/.bin/eslint <archivo>          # exit 0 (ESLint 9 sin eslint.config.js)
+./node_modules/.bin/prettier --check <archivo>                             # limpio
+```
+
+- Render aislado del componente REAL (`typescript.transpileModule` + stubs de `@/lib/api/*` vía
+  `Module._load` + `renderToStaticMarkup`) con los datos de producción: `9 publicados · 4 min por
+  artículo · 5 categorías / 13 subcategorías`. Con `posts=[]` y árbol `[]` → no renderiza nada; con
+  `readingTime=0` en todos los artículos → sin métrica de lectura. `className` del consumidor se
+  fusiona con `cn()`.
+- El gate de build lo cubre el `docker build` del propio deploy (la imagen compila la web con
+  typecheck): si el componente no compilara, el contenedor no se recrearía y el push fallaría.
