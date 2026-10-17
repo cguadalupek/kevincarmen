@@ -108,7 +108,9 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             </Link>
 
             <header>
-              <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-2 text-sm text-muted-foreground">
+              {/* Móvil: los metadatos se apilan (autor / fecha y tiempo / categoría)
+                  para no comprimir el badge del autor en varias columnas. */}
+              <div className="mb-4 flex flex-col items-start gap-2 text-sm text-muted-foreground md:flex-row md:flex-wrap md:items-center md:gap-x-3 md:gap-y-2">
                 <AuthorBadge
                   name={author.name}
                   avatar={author.avatar}
