@@ -105,27 +105,21 @@ export function CMSEditor({
         class: 'post-editor-content',
         'aria-label': `${CMS_SECTIONS[section].label}: contenido`,
       },
-      handleTextInput: (view, from, _to, text) => {
-        const currentEditor = editorRef.current;
-        if (text !== ' ' || !currentEditor || !isCodeMarkActive(currentEditor)) return false;
-        const previousCharacter = view.state.doc.textBetween(Math.max(0, from - 1), from);
-        if (previousCharacter !== ' ') return false;
-
-        currentEditor.commands.unsetMark('code');
-        currentEditor.commands.insertContent(' ');
-        return true;
-      },
       handleKeyDown: (_view, event) => {
         const currentEditor = editorRef.current;
         if (!currentEditor) return false;
 
-        if (event.key === ' ' && isCodeMarkActive(currentEditor)) {
-          const { $from } = currentEditor.state.selection;
-          const previousCharacter = currentEditor.state.doc.textBetween($from.pos - 1, $from.pos);
-          if (previousCharacter === ' ') {
-            currentEditor.commands.unsetMark('code');
-            return true;
-          }
+        // El espacio cierra el fragmento de código EN LÍNEA (sintaxis en caliente
+        // y comando `/Código en línea`): si la marca está activa en el cursor y no
+        // continúa después de él, se sale de la marca y el espacio entra como texto
+        // normal. Con el cursor en medio de un código, el espacio sigue siendo código.
+        if (
+          event.key === ' ' &&
+          currentEditor.isActive('code') &&
+          !codeContinuesAt(currentEditor)
+        ) {
+          currentEditor.commands.unsetMark('code');
+          return false;
         }
 
         if (
@@ -302,4 +296,18 @@ function isCodeMarkActive(editor: Editor) {
   const codeMark = editor.schema.marks.code;
   if (!codeMark) return false;
   return editor.state.selection.$from.marks().some((mark) => mark.type === codeMark);
+}
+
+/**
+ * ¿La marca de código sigue después del cursor? Si el cursor está en medio de un
+ * fragmento (queda código por delante) el espacio forma parte del código; si está
+ * al final (o el fragmento aún no se ha escrito) el espacio lo cierra.
+ */
+function codeContinuesAt(editor: Editor) {
+  const codeMark = editor.schema.marks.code;
+  if (!codeMark) return false;
+  const { $from, to } = editor.state.selection;
+  const end = Math.min(to + 1, editor.state.doc.content.size);
+  if (end <= $from.pos) return false;
+  return editor.state.doc.rangeHasMark($from.pos, end, codeMark);
 }

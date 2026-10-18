@@ -105,7 +105,7 @@ export function createCMSEditorExtensions({
       transformCopiedText: true,
     }),
     Iframe,
-    SlashCommand.configure({ section }),
+    SlashCommand,
     KCTable.configure({ resizable: true, cellMinWidth: 80, View: KCTableView }),
     TableRow,
     KCTableHeader,

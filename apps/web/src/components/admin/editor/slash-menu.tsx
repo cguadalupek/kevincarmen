@@ -16,14 +16,13 @@ import {
   PlayCircle,
   Quote,
   Table2,
-  Terminal,
   TerminalSquare,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { CMS_EDITOR_IMAGE_INPUT_ID, DEFAULT_CODE_LANGUAGE, type CMSSection } from './cms-sections';
+import { CMS_EDITOR_IMAGE_INPUT_ID, DEFAULT_CODE_LANGUAGE } from './cms-sections';
 
 /** Categorías del menú `/` (se pintan como cabeceras del listado). */
-export type SlashCategory = 'Básicos' | 'Listas' | 'Estructura' | 'Multimedia' | 'Laboratorio';
+export type SlashCategory = 'Básicos' | 'Listas' | 'Estructura' | 'Multimedia';
 
 export interface SlashCommandItem {
   title: string;
@@ -51,7 +50,13 @@ function codeBlockCommand(language: string) {
   };
 }
 
-/** Comandos disponibles en TODAS las secciones, agrupados por categoría. */
+/**
+ * Comandos del menú `/`.
+ *
+ * El catálogo es EL MISMO en las cuatro secciones (Artículos, Proyectos, Lab y
+ * Cursos): 14 comandos en el mismo orden. Lo que cambia por sección es el texto
+ * de ayuda del editor (`cms-sections.ts`), no el menú.
+ */
 export const slashCommandItems: SlashCommandItem[] = [
   {
     title: 'Párrafo',
@@ -96,8 +101,14 @@ export const slashCommandItems: SlashCommandItem[] = [
     category: 'Básicos',
     icon: <TerminalSquare className="h-4 w-4" />,
     keywords: ['inline', 'code'],
-    command: ({ editor, range }) =>
-      editor.chain().focus().deleteRange(range).toggleMark('code').run(),
+    command: ({ editor, range }) => {
+      // Con texto seleccionado se marca esa selección; sin selección la marca
+      // queda activa para lo que se escriba después (un espacio la cierra).
+      const hasSelection = !editor.state.selection.empty;
+      const chain = editor.chain().focus().deleteRange(range);
+      if (hasSelection) chain.toggleMark('code').run();
+      else chain.setMark('code').run();
+    },
   },
   {
     title: 'Lista de viñetas',
@@ -186,28 +197,6 @@ export const slashCommandItems: SlashCommandItem[] = [
     command: ({ editor }) => requestVideoEmbed(editor),
   },
 ];
-
-/**
- * Comandos propios de una sección. Es el punto de extensión para personalizar el
- * menú `/` sin tocar el tronco común (p. ej. Lab, que trabaja con terminal).
- */
-export const SECTION_SLASH_COMMANDS: Partial<Record<CMSSection, SlashCommandItem[]>> = {
-  lab: [
-    {
-      title: 'Salida de terminal',
-      description: 'Bloque de bash para pegar la salida de un comando',
-      category: 'Laboratorio',
-      icon: <Terminal className="h-4 w-4" />,
-      keywords: ['terminal', 'consola', 'shell', 'salida'],
-      command: codeBlockCommand('bash'),
-    },
-  ],
-};
-
-/** Catálogo efectivo del menú `/` para una sección. */
-export function slashCommandsFor(section: CMSSection): SlashCommandItem[] {
-  return [...slashCommandItems, ...(SECTION_SLASH_COMMANDS[section] ?? [])];
-}
 
 /** Filtra por título, descripción o palabras clave (ignorando acentos). */
 export function filterSlashCommands(items: SlashCommandItem[], query: string): SlashCommandItem[] {

@@ -11,18 +11,15 @@ import {
   shift,
   type VirtualElement,
 } from '@floating-ui/dom';
-import { DEFAULT_CMS_SECTION, type CMSSection } from './cms-sections';
 import {
   SlashMenu,
   filterSlashCommands,
-  slashCommandsFor,
+  slashCommandItems,
   type SlashCommandItem,
   type SlashMenuHandle,
 } from './slash-menu';
 
 export interface SlashCommandOptions {
-  /** Sección del CMS: determina el catálogo de comandos de `/`. */
-  section: CMSSection;
   suggestion: Partial<SuggestionOptions>;
 }
 
@@ -39,7 +36,6 @@ export const SlashCommand = Extension.create<SlashCommandOptions>({
 
   addOptions() {
     return {
-      section: DEFAULT_CMS_SECTION,
       suggestion: {
         char: '/',
         command: ({
@@ -57,22 +53,14 @@ export const SlashCommand = Extension.create<SlashCommandOptions>({
     };
   },
 
-  addKeyboardShortcuts() {
-    return {
-      'Mod-e': () => this.editor.commands.unsetMark('code'),
-    };
-  },
-
   addProseMirrorPlugins() {
     const editor = this.editor;
-    const section = this.options.section;
 
     return [
       Suggestion({
         editor,
         ...this.options.suggestion,
-        items: ({ query }: { query: string }) =>
-          filterSlashCommands(slashCommandsFor(section), query),
+        items: ({ query }: { query: string }) => filterSlashCommands(slashCommandItems, query),
         render: () => {
           let component: ReactRenderer<SlashMenuHandle> | null = null;
           let element: HTMLElement | null = null;
