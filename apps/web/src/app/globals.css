@@ -59,6 +59,18 @@
     @apply rounded-xl border border-border bg-card/50 backdrop-blur-sm;
   }
 
+  /*
+    Alto máximo de la ventana superpuesta del panel (ver `AdminModal`).
+    En móvil `vh` mide el viewport GRANDE (con la barra del navegador oculta), así que
+    un 92vh puede sobresalir de lo que el usuario ve y dejar la cabecera fuera de la
+    pantalla; `svh` es el viewport más pequeño (barras visibles) y garantiza que la
+    ventana quepa entera. `vh` se declara primero como respaldo de navegadores sin `svh`.
+  */
+  .admin-modal-panel {
+    max-height: 92vh;
+    max-height: 92svh;
+  }
+
   .gradient-text {
     @apply bg-gradient-to-r from-primary via-accent to-accent bg-clip-text text-transparent;
   }

@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -18,11 +19,19 @@ interface AdminModalProps {
 /**
  * Vista superpuesta del panel.
  *
+ * Se monta con un PORTAL en `document.body` y no dentro del formulario: `position: fixed`
+ * se resuelve contra el primer ancestro que crea bloque contenedor, y eso ocurre con
+ * cualquier `backdrop-filter`/`transform`/`filter`. Las secciones del panel usan
+ * `.glass-card` (`backdrop-blur-sm`), así que la capa `inset-0` quedaba anclada al
+ * recuadro del formulario en vez de al viewport: la ventana salía alta, centrada en esa
+ * tarjeta y con la cabecera fuera de la pantalla. En un portal compite en el contexto de
+ * apilado raíz, igual que el menú `/` del editor (ver `cms-sections.ts`).
+ *
  * Mobile-first: en pantallas estrechas es una hoja pegada al borde inferior que ocupa
- * el ancho completo y como mucho el 92 % del alto (el cuerpo hace su propio scroll);
- * a partir de `sm` es un diálogo centrado. La cabecera y el pie van fuera del área
- * de scroll, así el título y los botones Guardar/Cancelar nunca se pierden al bajar
- * por un formulario largo.
+ * el ancho completo y como mucho el 92 % del ALTO VISIBLE (clase `admin-modal-panel`,
+ * definida en `globals.css`; el cuerpo hace su propio scroll); a partir de `sm` es un
+ * diálogo centrado. La cabecera y el pie van fuera del área de scroll, así el título y
+ * los botones Guardar/Cancelar nunca se pierden al bajar por un formulario largo.
  */
 export function AdminModal({
   title,
@@ -32,8 +41,12 @@ export function AdminModal({
   footer,
   maxWidthClass = 'sm:max-w-2xl',
 }: AdminModalProps) {
+  // El portal necesita `document`: el primer render (SSR/hidratación) sale vacío.
+  const [mounted, setMounted] = useState(false);
+
   // Escape cierra y el fondo no se desplaza mientras está abierto.
   useEffect(() => {
+    setMounted(true);
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose();
     };
@@ -46,7 +59,9 @@ export function AdminModal({
     };
   }, [onClose]);
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <div
       className="fixed inset-0 z-[60] flex items-end justify-center bg-slate-950/70 backdrop-blur-sm sm:items-center sm:p-6"
       role="dialog"
@@ -62,7 +77,7 @@ export function AdminModal({
 
       <div
         className={cn(
-          'relative flex max-h-[92vh] w-full flex-col overflow-hidden rounded-t-2xl border border-border bg-card shadow-2xl sm:rounded-2xl',
+          'admin-modal-panel relative flex w-full flex-col overflow-hidden rounded-t-2xl border border-border bg-card shadow-2xl sm:rounded-2xl',
           maxWidthClass,
         )}
       >
@@ -99,6 +114,7 @@ export function AdminModal({
           </div>
         ) : null}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }
