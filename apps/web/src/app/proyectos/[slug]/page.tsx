@@ -9,6 +9,7 @@ import { extractHeadings } from '@/lib/blog/headings';
 import { MarkdownContent } from '@/components/blog/markdown-content';
 import { AuthorBadge } from '@/components/blog/author-badge';
 import { PostToc, PostTocFab } from '@/components/blog/post-toc';
+import { ImageGallery } from '@/components/ui/image-gallery';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -134,16 +135,7 @@ export default async function ProjectDetailPage({ params }: PageProps) {
             {project.gallery.length > 0 && (
               <section className="mt-12">
                 <h2 className="mb-4 text-2xl font-semibold">Galería</h2>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {project.gallery.map((url, i) => (
-                    <img
-                      key={url}
-                      src={url}
-                      alt={`${project.title} · imagen ${i + 1}`}
-                      className="w-full rounded-xl border border-border object-cover"
-                    />
-                  ))}
-                </div>
+                <ImageGallery images={project.gallery} title={project.title} />
               </section>
             )}
 
