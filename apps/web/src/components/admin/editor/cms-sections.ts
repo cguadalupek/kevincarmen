@@ -62,5 +62,16 @@ export const EDITOR_CODE_LANGUAGES: CodeLanguage[] = [
 
 export const DEFAULT_CODE_LANGUAGE = 'plaintext';
 
+/**
+ * z-index de las capas flotantes del editor.
+ *
+ * El menú `/` se monta en `document.body` (fuera del árbol del modal), así que
+ * su `z-index` compite con las capas del panel: el overlay del `AdminModal` es
+ * `z-[60]` y el drawer móvil `z-50`. Con un 50 el menú quedaba DETRÁS del
+ * overlay oscuro y parecía no abrirse; 9999 lo deja por encima de cualquier
+ * capa del CMS.
+ */
+export const CMS_FLOATING_Z_INDEX = 9999;
+
 /** Id del `<input type="file">` oculto del editor (lo dispara el comando `/`). */
 export const CMS_EDITOR_IMAGE_INPUT_ID = 'cms-editor-image-input';

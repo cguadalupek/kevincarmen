@@ -11,6 +11,7 @@ import {
   shift,
   type VirtualElement,
 } from '@floating-ui/dom';
+import { CMS_FLOATING_Z_INDEX } from './cms-sections';
 import {
   SlashMenu,
   filterSlashCommands,
@@ -38,6 +39,12 @@ export const SlashCommand = Extension.create<SlashCommandOptions>({
     return {
       suggestion: {
         char: '/',
+        /**
+         * Permite espacios dentro de la consulta: los títulos del catálogo son
+         * de varias palabras («Lista de viñetas»), y con el valor por defecto
+         * (`false`) el menú se cerraba al teclear el primer espacio.
+         */
+        allowSpaces: true,
         command: ({
           editor,
           range,
@@ -110,7 +117,10 @@ export const SlashCommand = Extension.create<SlashCommandOptions>({
               });
               element = component.element as HTMLElement;
               element.style.position = 'fixed';
-              element.style.zIndex = '50';
+              // Por encima de cualquier capa del CMS: el overlay del modal del
+              // panel es z-[60] y el menú se monta en <body>, así que un 50 lo
+              // dejaba detrás del fondo oscuro (el menú "no aparecía").
+              element.style.zIndex = String(CMS_FLOATING_Z_INDEX);
               document.body.appendChild(element);
               updateCaretRect(props.clientRect);
               place();
