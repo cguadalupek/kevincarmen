@@ -11,8 +11,34 @@ import type { TocHeading } from '@/lib/blog/headings';
 const HEADING_OFFSET = 96;
 /** Banda inferior del viewport en la que un encabezado ya no cuenta como "activo". */
 const BOTTOM_BAND = 60;
-/** Ruta de detalle de un artículo: la ÚNICA que monta la tabla de contenidos. */
-const ARTICLE_ROUTE = /^\/blog\/[^/]+\/?$/;
+/**
+ * Rutas de DETALLE con cuerpo markdown y encabezados navegables: artículo,
+ * proyecto y clase de curso. El listado (`/blog`, `/proyectos`, `/cursos`) no
+ * monta el FAB ni la hoja porque no pasa el slug.
+ */
+const DETAIL_ROUTE = /^\/(blog|proyectos|cursos)\/.+/;
+
+/**
+ * Punto de corte en el que el índice pasa de hoja móvil (FAB) a columna fija.
+ *
+ * `lg` es el del artículo (columna de 13 rem junto a la lectura de 768 px).
+ * `xl` se usa donde la rejilla de la página ya tiene dos columnas antes (el
+ * reproductor de clases: temario + contenido), así que el índice solo cabe
+ * como tercera columna en pantallas anchas. Los dos componentes comparten el
+ * mismo valor para que NUNCA queden los dos visibles ni ninguno.
+ */
+export type TocBreakpoint = 'lg' | 'xl';
+
+const ASIDE_BREAKPOINT: Record<TocBreakpoint, string> = {
+  lg: 'hidden lg:block',
+  xl: 'hidden xl:block',
+};
+
+/** El botón flotante y su hoja desaparecen justo cuando aparece la columna. */
+const HIDE_FROM_BREAKPOINT: Record<TocBreakpoint, string> = {
+  lg: 'lg:hidden',
+  xl: 'xl:hidden',
+};
 
 /**
  * Scrollspy: resalta el encabezado que el usuario está leyendo.
@@ -67,6 +93,12 @@ export function useActiveHeading(ids: string[]): string | null {
 
 interface PostTocProps {
   headings: TocHeading[];
+  /** Punto de corte del índice: `lg` (artículo/proyecto) o `xl` (clase de curso). */
+  breakpoint?: TocBreakpoint;
+  /** Rótulo de la columna de escritorio («En este artículo», «En este proyecto»…). */
+  label?: string;
+  /** Clase de anclaje inferior del FAB (para apilarlo sobre otro botón flotante). */
+  bottomClass?: string;
 }
 
 /** Clases compartidas por los enlaces de índice (escritorio y hoja móvil). */
@@ -82,21 +114,21 @@ function linkClass(heading: TocHeading, active: string | null) {
 
 /**
  * Tabla de contenidos flotante (escritorio): sidebar `sticky top-24` en el
- * espacio sobrante al lado de la columna de lectura de 768 px.
+ * espacio sobrante al lado de la columna de lectura.
  */
-export function PostToc({ headings }: PostTocProps) {
+export function PostToc({ headings, breakpoint = 'lg', label = 'En este artículo' }: PostTocProps) {
   const active = useActiveHeading(headings.map((heading) => heading.id));
   if (headings.length === 0) return null;
 
   return (
-    <aside className="hidden lg:block">
+    <aside className={ASIDE_BREAKPOINT[breakpoint]}>
       <nav
         aria-label="Tabla de contenidos"
         className="thin-scrollbar sticky top-24 max-h-[calc(100vh-8rem)] overflow-y-auto pb-2 pr-1"
       >
         <p className="mb-3 flex items-center gap-2 font-mono text-xs uppercase tracking-wider text-muted-foreground">
           <ListTree className="h-3.5 w-3.5 text-accent" />
-          En este artículo
+          {label}
         </p>
         <ul className="border-l border-border">
           {headings.map((heading) => (
@@ -125,10 +157,14 @@ export function PostToc({ headings }: PostTocProps) {
  * `document.body` para quedar por encima del header fijo (que tiene su propio
  * contexto de apilado) y se cierra con Escape, con el fondo o al elegir sección.
  *
- * Se renderiza SOLO en la vista de detalle de un artículo (`/blog/[slug]`): ni
- * el inicio ni el listado del blog montan el FAB.
+ * Se renderiza SOLO en una vista de DETALLE (`/blog/[slug]`, `/proyectos/[slug]`
+ * y `/cursos/[curso]/[clase]`): ni los listados ni el inicio montan el FAB.
  */
-export function PostTocFab({ headings }: PostTocProps) {
+export function PostTocFab({
+  headings,
+  breakpoint = 'lg',
+  bottomClass = 'bottom-6',
+}: PostTocProps) {
   const pathname = usePathname();
   const active = useActiveHeading(headings.map((heading) => heading.id));
   const [open, setOpen] = useState(false);
@@ -198,8 +234,9 @@ export function PostTocFab({ headings }: PostTocProps) {
 
   if (headings.length === 0) return null;
   // La tabla de contenidos es un elemento de la vista de detalle: en el inicio
-  // o en el listado del blog no debe existir ni el FAB ni la hoja.
-  if (pathname === null || !ARTICLE_ROUTE.test(pathname)) return null;
+  // o en los listados (/blog, /proyectos, /cursos sin slug) no debe existir ni
+  // el FAB ni la hoja.
+  if (pathname === null || !DETAIL_ROUTE.test(pathname)) return null;
 
   return (
     <>
@@ -209,7 +246,11 @@ export function PostTocFab({ headings }: PostTocProps) {
         aria-expanded={open}
         aria-controls="post-toc-sheet"
         aria-label="Abrir tabla de contenidos"
-        className="fixed bottom-6 right-6 z-50 inline-flex items-center gap-2 rounded-full bg-accent px-5 py-3.5 text-sm font-semibold text-accent-foreground shadow-lg shadow-accent/40 ring-1 ring-accent/50 transition-transform hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-95 lg:hidden"
+        className={cn(
+          'fixed right-6 z-50 inline-flex items-center gap-2 rounded-full bg-accent px-5 py-3.5 text-sm font-semibold text-accent-foreground shadow-lg shadow-accent/40 ring-1 ring-accent/50 transition-transform hover:bg-accent/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background active:scale-95',
+          bottomClass,
+          HIDE_FROM_BREAKPOINT[breakpoint],
+        )}
       >
         <ListTree className="h-4 w-4 shrink-0" />
         Contenido
@@ -219,7 +260,11 @@ export function PostTocFab({ headings }: PostTocProps) {
         present &&
         createPortal(
           <div
-            className={cn('fixed inset-0 z-[60] lg:hidden', !open && 'pointer-events-none')}
+            className={cn(
+              'fixed inset-0 z-[60]',
+              HIDE_FROM_BREAKPOINT[breakpoint],
+              !open && 'pointer-events-none',
+            )}
             aria-hidden={!open}
             inert={!open}
             data-state={open ? 'open' : 'closed'}

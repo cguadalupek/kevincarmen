@@ -14,8 +14,11 @@ import {
 } from 'lucide-react';
 import type { PublicCourseDetail, FlattenedLesson } from '@/lib/api/courses';
 import { flattenCurriculum } from '@/lib/api/courses';
+import { extractHeadings } from '@/lib/blog/headings';
 import { LessonVideo } from '@/components/courses/lesson-video';
 import { MarkdownContent } from '@/components/blog/markdown-content';
+import { AuthorBadge } from '@/components/blog/author-badge';
+import { PostToc, PostTocFab } from '@/components/blog/post-toc';
 import { cn } from '@/lib/utils';
 
 const TYPE_META = {
@@ -34,9 +37,12 @@ const TYPE_META = {
 export function CoursePlayer({
   course,
   initialLessonSlug,
+  author,
 }: {
   course: PublicCourseDetail;
   initialLessonSlug: string;
+  /** Autor resuelto en el servidor (`GET /site` › `siteConfig`). */
+  author: { name: string; avatar: string | null };
 }) {
   const lessons = useMemo(() => flattenCurriculum(course), [course]);
 
@@ -50,6 +56,8 @@ export function CoursePlayer({
   const current = lessons[currentIndex];
   const prev = currentIndex > 0 ? lessons[currentIndex - 1] : null;
   const next = currentIndex < lessons.length - 1 ? lessons[currentIndex + 1] : null;
+  // Índice de la clase: los h2/h3 del markdown de ESTA clase.
+  const headings = useMemo(() => extractHeadings(current?.content ?? ''), [current?.content]);
 
   // Al cambiar de clase: sube al inicio y cierra el temario móvil.
   useEffect(() => {
@@ -91,7 +99,7 @@ export function CoursePlayer({
         <span className="min-w-0 truncate text-foreground">{current.title}</span>
       </nav>
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_360px_14rem]">
         {/* ── columna principal ── */}
         <main className="min-w-0">
           <div className="mb-4 flex flex-wrap items-center gap-2 text-xs text-accent">
@@ -101,6 +109,16 @@ export function CoursePlayer({
             <span className="rounded-full bg-muted px-2.5 py-1 text-muted-foreground">
               Clase {current.lessonIndex + 1} de {lessons.length}
             </span>
+          </div>
+
+          {/* Móvil: autor en una fila y fecha • duración en otra. */}
+          <div className="mb-4 flex flex-col items-start gap-2 text-sm text-muted-foreground md:flex-row md:flex-wrap md:items-center md:gap-x-3 md:gap-y-2">
+            <AuthorBadge
+              name={author.name}
+              avatar={author.avatar}
+              publishedAt={course.updatedAt}
+              duration={current.duration}
+            />
           </div>
 
           <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">{current.title}</h1>
@@ -122,7 +140,7 @@ export function CoursePlayer({
 
           {current.content && (
             <div className="mt-6">
-              <MarkdownContent content={current.content} />
+              <MarkdownContent content={current.content} headings={headings} />
             </div>
           )}
 
@@ -188,6 +206,10 @@ export function CoursePlayer({
               </div>
             )}
           </div>
+
+          {/* Índice de la clase: hoja deslizante en móvil y tablet (el temario
+              ya ocupa la columna derecha hasta `xl`). */}
+          <PostTocFab headings={headings} breakpoint="xl" bottomClass="bottom-20" />
         </main>
 
         {/* ── barra lateral: temario ── */}
@@ -200,6 +222,9 @@ export function CoursePlayer({
             onToggleModule={toggleModule}
           />
         </aside>
+
+        {/* ── índice de la clase (tercera columna, solo en pantallas anchas) ── */}
+        <PostToc headings={headings} breakpoint="xl" label="En esta clase" />
       </div>
 
       {/* drawer móvil */}

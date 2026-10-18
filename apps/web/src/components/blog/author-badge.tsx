@@ -7,23 +7,33 @@ interface AuthorBadgeProps {
   avatar?: string | null;
   publishedAt?: string | null;
   readingTime?: number;
+  /** Duración en minutos (clases de curso): se muestra como «12 min». */
+  duration?: number;
 }
 
 /**
- * Atribución del artículo en la cabecera del post.
+ * Atribución en la cabecera de un contenido: artículos, proyectos y clases.
  *
  * En móvil ocupa DOS filas limpias —avatar + nombre arriba y, debajo, fecha `•`
- * tiempo de lectura en `text-xs` secundario—; desde `md` vuelve a una sola
- * línea horizontal. Antes era una única fila `flex` sin `wrap` metida en el
- * contenedor de metadatos, así que en pantallas pequeñas el navegador partía
- * «17 de octubre de 2026» y «4 min lectura» a media frase.
+ * tiempo de lectura (o duración de la clase) en `text-xs` secundario—; desde
+ * `md` vuelve a una sola línea horizontal. Antes era una única fila `flex` sin
+ * `wrap` metida en el contenedor de metadatos, así que en pantallas pequeñas el
+ * navegador partía «17 de octubre de 2026» y «4 min lectura» a media frase.
  *
  * Reglas para que no haya cortes raros: el nombre trunca (`truncate`) y la
  * fecha y el tiempo llevan `whitespace-nowrap`, de modo que o caben enteros o
  * el bloque baja de fila, pero nunca se corta una palabra.
  */
-export function AuthorBadge({ name, avatar, publishedAt, readingTime }: AuthorBadgeProps) {
+export function AuthorBadge({
+  name,
+  avatar,
+  publishedAt,
+  readingTime,
+  duration,
+}: AuthorBadgeProps) {
   const hasReadingTime = typeof readingTime === 'number';
+  const hasDuration = typeof duration === 'number' && duration > 0;
+  const hasTrailing = hasReadingTime || hasDuration;
 
   return (
     <div className="flex min-w-0 flex-col gap-1 md:flex-row md:items-center md:gap-2">
@@ -33,7 +43,7 @@ export function AuthorBadge({ name, avatar, publishedAt, readingTime }: AuthorBa
         <span className="truncate">{name}</span>
       </span>
 
-      {(publishedAt || hasReadingTime) && (
+      {(publishedAt || hasTrailing) && (
         <span className="flex min-w-0 items-center gap-2 text-xs text-muted-foreground md:text-sm">
           {publishedAt && (
             <>
@@ -46,7 +56,7 @@ export function AuthorBadge({ name, avatar, publishedAt, readingTime }: AuthorBa
               </time>
             </>
           )}
-          {publishedAt && hasReadingTime && (
+          {publishedAt && hasTrailing && (
             <span aria-hidden className="text-border">
               •
             </span>
@@ -55,6 +65,12 @@ export function AuthorBadge({ name, avatar, publishedAt, readingTime }: AuthorBa
             <span className="flex items-center gap-1 whitespace-nowrap font-normal">
               <Clock className="h-3.5 w-3.5 shrink-0" />
               {readingTime} min lectura
+            </span>
+          )}
+          {!hasReadingTime && hasDuration && (
+            <span className="flex items-center gap-1 whitespace-nowrap font-normal">
+              <Clock className="h-3.5 w-3.5 shrink-0" />
+              {duration} min
             </span>
           )}
         </span>
