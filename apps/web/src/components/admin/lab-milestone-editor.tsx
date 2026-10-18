@@ -4,11 +4,8 @@ import { useState } from 'react';
 import { ArrowDown, ArrowUp, ListPlus, Pencil, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AdminModal } from '@/components/admin/admin-modal';
-import { PostEditor } from '@/components/admin/post-editor';
-import {
-  newMilestoneId,
-  type LabMilestone,
-} from '@/lib/lab-milestone';
+import { CMSEditor } from '@/components/admin/editor/cms-editor';
+import { newMilestoneId, type LabMilestone } from '@/lib/lab-milestone';
 import { cn } from '@/lib/utils';
 
 const fieldClass =
@@ -225,9 +222,10 @@ export function LabMilestoneEditor({ milestones, onChange }: LabMilestoneEditorP
               <label htmlFor="milestone-content" className="mb-2 block text-sm font-medium">
                 Contenido / detalles
               </label>
-              <PostEditor
+              <CMSEditor
                 key={draft.id}
-                content={draft.content}
+                section="lab"
+                value={draft.content}
                 onChange={(content) => setDraft({ ...draft, content })}
                 toolbarTopClass="top-0"
               />

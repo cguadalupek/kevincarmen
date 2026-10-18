@@ -110,7 +110,7 @@
     @apply mb-3 border-l-4 border-accent/50 pl-4 italic text-muted-foreground;
   }
 
-.post-editor-content pre {
+  .post-editor-content pre {
     @apply relative my-3 overflow-hidden rounded-xl border font-mono text-sm;
     background: rgb(15 23 42 / 1);
     border-color: rgb(51 65 85 / 1);
@@ -185,6 +185,29 @@
     background: rgb(var(--accent) / 0.5);
   }
 
+  /* Listas de tareas del editor (TipTap TaskList/TaskItem) */
+  .post-editor-content ul[data-type='taskList'] {
+    @apply mb-3 ml-0 list-none pl-0;
+  }
+  .post-editor-content ul[data-type='taskList'] li {
+    @apply flex items-start gap-2;
+  }
+  .post-editor-content ul[data-type='taskList'] li > label {
+    @apply mt-[3px] flex h-4 w-4 shrink-0 cursor-pointer items-center justify-center;
+  }
+  .post-editor-content ul[data-type='taskList'] li > label input {
+    @apply h-4 w-4 cursor-pointer accent-accent;
+  }
+  .post-editor-content ul[data-type='taskList'] li > div {
+    @apply min-w-0 flex-1;
+  }
+  .post-editor-content ul[data-type='taskList'] li p {
+    @apply mb-0;
+  }
+  .post-editor-content ul[data-type='taskList'] li[data-checked='true'] > div {
+    @apply text-muted-foreground line-through;
+  }
+
   /* Slash command menu */
   .slash-menu {
     @apply w-72 overflow-hidden rounded-xl border border-border bg-card shadow-xl;
@@ -227,7 +250,7 @@
     @apply bg-muted/70;
   }
 
-/* Public code blocks */
+  /* Public code blocks */
   .code-block {
     @apply my-4 overflow-hidden rounded-xl border;
     background: rgb(31 41 55 / 1);
@@ -305,6 +328,24 @@
   .prose th[data-borderless],
   .prose td[data-borderless] {
     border: none;
+  }
+
+  /* Listas de tareas en el contenido público (GFM: remark-gfm las emite como
+     .contains-task-list con <input type="checkbox" disabled>) */
+  .prose ul.contains-task-list {
+    @apply list-none pl-0;
+  }
+  .prose ul.contains-task-list > li {
+    @apply flex items-start gap-2 pl-0;
+  }
+  .prose ul.contains-task-list > li::marker {
+    content: none;
+  }
+  .prose ul.contains-task-list > li > input[type='checkbox'] {
+    @apply mt-[0.4em] h-4 w-4 shrink-0 accent-accent;
+  }
+  .prose ul.contains-task-list > li > p {
+    @apply my-0;
   }
 
   /* Syntax highlighting — tema oscuro alineado al sitio */

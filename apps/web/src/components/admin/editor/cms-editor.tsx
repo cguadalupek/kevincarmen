@@ -1,23 +1,18 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { EditorContent, useEditor, type Editor } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import Placeholder from '@tiptap/extension-placeholder';
-import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
-import ImageResize from 'tiptap-extension-resize-image';
-import Underline from '@tiptap/extension-underline';
-import { Markdown } from 'tiptap-markdown';
-import { common, createLowlight } from 'lowlight';
 import { api } from '@/lib/api/client';
-import { SlashCommand } from './editor/slash-command';
-import { CodeBlockToolbar } from './editor/code-block-toolbar';
-import { FormattingToolbar } from './editor/formatting-toolbar';
-import { TableToolbar } from './editor/table-toolbar';
-import { KCTable, KCTableCell, KCTableHeader, KCTableView, TableRow } from './editor/table';
-import { Iframe } from './editor/iframe-node';
-
-const lowlight = createLowlight(common);
+import {
+  CMS_EDITOR_IMAGE_INPUT_ID,
+  CMS_SECTIONS,
+  DEFAULT_CMS_SECTION,
+  type CMSSection,
+} from './cms-sections';
+import { createCMSEditorExtensions } from './tiptap.config';
+import { CodeBlockToolbar } from './code-block-toolbar';
+import { FormattingToolbar } from './formatting-toolbar';
+import { TableToolbar } from './table-toolbar';
 
 declare module '@tiptap/core' {
   interface Storage {
@@ -27,15 +22,23 @@ declare module '@tiptap/core' {
   }
 }
 
-interface PostEditorProps {
-  content: string;
+export interface CMSEditorProps {
+  /** Contenido del editor en markdown (el formato que guarda el CMS). */
+  value: string;
+  /** Se llama con el markdown completo tras cada cambio. */
   onChange: (markdown: string) => void;
-  videoUrl?: string;
+  /** Sección del CMS: define el texto de ayuda y los comandos de `/`. */
+  section?: CMSSection;
+  /** Texto de ayuda propio (sustituye el de la sección). */
+  placeholder?: string;
+  /** Sólo lectura, para vistas de previsualización. */
+  readOnly?: boolean;
+  /** Avisa cuando se pega una URL (el formulario decide qué hacer con ella). */
   onVideoPaste?: (url: string) => void;
   /**
-   * Clase de anclaje de la barra de formato. Dentro de una vista superpuesta (modal)
-   * el contenedor de scroll arranca bajo la cabecera, así que se pasa `top-0` para
-   * que la barra quede pegada al borde superior y no deje un hueco de 56 px.
+   * Clase de anclaje de la barra de formato. Dentro de una vista superpuesta
+   * (modal) el contenedor de scroll arranca bajo la cabecera, así que se pasa
+   * `top-0` para que la barra quede pegada al borde superior sin hueco.
    */
   toolbarTopClass?: string;
 }
@@ -47,18 +50,42 @@ async function insertImageFiles(editor: Editor, files: FileList | File[]) {
       const { url } = await api.uploadImage(file);
       editor.chain().focus().setImage({ src: url, alt: '' }).run();
     } catch {
-      // silently skip failed uploads in batch
+      // silencio: en un lote, una imagen que falla no debe cortar las demás
     }
   }
 }
 
-export function PostEditor({ content, onChange, onVideoPaste, toolbarTopClass }: PostEditorProps) {
+/**
+ * Editor de contenido del CMS.
+ *
+ * Un único editor TipTap para Artículos, Proyectos, Lab y Cursos: la sección
+ * concreta sólo aporta el texto de ayuda y el catálogo de comandos `/`
+ * (ver `tiptap.config.ts` y `cms-sections.ts`). El contenido se intercambia
+ * siempre en markdown, que es lo que guarda la base de datos.
+ */
+export function CMSEditor({
+  value,
+  onChange,
+  section = DEFAULT_CMS_SECTION,
+  placeholder,
+  readOnly = false,
+  onVideoPaste,
+  toolbarTopClass,
+}: CMSEditorProps) {
   const editorRef = useRef<Editor | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const onChangeRef = useRef(onChange);
   onChangeRef.current = onChange;
+  // Último markdown emitido por el propio editor: distingue un cambio de dentro
+  // de un `value` que llega de fuera (cargar otra entidad en el mismo montaje).
+  const lastEmittedRef = useRef<string | null>(null);
 
   const [selectedImagePos, setSelectedImagePos] = useState<number | null>(null);
+
+  const extensions = useMemo(
+    () => createCMSEditorExtensions({ ...(placeholder ? { placeholder } : {}), section }),
+    [placeholder, section],
+  );
 
   const handleImageInput = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const editor = editorRef.current;
@@ -70,39 +97,13 @@ export function PostEditor({ content, onChange, onVideoPaste, toolbarTopClass }:
 
   const editor = useEditor({
     immediatelyRender: false,
-    extensions: [
-      StarterKit.configure({
-        codeBlock: false,
-      }),
-      Underline,
-      CodeBlockLowlight.configure({
-        lowlight,
-        defaultLanguage: 'powershell',
-      }),
-      ImageResize.configure({
-        inline: false,
-        minWidth: 120,
-        maxWidth: 900,
-      }),
-      Placeholder.configure({
-        placeholder: 'Escribe tu artículo… Usa / para insertar código, tablas o imágenes.',
-      }),
-      Markdown.configure({
-        html: true,
-        transformPastedText: true,
-        transformCopiedText: true,
-      }),
-      Iframe,
-      SlashCommand,
-      KCTable.configure({ resizable: true, cellMinWidth: 80, View: KCTableView }),
-      TableRow,
-      KCTableHeader,
-      KCTableCell,
-    ],
-    content,
+    editable: !readOnly,
+    extensions,
+    content: value,
     editorProps: {
       attributes: {
         class: 'post-editor-content',
+        'aria-label': `${CMS_SECTIONS[section].label}: contenido`,
       },
       handleTextInput: (view, from, _to, text) => {
         const currentEditor = editorRef.current;
@@ -158,10 +159,10 @@ export function PostEditor({ content, onChange, onVideoPaste, toolbarTopClass }:
         if (!editorInstance) return false;
 
         const text = event.clipboardData?.getData('text/plain')?.trim();
-if (text && /^https?:\/\//i.test(text)) {
-            onVideoPaste?.(text);
-            event.preventDefault();
-            const choice = window.prompt(
+        if (text && /^https?:\/\//i.test(text)) {
+          onVideoPaste?.(text);
+          event.preventDefault();
+          const choice = window.prompt(
             `Pegaste: ${text}\n\n¿Cómo quieres insertarlo?\n1) URL\n2) Mención (@usuario)\n3) Marcado (#etiqueta)`,
             '1',
           );
@@ -197,13 +198,39 @@ if (text && /^https?:\/\//i.test(text)) {
       },
     },
     onUpdate: ({ editor: ed }) => {
-      onChangeRef.current(ed.storage.markdown.getMarkdown());
+      const markdown = ed.storage.markdown.getMarkdown();
+      lastEmittedRef.current = markdown;
+      onChangeRef.current(markdown);
     },
   });
 
   useEffect(() => {
     editorRef.current = editor;
   }, [editor]);
+
+  // Reaplica el contenido cuando el `value` cambia por FUERA del editor (cargar
+  // otra entidad reutilizando el mismo montaje). Si el cambio viene de teclear,
+  // `value` es exactamente lo último emitido y no se toca el documento (así no se
+  // pierde el cursor).
+  useEffect(() => {
+    if (!editor) return;
+    if (lastEmittedRef.current === null) {
+      lastEmittedRef.current = value;
+      return;
+    }
+    if (value === lastEmittedRef.current) return;
+    if (value === editor.storage.markdown.getMarkdown()) {
+      lastEmittedRef.current = value;
+      return;
+    }
+    editor.commands.setContent(value || '', { emitUpdate: false });
+    lastEmittedRef.current = value;
+  }, [editor, value]);
+
+  useEffect(() => {
+    if (!editor) return;
+    editor.setEditable(!readOnly);
+  }, [editor, readOnly]);
 
   useEffect(() => {
     if (!editor) return;
@@ -218,12 +245,12 @@ if (text && /^https?:\/\//i.test(text)) {
     };
   }, [editor]);
 
-  function updateImageCaption(value: string) {
+  function updateImageCaption(next: string) {
     if (!editor || selectedImagePos === null) return;
     editor.commands.command(({ tr }) => {
       const node = tr.doc.nodeAt(selectedImagePos);
       if (!node || node.type.name !== 'image') return false;
-      tr.setNodeMarkup(selectedImagePos, undefined, { ...node.attrs, alt: value });
+      tr.setNodeMarkup(selectedImagePos, undefined, { ...node.attrs, alt: next });
       return true;
     });
   }
@@ -232,23 +259,32 @@ if (text && /^https?:\/\//i.test(text)) {
 
   return (
     <div className="post-editor">
-      <input
-        id="post-editor-image-input"
-        ref={fileInputRef}
-        type="file"
-        accept="image/jpeg,image/png,image/gif,image/webp,image/bmp,image/svg+xml"
-        multiple
-        className="hidden"
-        onChange={handleImageInput}
-      />
+      {!readOnly && (
+        <input
+          id={CMS_EDITOR_IMAGE_INPUT_ID}
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/gif,image/webp,image/bmp,image/svg+xml"
+          multiple
+          className="hidden"
+          onChange={handleImageInput}
+        />
+      )}
 
-      <FormattingToolbar editor={editor} {...(toolbarTopClass ? { topClass: toolbarTopClass } : {})} />
-      <CodeBlockToolbar editor={editor} />
-      <TableToolbar editor={editor} />
+      {!readOnly && (
+        <>
+          <FormattingToolbar
+            editor={editor}
+            {...(toolbarTopClass ? { topClass: toolbarTopClass } : {})}
+          />
+          <CodeBlockToolbar editor={editor} />
+          <TableToolbar editor={editor} />
+        </>
+      )}
 
       <EditorContent editor={editor} />
 
-      {selectedImagePos !== null && (
+      {!readOnly && selectedImagePos !== null && (
         <input
           type="text"
           value={editor.state.doc.nodeAt(selectedImagePos)?.attrs.alt ?? ''}

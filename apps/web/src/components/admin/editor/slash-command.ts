@@ -4,35 +4,42 @@ import { Extension } from '@tiptap/core';
 import { ReactRenderer } from '@tiptap/react';
 import Suggestion, { type SuggestionOptions } from '@tiptap/suggestion';
 import {
-  SlashCommandList,
-  type SlashCommandListRef,
-  slashCommandItems,
+  autoUpdate,
+  computePosition,
+  flip,
+  offset,
+  shift,
+  type VirtualElement,
+} from '@floating-ui/dom';
+import { DEFAULT_CMS_SECTION, type CMSSection } from './cms-sections';
+import {
+  SlashMenu,
+  filterSlashCommands,
+  slashCommandsFor,
   type SlashCommandItem,
-} from './slash-command-list';
+  type SlashMenuHandle,
+} from './slash-menu';
 
-function filterItems(query: string): SlashCommandItem[] {
-  const q = query.toLowerCase();
-  return slashCommandItems.filter(
-    (item) =>
-      item.title.toLowerCase().includes(q) ||
-      item.description.toLowerCase().includes(q) ||
-      (q.startsWith('cod') && item.title.startsWith('Código')) ||
-      (q.startsWith('inline') && item.title === 'Código en línea') ||
-      (q.startsWith('en linea') && item.title === 'Código en línea'),
-  );
+export interface SlashCommandOptions {
+  /** Sección del CMS: determina el catálogo de comandos de `/`. */
+  section: CMSSection;
+  suggestion: Partial<SuggestionOptions>;
 }
 
-export const SlashCommand = Extension.create({
+/**
+ * Menú de comandos `/` del editor.
+ *
+ * El listado vive en `SlashMenu` (independiente y reutilizable) y el
+ * posicionamiento flotante lo resuelve floating-ui (`computePosition` con
+ * `strategy: 'fixed'` + `autoUpdate`), así que el menú sigue al cursor cuando se
+ * desplaza el contenedor del editor y se da la vuelta al llegar al borde.
+ */
+export const SlashCommand = Extension.create<SlashCommandOptions>({
   name: 'slashCommand',
-
-  addKeyboardShortcuts() {
-    return {
-      'Mod-e': () => this.editor.commands.unsetMark('code'),
-    };
-  },
 
   addOptions() {
     return {
+      section: DEFAULT_CMS_SECTION,
       suggestion: {
         char: '/',
         command: ({
@@ -50,29 +57,63 @@ export const SlashCommand = Extension.create({
     };
   },
 
+  addKeyboardShortcuts() {
+    return {
+      'Mod-e': () => this.editor.commands.unsetMark('code'),
+    };
+  },
+
   addProseMirrorPlugins() {
+    const editor = this.editor;
+    const section = this.options.section;
+
     return [
       Suggestion({
-        editor: this.editor,
+        editor,
         ...this.options.suggestion,
-        items: ({ query }: { query: string }) => filterItems(query),
+        items: ({ query }: { query: string }) =>
+          filterSlashCommands(slashCommandsFor(section), query),
         render: () => {
-          let component: ReactRenderer<SlashCommandListRef> | null = null;
+          let component: ReactRenderer<SlashMenuHandle> | null = null;
           let element: HTMLElement | null = null;
+          let stopAutoUpdate: (() => void) | null = null;
+          // Última caja del cursor conocida: la referencia virtual que sigue floating-ui.
+          let caretRect: DOMRect | null = null;
 
-          function positionPopup(clientRect?: (() => DOMRect | null) | null) {
-            if (!element || !clientRect) return;
-            const rect = clientRect();
-            if (!rect) return;
-            element.style.position = 'fixed';
-            element.style.left = `${rect.left}px`;
-            element.style.top = `${rect.bottom + 8}px`;
-            element.style.zIndex = '50';
+          const reference: VirtualElement = {
+            getBoundingClientRect: () => caretRect ?? new DOMRect(),
+            contextElement: editor.view.dom,
+          };
+
+          function place() {
+            if (!element) return;
+            void computePosition(reference, element, {
+              strategy: 'fixed',
+              placement: 'bottom-start',
+              middleware: [offset(8), flip({ padding: 8 }), shift({ padding: 8 })],
+            }).then(({ x, y }) => {
+              if (!element) return;
+              element.style.left = `${Math.round(x)}px`;
+              element.style.top = `${Math.round(y)}px`;
+            });
+          }
+
+          function updateCaretRect(clientRect?: (() => DOMRect | null) | null) {
+            caretRect = clientRect?.() ?? null;
+          }
+
+          function destroy() {
+            stopAutoUpdate?.();
+            stopAutoUpdate = null;
+            element?.remove();
+            component?.destroy();
+            element = null;
+            component = null;
           }
 
           return {
             onStart: (props) => {
-              component = new ReactRenderer(SlashCommandList, {
+              component = new ReactRenderer(SlashMenu, {
                 props: {
                   items: props.items as SlashCommandItem[],
                   command: (item: SlashCommandItem) => props.command(item),
@@ -80,28 +121,35 @@ export const SlashCommand = Extension.create({
                 editor: props.editor,
               });
               element = component.element as HTMLElement;
+              element.style.position = 'fixed';
+              element.style.zIndex = '50';
               document.body.appendChild(element);
-              positionPopup(props.clientRect);
+              updateCaretRect(props.clientRect);
+              place();
+              stopAutoUpdate = autoUpdate(reference, element, place, {
+                ancestorScroll: true,
+                ancestorResize: false,
+                elementResize: true,
+                layoutShift: false,
+              });
             },
             onUpdate: (props) => {
               component?.updateProps({
                 items: props.items as SlashCommandItem[],
                 command: (item: SlashCommandItem) => props.command(item),
               });
-              positionPopup(props.clientRect);
+              updateCaretRect(props.clientRect);
             },
             onKeyDown: (props) => {
               if (props.event.key === 'Escape') {
-                element?.remove();
-                component?.destroy();
+                // Borrar el `/consulta` hace que la sugerencia deje de coincidir y
+                // el plugin sale por su propio `onExit` (una sola vía de cierre).
+                editor.chain().focus().deleteRange(props.range).run();
                 return true;
               }
               return component?.ref?.onKeyDown(props) ?? false;
             },
-            onExit: () => {
-              element?.remove();
-              component?.destroy();
-            },
+            onExit: destroy,
           };
         },
       }),

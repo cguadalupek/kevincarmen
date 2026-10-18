@@ -25,7 +25,7 @@ import {
 } from 'lucide-react';
 import { slugify } from '@kevincarmen/utils';
 import { Button } from '@/components/ui/button';
-import { PostEditor } from '@/components/admin/post-editor';
+import { CMSEditor } from '@/components/admin/editor/cms-editor';
 import { ChipInput } from '@/components/admin/chip-input';
 import { LabMilestoneEditor } from '@/components/admin/lab-milestone-editor';
 import { AdminSubNav } from '@/components/admin/admin-subnav';
@@ -430,8 +430,9 @@ export function LabForm({ experiment }: LabFormProps) {
                 (objetivo, entorno, procedimiento y resultados)
               </span>
             </label>
-            <PostEditor
-              content={content}
+            <CMSEditor
+              section="lab"
+              value={content}
               onChange={setContent}
               onVideoPaste={handleVideoUrlChange}
             />

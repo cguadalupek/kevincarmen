@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { ChevronDown, ExternalLink, Link2, Save, Video, X } from 'lucide-react';
 import { slugify } from '@kevincarmen/utils';
 import { Button } from '@/components/ui/button';
-import { PostEditor } from '@/components/admin/post-editor';
+import { CMSEditor } from '@/components/admin/editor/cms-editor';
 import { api, type ApiPost, type VideoTypeValue } from '@/lib/api/client';
 import { getCategoryTree, subcategoriesOf, type CategoryTreeNode } from '@/lib/api/categories';
 
@@ -257,10 +257,10 @@ export function PostForm({ post }: PostFormProps) {
             <label htmlFor="content" className="mb-2 block text-sm font-medium">
               Contenido
             </label>
-            <PostEditor
-              content={content}
+            <CMSEditor
+              section="blog"
+              value={content}
               onChange={setContent}
-              videoUrl={videoUrl}
               onVideoPaste={handleVideoUrlChange}
             />
             <p className="mt-2 text-xs text-muted-foreground">

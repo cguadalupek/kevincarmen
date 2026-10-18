@@ -7,7 +7,7 @@ import { Save, Upload, X } from 'lucide-react';
 import { slugify } from '@kevincarmen/utils';
 import { Button } from '@/components/ui/button';
 import { AdminModal } from '@/components/admin/admin-modal';
-import { PostEditor } from '@/components/admin/post-editor';
+import { CMSEditor } from '@/components/admin/editor/cms-editor';
 import { PROJECT_STATUS_LABELS, PROJECT_STATUS_OPTIONS } from '@/components/admin/project-status';
 import { api, type ApiProject, type ApiProjectCategory } from '@/lib/api/client';
 
@@ -293,9 +293,10 @@ export function ProjectEditorModal({
                 </span>
               </div>
               {/* `top-0`: dentro de la vista superpuesta el scroll arranca bajo la cabecera. */}
-              <PostEditor
+              <CMSEditor
                 key={project?.id ?? 'new'}
-                content={draft.content}
+                section="projects"
+                value={draft.content}
                 onChange={(markdown) => update('content', markdown)}
                 toolbarTopClass="top-0"
               />
@@ -331,7 +332,9 @@ export function ProjectEditorModal({
                 min="1900"
                 max="2100"
                 value={draft.projectYear ?? ''}
-                onChange={(e) => update('projectYear', e.target.value ? Number(e.target.value) : null)}
+                onChange={(e) =>
+                  update('projectYear', e.target.value ? Number(e.target.value) : null)
+                }
                 className={inputClass}
               />
               <label className="mt-4 flex items-center gap-2 text-sm">

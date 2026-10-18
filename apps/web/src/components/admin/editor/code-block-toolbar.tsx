@@ -4,7 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import { type Editor } from '@tiptap/react';
 import { BubbleMenu } from '@tiptap/react/menus';
 import { Check, ChevronDown, Copy } from 'lucide-react';
-import { CODE_LANGUAGES, getLanguageLabel } from '@/lib/editor/languages';
+import { getLanguageLabel } from '@/lib/editor/languages';
+import { DEFAULT_CODE_LANGUAGE, EDITOR_CODE_LANGUAGES } from './cms-sections';
 import { cn } from '@/lib/utils';
 
 interface CodeBlockToolbarProps {
@@ -17,9 +18,19 @@ export function CodeBlockToolbar({ editor }: CodeBlockToolbarProps) {
   const menuRef = useRef<HTMLDivElement>(null);
 
   const currentLanguage =
-    (editor.getAttributes('codeBlock').language as string | undefined) ?? 'plaintext';
+    (editor.getAttributes('codeBlock').language as string | undefined) ?? DEFAULT_CODE_LANGUAGE;
 
-  const filtered = CODE_LANGUAGES.filter((lang) =>
+  // Sólo se ofrecen los idiomas que el editor sabe resaltar; si el bloque trae
+  // uno antiguo (p. ej. `powershell`), se añade arriba para poder verlo y cambiarlo.
+  const selectable =
+    currentLanguage && !EDITOR_CODE_LANGUAGES.some((lang) => lang.id === currentLanguage)
+      ? [
+          { id: currentLanguage, label: getLanguageLabel(currentLanguage) },
+          ...EDITOR_CODE_LANGUAGES,
+        ]
+      : EDITOR_CODE_LANGUAGES;
+
+  const filtered = selectable.filter((lang) =>
     lang.label.toLowerCase().includes(search.toLowerCase()),
   );
 

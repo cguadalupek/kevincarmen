@@ -1,7 +1,7 @@
 'use client';
 
 import type { Editor } from '@tiptap/react';
-import { Bold, Code2, Italic, List, ListOrdered, Quote, Redo2, Strikethrough, Underline, Undo2 } from 'lucide-react';
+import { Bold, Code2, Italic, List, ListChecks, ListOrdered, Quote, Redo2, Strikethrough, Underline, Undo2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const toolButtonClass = cn(
@@ -34,6 +34,7 @@ export function FormattingToolbar({
     { label: 'Código en línea', icon: Code2, active: editor.isActive('code'), run: () => editor.chain().focus().toggleCode().run() },
     { label: 'Viñetas', icon: List, active: editor.isActive('bulletList'), run: () => editor.chain().focus().toggleBulletList().run() },
     { label: 'Numerada', icon: ListOrdered, active: editor.isActive('orderedList'), run: () => editor.chain().focus().toggleOrderedList().run() },
+    { label: 'Lista de tareas', icon: ListChecks, active: editor.isActive('taskList'), run: () => editor.chain().focus().toggleTaskList().run() },
     { label: 'Cita', icon: Quote, active: editor.isActive('blockquote'), run: () => editor.chain().focus().toggleBlockquote().run() },
   ];
 
@@ -44,7 +45,7 @@ export function FormattingToolbar({
         topClass,
       )}
       role="toolbar"
-      aria-label="Formato del artículo"
+      aria-label="Formato del contenido"
     >
       {items.map(({ label, icon: Icon, active, run }) => (
         <button

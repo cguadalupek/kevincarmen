@@ -27,7 +27,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { AdminModal } from '@/components/admin/admin-modal';
 import { AdminSubNav } from '@/components/admin/admin-subnav';
-import { PostEditor } from '@/components/admin/post-editor';
+import { CMSEditor } from '@/components/admin/editor/cms-editor';
 import {
   api,
   type ApiCourse,
@@ -1252,9 +1252,10 @@ function LessonModal({
               o imágenes · arrastra o pega capturas (Ctrl+V)
             </span>
           </div>
-          <PostEditor
+          <CMSEditor
             key={`lesson-${lesson.id}`}
-            content={draft.content ?? ''}
+            section="courses"
+            value={draft.content ?? ''}
             toolbarTopClass="top-0"
             onChange={(markdown) => setDraft((current) => ({ ...current, content: markdown }))}
           />

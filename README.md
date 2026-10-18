@@ -338,8 +338,12 @@ El código vive en **`apps/web/src/`** (`src/app` para rutas, `src/components`, 
   subida de archivo (25 MB) o enlace externo, tipo editable, versión, etiquetas,
   destacado y orden.
 - **Timeline** y **Configuración** (`/admin/settings`, KV del sitio).
-- Editor de artículos con **TipTap** (bloques, código resaltado, tablas, imágenes con
-  redimensionado, iframes, comandos slash `/`), compartido con proyectos y lab.
+- Editor de artículos con **TipTap** (bloques, código resaltado, tablas, listas de tareas,
+  imágenes con redimensionado, iframes, comandos slash `/`), compartido por artículos,
+  proyectos, lab y cursos a través del componente **`CMSEditor`**
+  (`src/components/admin/editor/`): la configuración de extensiones vive en `tiptap.config.ts`,
+  los textos y comandos por sección en `cms-sections.ts`, el menú flotante en `slash-menu.tsx`
+  y su posicionamiento (floating-ui) en `slash-command.ts`.
 
 **Caché y revalidación**
 - Los `fetch` de datos usan *tags*: `posts`, `videos`, `categories`, `site`, `timeline`

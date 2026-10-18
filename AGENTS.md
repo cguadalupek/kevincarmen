@@ -138,8 +138,11 @@ Nunca añadas rutas, componentes, dependencias ni imports hacia `@kevincarmen/cm
   colores hex crudos ni CSS a medida si existe un token. La UI debe ser **mobile-first**
   (la propietaria del CMS trabaja desde el móvil y el dueño desde escritorio): mantén las
   áreas táctiles (`min-h-[44px]`) y no rompas el layout responsive.
-- **Editor enriquecido**: artículos, proyectos y lab comparten TipTap. Si cambias extensiones o
-  el Markdown de salida, revisa **los tres** formularios y la vista pública que lo renderiza
+- **Editor enriquecido**: artículos, proyectos, lab y cursos comparten el mismo editor
+  (`src/components/admin/editor/cms-editor.tsx`, exporta `CMSEditor`) — no escribas un editor
+  nuevo ni dupliques extensiones: las capacidades se añaden en `tiptap.config.ts` y las
+  diferencias por sección en `cms-sections.ts`. Si cambias extensiones o el Markdown de salida,
+  revisa **los cuatro** formularios y la vista pública que lo renderiza
   (`react-markdown` + `remark-gfm`).
 - **Imágenes**: usa `next/image` con los `remotePatterns` declarados; para subidas propias, la URL
   relativa que devuelve el API (`/uploads/...`).
