@@ -1,6 +1,6 @@
 'use client';
 
-import { forwardRef, useEffect, useImperativeHandle, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import type { Editor } from '@tiptap/react';
 import {
   AlignLeft,
@@ -238,8 +238,22 @@ export const SlashMenu = forwardRef<SlashMenuHandle, SlashMenuProps>(function Sl
   ref,
 ) {
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => setSelectedIndex(0), [items]);
+
+  // El listado puede ser más alto que su caja (max-h + scroll): al mover la
+  // selección con el teclado, la opción activa tiene que quedar a la vista.
+  // Se ajusta sólo el scrollTop del propio menú para no pelear con floating-ui.
+  useEffect(() => {
+    const list = listRef.current;
+    const active = list?.querySelectorAll<HTMLElement>('button[role="option"]')[selectedIndex];
+    if (!list || !active) return;
+    const listBox = list.getBoundingClientRect();
+    const itemBox = active.getBoundingClientRect();
+    if (itemBox.top < listBox.top) list.scrollTop -= listBox.top - itemBox.top;
+    else if (itemBox.bottom > listBox.bottom) list.scrollTop += itemBox.bottom - listBox.bottom;
+  }, [selectedIndex, items]);
 
   useImperativeHandle(ref, () => ({
     onKeyDown: ({ event }) => {
@@ -270,7 +284,7 @@ export const SlashMenu = forwardRef<SlashMenuHandle, SlashMenuProps>(function Sl
   }
 
   return (
-    <div className="slash-menu" role="listbox" aria-label="Comandos del editor">
+    <div className="slash-menu" ref={listRef} role="listbox" aria-label="Comandos del editor">
       {items.map((item, index) => (
         <div key={`${item.category}-${item.title}`}>
           {(index === 0 || item.category !== items[index - 1]?.category) && (
