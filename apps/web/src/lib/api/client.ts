@@ -374,6 +374,16 @@ export interface ApiTechCategory {
   items: ApiTechItem[];
 }
 
+/** Totales de `GET /likes/admin/analytics` (JWT). */
+export interface ApiLikeAnalytics {
+  posts: number;
+  projects: number;
+  /** Desde las 00:00 en hora de Chile. */
+  today: number;
+  last7Days: number;
+  last30Days: number;
+}
+
 export const api = {
   login: (email: string, password: string) =>
     apiFetch<{ accessToken: string; user: AuthUser }>('/auth/login', {
@@ -382,6 +392,9 @@ export const api = {
     }),
 
   getPosts: () => apiFetch<ApiPost[]>('/posts/admin/all'),
+
+  /** Totales de likes del panel de analítica (requiere el token del CMS). */
+  getLikeAnalytics: () => apiFetch<ApiLikeAnalytics>('/likes/admin/analytics'),
 
   getPost: (id: string) => apiFetch<ApiPost>(`/posts/admin/${id}`),
 
@@ -632,7 +645,10 @@ export const api = {
   deleteTechCategory: (id: string) =>
     apiFetch<{ success: boolean }>(`/tech/categories/${id}`, { method: 'DELETE' }),
   createTechItem: (name: string, categoryId: string) =>
-    apiFetch<ApiTechItem>('/tech/items', { method: 'POST', body: JSON.stringify({ name, categoryId }) }),
+    apiFetch<ApiTechItem>('/tech/items', {
+      method: 'POST',
+      body: JSON.stringify({ name, categoryId }),
+    }),
   updateTechItem: (id: string, data: { name?: string; categoryId?: string }) =>
     apiFetch<ApiTechItem>(`/tech/items/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteTechItem: (id: string) =>

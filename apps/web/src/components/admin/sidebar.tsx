@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
+  BarChart3,
   ChevronDown,
   ChevronRight,
   Clock,
@@ -62,6 +63,7 @@ const navItems: NavItem[] = [
   { label: 'Lab', href: '/admin/lab', icon: FlaskConical, iconClassName: 'rotate-[8deg]' },
   { label: 'Recursos', href: '/admin/recursos', icon: Download },
   { label: 'Timeline', href: '/admin/timeline', icon: Clock },
+  { label: 'Analítica', href: '/admin/analytics', icon: BarChart3 },
   { label: 'Configuración', href: '/admin/settings', icon: Settings },
 ];
 

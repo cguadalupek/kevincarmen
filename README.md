@@ -315,6 +315,7 @@ y `ValidationPipe` global.
 | GET | `/likes?entity=POST\|PROJECT&entityId=…&visitorId=…` | — | `{entity, entityId, count, liked}`; sin `visitorId` solo el contador |
 | GET | `/likes/counts?entity=POST\|PROJECT&ids=a,b,c` | — | `{entity, counts: {id: n}}`; contadores de un listado en **una** llamada (ids sin votos no aparecen) |
 | POST | `/likes/toggle` | — | `{entity, entityId, visitorId}` → `{count, liked}` ya persistidos (alterna el voto) |
+| GET | `/likes/admin/analytics` | **JWT** | Totales del panel: `{posts, projects, today, last7Days, last30Days}` |
 
 El voto se identifica con un UUID que la web guarda en la cookie `kc_vid` (no hay cuentas
 públicas). `POST /likes/toggle` está limitado con `ThrottlerGuard` a **30 peticiones por
@@ -363,6 +364,9 @@ El código vive en **`apps/web/src/`** (`src/app` para rutas, `src/components`, 
   subida de archivo (25 MB) o enlace externo, tipo editable, versión, etiquetas,
   destacado y orden.
 - **Timeline** y **Configuración** (`/admin/settings`, KV del sitio).
+- **Analítica** (`/admin/analytics`): totales de «me gusta» (artículos, proyectos, hoy en
+  hora de Chile, últimos 7 y 30 días). Consume `GET /likes/admin/analytics` con el JWT del
+  panel; el agregado no es público aunque los contadores de cada tarjeta sí lo sean.
 - Editor de artículos con **TipTap** (bloques, código resaltado, tablas, listas de tareas,
   imágenes con redimensionado, iframes, comandos slash `/`), compartido por artículos,
   proyectos, lab y cursos a través del componente **`CMSEditor`**

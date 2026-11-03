@@ -1,6 +1,7 @@
 import { Body, Controller, Get, HttpCode, Post, Query, UseGuards } from '@nestjs/common';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { LikesService } from './likes.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ToggleLikeDto } from './dto/toggle-like.dto';
 import { LikeStatusQueryDto } from './dto/like-status-query.dto';
 import { LikeCountsQueryDto } from './dto/like-counts-query.dto';
@@ -16,6 +17,17 @@ import { LikeCountsQueryDto } from './dto/like-counts-query.dto';
 @UseGuards(ThrottlerGuard)
 export class LikesController {
   constructor(private readonly likesService: LikesService) {}
+
+  /**
+   * `GET /likes/admin/analytics` — totales del panel. **JWT obligatorio**: el agregado
+   * (cuántos votos, cuándo) es información del dueño, no del público, aunque los
+   * contadores individuales sí sean públicos.
+   */
+  @Get('admin/analytics')
+  @UseGuards(JwtAuthGuard)
+  analytics() {
+    return this.likesService.analytics();
+  }
 
   /** `GET /likes?entity=POST&entityId=…&visitorId=…` */
   @Get()

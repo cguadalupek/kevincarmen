@@ -12,6 +12,18 @@ export interface LikeStatus {
   liked: boolean;
 }
 
+/** Totales del panel de analítica (`GET /likes/admin/analytics`). */
+export interface LikeAnalytics {
+  /** Likes acumulados en artículos. */
+  posts: number;
+  /** Likes acumulados en proyectos. */
+  projects: number;
+  /** Likes desde las 00:00 en hora de Chile. */
+  today: number;
+  last7Days: number;
+  last30Days: number;
+}
+
 @Injectable()
 export class LikesService {
   constructor(private prisma: PrismaService) {}
@@ -61,6 +73,33 @@ export class LikesService {
     });
 
     return Object.fromEntries(grouped.map((row) => [row.entityId, row._count._all]));
+  }
+
+  /**
+   * Totales del panel de analítica.
+   *
+   * UNA consulta con agregados `FILTER`: cinco `count` separados serían cinco round
+   * trips para leer la misma tabla. La alternativa tipada (varios `prisma.like.count`)
+   * sería más legible pero hace lo mismo cinco veces.
+   *
+   * `today` se calcula en hora de Chile, no en UTC: el contenedor corre en UTC y a las
+   * 21:00 de Santiago un like se contaría como «mañana».
+   */
+  async analytics(): Promise<LikeAnalytics> {
+    const [row] = await this.prisma.$queryRaw<LikeAnalytics[]>`
+      SELECT
+        (count(*) FILTER (WHERE entity = 'POST'))::int    AS "posts",
+        (count(*) FILTER (WHERE entity = 'PROJECT'))::int AS "projects",
+        (count(*) FILTER (
+          WHERE created_at >= date_trunc('day', now() AT TIME ZONE 'America/Santiago')
+                              AT TIME ZONE 'America/Santiago'
+        ))::int                                           AS "today",
+        (count(*) FILTER (WHERE created_at >= now() - interval '7 days'))::int  AS "last7Days",
+        (count(*) FILTER (WHERE created_at >= now() - interval '30 days'))::int AS "last30Days"
+      FROM likes
+    `;
+
+    return row ?? { posts: 0, projects: 0, today: 0, last7Days: 0, last30Days: 0 };
   }
 
   /**
