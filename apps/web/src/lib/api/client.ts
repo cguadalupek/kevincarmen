@@ -382,6 +382,19 @@ export interface ApiLikeAnalytics {
   today: number;
   last7Days: number;
   last30Days: number;
+  /** Detalle por contenido con al menos un voto, ordenado por votos. */
+  items: ApiLikeAnalyticsItem[];
+}
+
+/** Fila de la tabla del panel: contenido + sección de la que viene. */
+export interface ApiLikeAnalyticsItem {
+  id: string;
+  title: string;
+  slug: string;
+  type: 'POST' | 'PROJECT';
+  section: string | null;
+  subcategory: string | null;
+  count: number;
 }
 
 export const api = {

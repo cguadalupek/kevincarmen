@@ -22,6 +22,21 @@ export interface LikeAnalytics {
   today: number;
   last7Days: number;
   last30Days: number;
+  /** Detalle por contenido con al menos un voto, ordenado por votos. */
+  items: LikeAnalyticsItem[];
+}
+
+/** Una fila de la tabla del panel: el contenido y la sección de la que viene. */
+export interface LikeAnalyticsItem {
+  id: string;
+  title: string;
+  slug: string;
+  type: 'POST' | 'PROJECT';
+  /** Categoría principal del artículo o clasificación del proyecto. */
+  section: string | null;
+  /** Subcategoría del artículo (los proyectos no tienen). */
+  subcategory: string | null;
+  count: number;
 }
 
 @Injectable()
@@ -86,7 +101,7 @@ export class LikesService {
    * 21:00 de Santiago un like se contaría como «mañana».
    */
   async analytics(): Promise<LikeAnalytics> {
-    const [row] = await this.prisma.$queryRaw<LikeAnalytics[]>`
+    const [row] = await this.prisma.$queryRaw<Omit<LikeAnalytics, 'items'>[]>`
       SELECT
         (count(*) FILTER (WHERE entity = 'POST'))::int    AS "posts",
         (count(*) FILTER (WHERE entity = 'PROJECT'))::int AS "projects",
@@ -99,7 +114,64 @@ export class LikesService {
       FROM likes
     `;
 
-    return row ?? { posts: 0, projects: 0, today: 0, last7Days: 0, last30Days: 0 };
+    return {
+      posts: row?.posts ?? 0,
+      projects: row?.projects ?? 0,
+      today: row?.today ?? 0,
+      last7Days: row?.last7Days ?? 0,
+      last30Days: row?.last30Days ?? 0,
+      items: await this.analyticsItems(),
+    };
+  }
+
+  /**
+   * Detalle por contenido, con su sección.
+   *
+   * `UNION ALL` de las dos taxonomías: cada CONTENIDO usa la suya (artículo →
+   * `main_categories`, proyecto → `project_categories`, con el texto denormalizado
+   * `projects.category` como respaldo de los antiguos). El like es polimórfico y no
+   * tiene FK, así que Prisma no puede resolver este join: va en SQL, y es UNA consulta
+   * para las dos entidades en lugar de dos consultas + mezcla en memoria.
+   *
+   * No se limita el número de filas: el panel enseña todo lo que tenga votos (en un
+   * blog personal son decenas). Si un día crece, aquí va un `LIMIT` + un agregado
+   * aparte para los totales por sección.
+   */
+  private analyticsItems(): Promise<LikeAnalyticsItem[]> {
+    return this.prisma.$queryRaw<LikeAnalyticsItem[]>`
+      SELECT
+        p.id                        AS "id",
+        p.title                     AS "title",
+        p.slug                      AS "slug",
+        'POST'                      AS "type",
+        mc.name                     AS "section",
+        sc.name                     AS "subcategory",
+        (count(l.id))::int          AS "count"
+      FROM likes l
+      JOIN posts p              ON p.id = l.entity_id
+      LEFT JOIN main_categories mc ON mc.id = p.main_category_id
+      LEFT JOIN subcategories   sc ON sc.id = p.sub_category_id
+      WHERE l.entity = 'POST'
+      GROUP BY p.id, p.title, p.slug, mc.name, sc.name
+
+      UNION ALL
+
+      SELECT
+        pr.id                       AS "id",
+        pr.title                    AS "title",
+        pr.slug                     AS "slug",
+        'PROJECT'                   AS "type",
+        COALESCE(pc.name, pr.category) AS "section",
+        NULL                        AS "subcategory",
+        (count(l.id))::int          AS "count"
+      FROM likes l
+      JOIN projects pr              ON pr.id = l.entity_id
+      LEFT JOIN project_categories pc ON pc.id = pr.project_category_id
+      WHERE l.entity = 'PROJECT'
+      GROUP BY pr.id, pr.title, pr.slug, pc.name, pr.category
+
+      ORDER BY "count" DESC, "title" ASC
+    `;
   }
 
   /**

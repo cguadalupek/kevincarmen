@@ -1,10 +1,23 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import { CalendarDays, FileText, FolderOpen, Heart, RefreshCw, TrendingUp } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import {
+  CalendarDays,
+  ExternalLink,
+  FileText,
+  FolderOpen,
+  FolderTree,
+  Heart,
+  ListFilter,
+  RefreshCw,
+  TrendingUp,
+} from 'lucide-react';
 import { AdminPageHeader } from '@/components/admin/admin-page-header';
 import { Button } from '@/components/ui/button';
-import { api, type ApiLikeAnalytics } from '@/lib/api/client';
+import { FilterList } from '@/components/ui/filter-list';
+import { api, type ApiLikeAnalytics, type ApiLikeAnalyticsItem } from '@/lib/api/client';
+import { cn } from '@/lib/utils';
 
 /**
  * Panel de analítica de likes.
@@ -13,10 +26,13 @@ import { api, type ApiLikeAnalytics } from '@/lib/api/client';
  * del layout: si no hay token, el guard redirige a `/admin/login` antes de pintar nada.
  * Los datos los sirve `GET /likes/admin/analytics`, protegido con JWT en el API — la
  * protección real está ahí, no en el cliente.
+ *
+ * La sección de cada fila NO es un campo nuevo en `Post`: sale de la taxonomía que ya
+ * existe (`mainCategory` en artículos, `projectCategory` en proyectos).
  */
 
 interface MetricCard {
-  key: keyof ApiLikeAnalytics;
+  key: Exclude<keyof ApiLikeAnalytics, 'items'>;
   label: string;
   hint: string;
   Icon: typeof Heart;
@@ -43,10 +59,23 @@ const METRICS: MetricCard[] = [
   { key: 'last30Days', label: 'Últimos 30 días', hint: 'Ventana móvil', Icon: Heart },
 ];
 
+const ALL = 'todas';
+const SIN_SECCION = 'sin-seccion';
+
+function sectionOf(item: ApiLikeAnalyticsItem): string {
+  return item.section?.trim() ? item.section : SIN_SECCION;
+}
+
+function publicHref(item: ApiLikeAnalyticsItem): string {
+  return item.type === 'POST' ? `/blog/${item.slug}` : `/proyectos/${item.slug}`;
+}
+
 export default function AdminAnalyticsPage() {
   const [data, setData] = useState<ApiLikeAnalytics | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [typeFilter, setTypeFilter] = useState<string>(ALL);
+  const [sectionFilter, setSectionFilter] = useState<string>(ALL);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -64,11 +93,44 @@ export default function AdminAnalyticsPage() {
     void load();
   }, [load]);
 
+  const items = data?.items ?? [];
+
+  /** Secciones reales con su número de votos (solo las que tienen alguno). */
+  const sections = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const item of items) {
+      const key = sectionOf(item);
+      counts.set(key, (counts.get(key) ?? 0) + item.count);
+    }
+    return Array.from(counts.entries())
+      .map(([value, count]) => ({
+        value,
+        label: value === SIN_SECCION ? 'Sin sección' : value,
+        count,
+      }))
+      .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, 'es'));
+  }, [items]);
+
+  const visibleItems = useMemo(
+    () =>
+      items.filter(
+        (item) =>
+          (typeFilter === ALL || item.type === typeFilter) &&
+          (sectionFilter === ALL || sectionOf(item) === sectionFilter),
+      ),
+    [items, typeFilter, sectionFilter],
+  );
+
+  const postsCount = items.filter((item) => item.type === 'POST').reduce((n, i) => n + i.count, 0);
+  const projectsCount = items
+    .filter((item) => item.type === 'PROJECT')
+    .reduce((n, i) => n + i.count, 0);
+
   return (
     <>
       <AdminPageHeader
         title="Analítica"
-        subtitle="Rendimiento de los «me gusta» del sitio"
+        subtitle="Rendimiento de los «me gusta» del sitio, por contenido y por sección"
         action={
           <Button
             variant="outline"
@@ -121,6 +183,129 @@ export default function AdminAnalyticsPage() {
           de una tarjeta en <span className="font-mono">/blog</span> o{' '}
           <span className="font-mono">/proyectos</span>.
         </div>
+      )}
+
+      {items.length > 0 && (
+        <section className="mt-10" aria-labelledby="likes-por-contenido">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 id="likes-por-contenido" className="text-lg font-semibold">
+                Likes por contenido
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {visibleItems.length} de {items.length} contenidos con votos ·{' '}
+                {postsCount.toLocaleString('es-CL')} en artículos ·{' '}
+                {projectsCount.toLocaleString('es-CL')} en proyectos
+              </p>
+            </div>
+          </div>
+
+          {/* Filtros: el componente compartido de Proyectos, Lab, Recursos y Blog. */}
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end">
+            <FilterList
+              className="w-full sm:w-64"
+              label="Tipo"
+              icon={<ListFilter className="h-3.5 w-3.5" />}
+              value={typeFilter}
+              allValue={ALL}
+              allLabel="Todo el contenido"
+              allCount={items.reduce((n, item) => n + item.count, 0)}
+              options={[
+                { value: 'POST', label: 'Artículos', count: postsCount },
+                { value: 'PROJECT', label: 'Proyectos', count: projectsCount },
+              ]}
+              onSelect={setTypeFilter}
+            />
+
+            <FilterList
+              className="w-full sm:w-64"
+              label="Sección"
+              icon={<FolderTree className="h-3.5 w-3.5" />}
+              value={sectionFilter}
+              allValue={ALL}
+              allLabel="Todas las secciones"
+              allCount={items.reduce((n, item) => n + item.count, 0)}
+              options={sections}
+              onSelect={setSectionFilter}
+            />
+          </div>
+
+          <div className="mt-4 overflow-hidden rounded-xl border border-border">
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[36rem] border-collapse text-sm">
+                <caption className="sr-only">
+                  Contenido con «me gusta», su sección y el total de votos
+                </caption>
+                <thead>
+                  <tr className="border-b border-border bg-muted/40 text-left text-xs uppercase tracking-[0.08em] text-muted-foreground">
+                    <th scope="col" className="px-4 py-3 font-medium">
+                      Contenido
+                    </th>
+                    <th scope="col" className="px-4 py-3 font-medium">
+                      Sección
+                    </th>
+                    <th scope="col" className="px-4 py-3 font-medium">
+                      Tipo
+                    </th>
+                    <th scope="col" className="px-4 py-3 text-right font-medium">
+                      Likes
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {visibleItems.map((item) => (
+                    <tr
+                      key={`${item.type}-${item.id}`}
+                      className="border-b border-border/60 last:border-0"
+                    >
+                      <td className="max-w-[22rem] px-4 py-3">
+                        <a
+                          href={publicHref(item)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="group inline-flex items-start gap-1.5 font-medium hover:text-accent"
+                        >
+                          <span className="line-clamp-2">{item.title}</span>
+                          <ExternalLink
+                            className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground group-hover:text-accent"
+                            aria-hidden="true"
+                          />
+                        </a>
+                        {item.subcategory && (
+                          <p className="mt-1 text-xs text-muted-foreground">{item.subcategory}</p>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={cn(
+                            'inline-block rounded-full border px-2.5 py-0.5 text-xs',
+                            item.section
+                              ? 'border-accent/40 bg-accent/10 text-accent'
+                              : 'border-border bg-muted/40 text-muted-foreground',
+                          )}
+                        >
+                          {item.section ?? 'Sin sección'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground">
+                        {item.type === 'POST' ? 'Artículo' : 'Proyecto'}
+                      </td>
+                      <td className="px-4 py-3 text-right font-semibold tabular-nums">
+                        {item.count.toLocaleString('es-CL')}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {visibleItems.length === 0 && (
+              <p className="px-4 py-8 text-center text-sm text-muted-foreground">
+                Ningún contenido con votos en este filtro.
+              </p>
+            )}
+          </div>
+        </section>
       )}
     </>
   );
