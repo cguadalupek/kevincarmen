@@ -582,3 +582,31 @@ model NewsletterSubscriber {
   @@index([status, createdAt])
   @@map("newsletter_subscribers")
 }
+
+/// Entidad que puede recibir «me gusta». Es un enum y no dos tablas de unión
+/// porque el like es POLIMÓRFICO: `entity` + `entityId` identifican al dueño.
+enum LikeEntity {
+  POST
+  PROJECT
+}
+
+/// Un «me gusta» anónimo. No hay FK a `posts`/`projects` (una sola tabla cubre
+/// ambos tipos), así que la existencia del destino la valida el servicio antes
+/// de escribir; si se borra la entidad, sus filas quedan huérfanas e inofensivas.
+///
+/// La identidad del visitante es una cookie (`kc_vid`), no un usuario del CMS:
+/// `@@unique([entity, entityId, visitorId])` garantiza un voto por visitante y
+/// permite alternarlo sin duplicar filas. El contador que ve el público es
+/// `COUNT(*)`, así que borrar filas es el único modo de "des-likear" en masa.
+model Like {
+  id        String     @id @default(cuid())
+  entity    LikeEntity
+  entityId  String     @map("entity_id")
+  visitorId String     @map("visitor_id")
+  createdAt DateTime   @default(now()) @map("created_at")
+
+  @@unique([entity, entityId, visitorId])
+  @@index([entity, entityId])
+  @@map("likes")
+}
+

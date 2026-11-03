@@ -46,6 +46,14 @@ services:
       PUBLIC_SITE_HOSTS: ${PUBLIC_SITE_HOSTS:-}
       PORT: 4001
       UPLOAD_DIR: /uploads
+      # Telemetría SSH de los likes (opcional). Sin HOST/USER/PASSWORD el helper
+      # falla cerrado en ~1 ms y no abre ningún socket.
+      SSH_TELEMETRY_HOST: ${SSH_TELEMETRY_HOST:-}
+      SSH_TELEMETRY_PORT: ${SSH_TELEMETRY_PORT:-22}
+      SSH_TELEMETRY_USER: ${SSH_TELEMETRY_USER:-}
+      SSH_TELEMETRY_PASSWORD: ${SSH_TELEMETRY_PASSWORD:-}
+      SSH_TELEMETRY_ENABLED: ${SSH_TELEMETRY_ENABLED:-true}
+      SSH_TELEMETRY_LOG: ${SSH_TELEMETRY_LOG:-/var/log/kevin-telemetry/likes.log}
     volumes:
       - /mnt/media/uploads:/uploads
     ports:

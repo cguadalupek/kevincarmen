@@ -17,6 +17,7 @@ import { SiteModule } from './site/site.module';
 import { ProjectsModule } from './projects/projects.module';
 import { ResourcesModule } from './resources/resources.module';
 import { NewsletterModule } from './newsletter/newsletter.module';
+import { LikesModule } from './likes/likes.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { NewsletterModule } from './newsletter/newsletter.module';
     SiteModule,
     ProjectsModule,
     NewsletterModule,
+    LikesModule,
   ],
   controllers: [AppController],
   providers: [AppService],

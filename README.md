@@ -197,6 +197,14 @@ Las migraciones viven en `apps/api/prisma/migrations/` y se aplican en orden lex
   ACTIVE / UNSUBSCRIBED) y `unsubscribedAt`. La baja es **lógica** (la fila no se borra):
   conserva el histórico de altas, y una alta posterior reactiva la misma fila.
 
+**Likes (me gusta anónimos)**:
+- `Like` (`likes`) — una fila por voto: `entity` (`LikeEntity`: POST / PROJECT),
+  `entityId` (id del artículo o proyecto) y `visitorId` (UUID de la cookie `kc_vid`).
+  `@@unique([entity, entityId, visitorId])` = un voto por visitante y contenido; el
+  contador público es `COUNT(*)`. No hay FK (el like es polimórfico): la existencia y
+  visibilidad del destino las valida el servicio antes de escribir.
+  Migración `20261103090000_add_likes`.
+
 **Otros**: `Media` (subidas), `Setting` (KV de configuración), `TimelineEvent`.
 
 ---
@@ -300,6 +308,20 @@ y `ValidationPipe` global.
   La tabla nace con la migración `20261017030000_add_newsletter_subscribers`.
 - **Health**: `GET /health`.
 
+### Likes (público)
+
+| Método | Ruta | Auth | Descripción |
+|---|---|---|---|
+| GET | `/likes?entity=POST\|PROJECT&entityId=…&visitorId=…` | — | `{entity, entityId, count, liked}`; sin `visitorId` solo el contador |
+| POST | `/likes/toggle` | — | `{entity, entityId, visitorId}` → `{count, liked}` ya persistidos (alterna el voto) |
+
+El voto se identifica con un UUID que la web guarda en la cookie `kc_vid` (no hay cuentas
+públicas). `POST /likes/toggle` está limitado con `ThrottlerGuard` a **30 peticiones por
+minuto e IP**; el identificador es falsificable por diseño, así que el contador es una
+métrica de popularidad, no una votación. Tras escribir, el servicio registra el evento
+por **SSH** en el nodo de telemetría (`apps/api/src/telemetry/ssh-telemetry.ts`) sin
+bloquear la respuesta ni poder romperla; sin `SSH_TELEMETRY_*` configurado no abre sockets.
+
 > La validación usa `ValidationPipe` global con `whitelist + forbidNonWhitelisted + transform`:
 > propiedades no declaradas en los DTOs se rechazan (400). Los DTOs de *update* deben ser
 > **clases** (no type aliases) para que la validación se aplique.
@@ -363,7 +385,7 @@ El código vive en **`apps/web/src/`** (`src/app` para rutas, `src/components`, 
 - `src/components/blog/category-badge.tsx` — badge principal + subcategoría;
   `src/components/blog/post-toc.tsx` — TOC flotante con scrollspy (FAB + hoja deslizante en móvil).
 - `src/lib/api/*.ts` — clientes tipados por recurso (`categories`, `courses`, `lab`,
-  `posts`, `projects`, `resources`, `site`, `timeline`) + `client.ts` (token, subida, revalidación).
+  `likes`, `posts`, `projects`, `resources`, `site`, `timeline`) + `client.ts` (token, subida, revalidación).
 
 ---
 
@@ -387,6 +409,10 @@ El código vive en **`apps/web/src/`** (`src/app` para rutas, `src/components`, 
 | `API_PROXY_TARGET` | web (dev) | Destino del rewrite de Next hacia NestJS |
 | `REVALIDATE_SECRET` / `NEXT_PUBLIC_REVALIDATE_SECRET` | web | Secreto compartido de `/api/revalidate` |
 | `DOCKER_BUILD` | web | `true` activa `output: 'standalone'` (lo fija el Dockerfile) |
+| `SSH_TELEMETRY_HOST` / `_PORT` / `_USER` / `_PASSWORD` | api | Nodo de telemetría de los likes por SSH. **Sin las tres primeras, la telemetría queda desactivada** (no abre sockets). La contraseña va en el `.env` del servidor, nunca en el código |
+| `SSH_TELEMETRY_ENABLED` | api | `false` desactiva la telemetría aunque haya credenciales |
+| `SSH_TELEMETRY_LOG` | api | Fichero remoto donde se añade una línea JSON por like (`/var/log/kevin-telemetry/likes.log`) |
+| `SSH_TELEMETRY_CONNECT_TIMEOUT_MS` / `_COMMAND_TIMEOUT_MS` / `_THROTTLE_MS` | api | Límites de la sesión (4000 / 3000 / 15000 por defecto) |
 
 ---
 
