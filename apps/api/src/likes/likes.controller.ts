@@ -3,6 +3,7 @@ import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { LikesService } from './likes.service';
 import { ToggleLikeDto } from './dto/toggle-like.dto';
 import { LikeStatusQueryDto } from './dto/like-status-query.dto';
+import { LikeCountsQueryDto } from './dto/like-counts-query.dto';
 
 /**
  * Likes del sitio público. Sin `JwtAuthGuard`: cualquier visitante puede leer el
@@ -20,6 +21,17 @@ export class LikesController {
   @Get()
   status(@Query() query: LikeStatusQueryDto) {
     return this.likesService.status(query.entity, query.entityId, query.visitorId);
+  }
+
+  /**
+   * `GET /likes/counts?entity=POST&ids=a,b,c` — contadores del listado.
+   * Lo consume la web en bloque para pintar las tarjetas sin una llamada por cada una.
+   */
+  @Get('counts')
+  counts(@Query() query: LikeCountsQueryDto) {
+    return this.likesService
+      .counts(query.entity, query.ids.split(','))
+      .then((counts) => ({ entity: query.entity, counts }));
   }
 
   /** `POST /likes/toggle` — devuelve `{ count, liked }` ya persistidos. */

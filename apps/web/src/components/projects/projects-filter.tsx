@@ -12,6 +12,8 @@ interface ProjectsFilterProps {
   projects: PublicProject[];
   /** Clasificaciones creadas en el panel (ordenadas por `position`). */
   categories: ProjectCategoryOption[];
+  /** Contadores de «me gusta» por id de proyecto (una sola llamada, en el servidor). */
+  likeCounts?: Record<string, number>;
 }
 
 /**
@@ -36,7 +38,7 @@ function categoryName(project: PublicProject): string | null {
   return project.projectCategory?.name ?? project.category ?? null;
 }
 
-export function ProjectsFilter({ projects, categories }: ProjectsFilterProps) {
+export function ProjectsFilter({ projects, categories, likeCounts = {} }: ProjectsFilterProps) {
   const [selected, setSelected] = useState<string>(ALL);
   const [page, setPage] = useState(1);
 
@@ -79,7 +81,9 @@ export function ProjectsFilter({ projects, categories }: ProjectsFilterProps) {
 
   const visible = useMemo(
     () =>
-      selected === ALL ? projects : projects.filter((project) => categoryName(project) === selected),
+      selected === ALL
+        ? projects
+        : projects.filter((project) => categoryName(project) === selected),
     [projects, selected],
   );
 
@@ -145,6 +149,11 @@ export function ProjectsFilter({ projects, categories }: ProjectsFilterProps) {
                   repository={project.repository ?? undefined}
                   demo={project.demo ?? undefined}
                   coverImage={project.coverImage ?? undefined}
+                  like={{
+                    entity: 'PROJECT',
+                    entityId: project.id,
+                    count: likeCounts[project.id] ?? 0,
+                  }}
                 />
               </StaggerItem>
             ))}

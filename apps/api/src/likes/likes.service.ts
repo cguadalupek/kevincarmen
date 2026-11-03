@@ -46,6 +46,24 @@ export class LikesService {
   }
 
   /**
+   * Contadores de VARIOS contenidos en una sola consulta (los listados pintan 4-6
+   * tarjetas por página; una petición por tarjeta sería absurdo).
+   * Los ids sin votos no aparecen en el mapa: la web los trata como 0.
+   */
+  async counts(entity: LikeEntity, entityIds: string[]): Promise<Record<string, number>> {
+    const ids = Array.from(new Set(entityIds.filter(Boolean)));
+    if (ids.length === 0) return {};
+
+    const grouped = await this.prisma.like.groupBy({
+      by: ['entityId'],
+      where: { entity, entityId: { in: ids } },
+      _count: { _all: true },
+    });
+
+    return Object.fromEntries(grouped.map((row) => [row.entityId, row._count._all]));
+  }
+
+  /**
    * Alterna el voto del visitante y devuelve el contador ya actualizado.
    * Idempotente por visitante gracias a `@@unique([entity, entityId, visitorId])`.
    */

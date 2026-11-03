@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { getProjectCategories, getPublishedProjects } from '@/lib/api/projects';
+import { getLikeCounts } from '@/lib/api/likes';
 import { FolderKanban } from 'lucide-react';
 import { ProjectsFilter } from '@/components/projects/projects-filter';
 import { FadeIn } from '@/components/motion/fade-in';
@@ -20,11 +21,20 @@ export default async function ProjectsPage() {
     getProjectCategories(),
   ]);
 
+  // Una sola llamada para los contadores de todas las tarjetas del listado.
+  const likeCounts = await getLikeCounts(
+    'PROJECT',
+    projects.map((project) => project.id),
+  );
+
   return (
     <div className="py-16">
       <div className="section-container">
         <FadeIn>
-          <div className="flex items-center gap-3 text-accent"><FolderKanban className="h-6 w-6" /><span className="font-mono text-sm">/ proyectos</span></div>
+          <div className="flex items-center gap-3 text-accent">
+            <FolderKanban className="h-6 w-6" />
+            <span className="font-mono text-sm">/ proyectos</span>
+          </div>
           <h1 className="section-title mt-3">Portfolio</h1>
           <p className="section-subtitle">
             Proyectos de software, infraestructura y herramientas open source.
@@ -32,9 +42,11 @@ export default async function ProjectsPage() {
         </FadeIn>
 
         {projects.length > 0 ? (
-          <ProjectsFilter projects={projects} categories={categories} />
+          <ProjectsFilter projects={projects} categories={categories} likeCounts={likeCounts} />
         ) : (
-          <div className="mt-12 rounded-xl border border-border bg-card/40 p-10 text-center text-muted-foreground">Aún no hay proyectos publicados.</div>
+          <div className="mt-12 rounded-xl border border-border bg-card/40 p-10 text-center text-muted-foreground">
+            Aún no hay proyectos publicados.
+          </div>
         )}
       </div>
     </div>

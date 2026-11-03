@@ -10,6 +10,7 @@ import type { CategoryTreeNode } from '@/lib/api/categories';
 import { LEGACY_CATEGORY_SLUG_MAP } from '@/lib/categories';
 import { FadeIn } from '@/components/motion/fade-in';
 import { CategoryBadge } from '@/components/blog/category-badge';
+import { LikeButton } from '@/components/blog/like-button';
 import { Pagination } from '@/components/ui/pagination';
 import {
   ALL_CATEGORIES,
@@ -20,6 +21,8 @@ import {
 interface BlogExplorerProps {
   posts: PublicPost[];
   categoryTree: CategoryTreeNode[];
+  /** Contadores por id de artículo (una sola llamada, en el servidor). */
+  likeCounts?: Record<string, number>;
   /** Slug de la categoría (o slug de la taxonomía antigua), tal cual en la URL. */
   selectedCategory: string | null;
   /** Slug de la subcategoría. */
@@ -29,6 +32,7 @@ interface BlogExplorerProps {
 export function BlogExplorer({
   posts,
   categoryTree,
+  likeCounts = {},
   // Props con el estado de la URL (`?categoria=` / `?subcategoria=`).
   selectedCategory: categoryParam,
   selectedSubcategory: subcategoryParam,
@@ -138,7 +142,8 @@ export function BlogExplorer({
           <div className="min-w-0 md:col-start-1 md:row-start-1">
             <h1 className="section-title">Blog</h1>
             <p className="section-subtitle">
-              Tutoriales, reflexiones y documentación técnica organizados por categoría y subcategoría.
+              Tutoriales, reflexiones y documentación técnica organizados por categoría y
+              subcategoría.
             </p>
           </div>
 
@@ -174,7 +179,6 @@ export function BlogExplorer({
             )}
           </div>
         </div>
-
       </div>
 
       {showDropdown && filteredPosts.length > 0 && (
@@ -254,6 +258,15 @@ export function BlogExplorer({
                             Sin miniatura
                           </div>
                         )}
+                        {/* El like vive en la MINIATURA, no dentro del artículo. */}
+                        <div className="absolute right-3 top-3 z-10">
+                          <LikeButton
+                            entity="POST"
+                            entityId={featuredPost.id}
+                            initialCount={likeCounts[featuredPost.id] ?? 0}
+                            variant="pill"
+                          />
+                        </div>
                       </div>
                       <div className="flex flex-col justify-center p-6 md:p-8">
                         <div className="mb-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
@@ -320,6 +333,15 @@ export function BlogExplorer({
                                 Sin miniatura
                               </div>
                             )}
+                            {/* El like vive en la MINIATURA, no dentro del artículo. */}
+                            <div className="absolute right-3 top-3 z-10">
+                              <LikeButton
+                                entity="POST"
+                                entityId={post.id}
+                                initialCount={likeCounts[post.id] ?? 0}
+                                variant="pill"
+                              />
+                            </div>
                           </div>
                           <div className="flex flex-1 flex-col p-5">
                             <div className="mb-3 flex flex-wrap items-center gap-3 text-xs text-muted-foreground">

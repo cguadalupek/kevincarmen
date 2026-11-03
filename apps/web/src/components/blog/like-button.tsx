@@ -44,15 +44,31 @@ interface LikeButtonProps {
   entityId: string;
   /** Contador renderizado en el servidor: se pinta al instante, sin salto de layout. */
   initialCount?: number;
+  /**
+   * `pill` = control compacto para superponer a la miniatura de una tarjeta.
+   * `inline` = botón con texto, para bloques de contenido.
+   */
+  variant?: 'pill' | 'inline';
   className?: string;
 }
 
 /**
  * Botón «me gusta» con respuesta optimista: el estado visual cambia al pulsar y, si
  * la API falla, se revierte y se muestra el mensaje. Nunca lanza: un fallo del
- * contador no puede romper la lectura del artículo.
+ * contador no puede romper la navegación de quien lee.
+ *
+ * Se monta SOBRE la miniatura de las tarjetas del listado, dentro del `<Link>` de la
+ * tarjeta, así que el clic hace `preventDefault` + `stopPropagation` para marcar el
+ * like sin abrir el artículo/proyecto (mismo patrón que los iconos GitHub/Demo de
+ * `portfolio-card`).
  */
-export function LikeButton({ entity, entityId, initialCount = 0, className }: LikeButtonProps) {
+export function LikeButton({
+  entity,
+  entityId,
+  initialCount = 0,
+  variant = 'inline',
+  className,
+}: LikeButtonProps) {
   const [count, setCount] = useState(initialCount);
   const [liked, setLiked] = useState(false);
   const [visitorId, setVisitorId] = useState<string | null>(null);
@@ -80,31 +96,40 @@ export function LikeButton({ entity, entityId, initialCount = 0, className }: Li
     };
   }, [entity, entityId]);
 
-  const handleClick = useCallback(async () => {
-    if (pending || !visitorId) return;
+  const handleClick = useCallback(
+    async (event: React.MouseEvent<HTMLButtonElement>) => {
+      // La tarjeta entera es un enlace: el like no debe navegar.
+      event.preventDefault();
+      event.stopPropagation();
 
-    const previous = { count, liked };
-    setPending(true);
-    setError(null);
-    // Optimista: el usuario ve el cambio ya, sin esperar a la red.
-    setLiked(!previous.liked);
-    setCount(Math.max(0, previous.count + (previous.liked ? -1 : 1)));
+      if (pending || !visitorId) return;
 
-    try {
-      const status = await toggleLike(entity, entityId, visitorId);
-      setCount(status.count);
-      setLiked(status.liked);
-    } catch (err) {
-      setLiked(previous.liked);
-      setCount(previous.count);
-      setError(err instanceof Error ? err.message : 'No se pudo guardar el like.');
-    } finally {
-      setPending(false);
-    }
-  }, [count, entity, entityId, liked, pending, visitorId]);
+      const previous = { count, liked };
+      setPending(true);
+      setError(null);
+      // Optimista: el usuario ve el cambio ya, sin esperar a la red.
+      setLiked(!previous.liked);
+      setCount(Math.max(0, previous.count + (previous.liked ? -1 : 1)));
+
+      try {
+        const status = await toggleLike(entity, entityId, visitorId);
+        setCount(status.count);
+        setLiked(status.liked);
+      } catch (err) {
+        setLiked(previous.liked);
+        setCount(previous.count);
+        setError(err instanceof Error ? err.message : 'No se pudo guardar el like.');
+      } finally {
+        setPending(false);
+      }
+    },
+    [count, entity, entityId, liked, pending, visitorId],
+  );
+
+  const isPill = variant === 'pill';
 
   return (
-    <div className={cn('flex flex-wrap items-center gap-3', className)}>
+    <div className={cn(isPill ? 'inline-flex' : 'flex flex-wrap items-center gap-3', className)}>
       <button
         type="button"
         onClick={handleClick}
@@ -112,18 +137,23 @@ export function LikeButton({ entity, entityId, initialCount = 0, className }: Li
         aria-pressed={liked}
         aria-label={liked ? 'Quitar me gusta' : 'Me gusta'}
         className={cn(
-          'inline-flex min-h-[44px] items-center gap-2 rounded-full border px-4 text-sm font-medium',
+          'inline-flex items-center rounded-full border font-medium',
           'transition-colors motion-reduce:transition-none',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background',
-          liked
-            ? 'border-accent bg-accent/10 text-accent'
-            : 'border-border bg-muted/40 text-muted-foreground hover:border-accent hover:text-accent',
           'disabled:cursor-not-allowed disabled:opacity-70',
+          isPill
+            ? 'h-9 gap-1.5 bg-background/85 px-3 text-xs shadow-sm backdrop-blur-sm'
+            : 'min-h-[44px] gap-2 px-4 text-sm',
+          liked
+            ? 'border-accent/60 bg-accent/15 text-accent'
+            : 'border-border bg-background/85 text-muted-foreground hover:border-accent hover:text-accent',
+          !isPill && !liked && 'bg-muted/40',
         )}
       >
         <Heart
           className={cn(
-            'h-4 w-4 transition-colors motion-reduce:transition-none',
+            'shrink-0 transition-colors motion-reduce:transition-none',
+            isPill ? 'h-3.5 w-3.5' : 'h-4 w-4',
             liked && 'fill-current',
           )}
           aria-hidden="true"
@@ -132,9 +162,11 @@ export function LikeButton({ entity, entityId, initialCount = 0, className }: Li
         <span className="sr-only">{liked ? 'me gusta (ya marcado)' : 'me gusta'}</span>
       </button>
 
-      <span aria-live="polite" className="text-xs text-muted-foreground">
-        {error ?? ''}
-      </span>
+      {!isPill && (
+        <span aria-live="polite" className="text-xs text-muted-foreground">
+          {error ?? ''}
+        </span>
+      )}
     </div>
   );
 }

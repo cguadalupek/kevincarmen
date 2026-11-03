@@ -19,24 +19,31 @@ export interface LikeStatus {
 }
 
 /**
- * Contador público de una entidad, sin identidad de visitante.
+ * Contadores de varias publicaciones en UNA llamada (los listados pintan 4-6
+ * tarjetas; una petición por tarjeta sería absurdo).
  *
- * Pensado para Server Components: si la API falla o el contenido no existe, devuelve
- * `0` en vez de tumbar la página (un contador no puede romper un artículo).
+ * Pensado para Server Components: si la API falla, devuelve `{}` y las tarjetas se
+ * pintan con 0 — un contador no puede tumbar un listado.
  */
-export async function getLikeCount(entity: LikeEntity, entityId: string): Promise<number> {
+export async function getLikeCounts(
+  entity: LikeEntity,
+  entityIds: string[],
+): Promise<Record<string, number>> {
+  const ids = Array.from(new Set(entityIds.filter(Boolean)));
+  if (ids.length === 0) return {};
+
   try {
     const res = await fetch(
-      `${API_URL}/likes?entity=${entity}&entityId=${encodeURIComponent(entityId)}`,
+      `${API_URL}/likes/counts?entity=${entity}&ids=${encodeURIComponent(ids.join(','))}`,
       { cache: 'no-store' },
     );
 
-    if (!res.ok) return 0;
+    if (!res.ok) return {};
 
-    const data = (await res.json()) as Partial<LikeStatus>;
-    return typeof data.count === 'number' ? data.count : 0;
+    const data = (await res.json()) as { counts?: Record<string, number> };
+    return data.counts ?? {};
   } catch {
-    return 0;
+    return {};
   }
 }
 

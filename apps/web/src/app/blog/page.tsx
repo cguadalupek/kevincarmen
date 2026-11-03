@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { BlogExplorer } from '@/components/blog/blog-explorer';
 import { getPublishedPosts } from '@/lib/api/posts';
 import { getCategoryTree } from '@/lib/api/categories';
+import { getLikeCounts } from '@/lib/api/likes';
 
 export const metadata: Metadata = {
   title: 'Blog',
@@ -36,10 +37,17 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
     }),
   ]);
 
+  // Una sola llamada para los contadores de todas las tarjetas del listado.
+  const likeCounts = await getLikeCounts(
+    'POST',
+    posts.map((post) => post.id),
+  );
+
   return (
     <BlogExplorer
       posts={posts}
       categoryTree={categoryTree}
+      likeCounts={likeCounts}
       selectedCategory={selectedCategory}
       selectedSubcategory={selectedSubcategory}
     />

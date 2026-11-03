@@ -313,13 +313,16 @@ y `ValidationPipe` global.
 | Método | Ruta | Auth | Descripción |
 |---|---|---|---|
 | GET | `/likes?entity=POST\|PROJECT&entityId=…&visitorId=…` | — | `{entity, entityId, count, liked}`; sin `visitorId` solo el contador |
+| GET | `/likes/counts?entity=POST\|PROJECT&ids=a,b,c` | — | `{entity, counts: {id: n}}`; contadores de un listado en **una** llamada (ids sin votos no aparecen) |
 | POST | `/likes/toggle` | — | `{entity, entityId, visitorId}` → `{count, liked}` ya persistidos (alterna el voto) |
 
 El voto se identifica con un UUID que la web guarda en la cookie `kc_vid` (no hay cuentas
 públicas). `POST /likes/toggle` está limitado con `ThrottlerGuard` a **30 peticiones por
 minuto e IP**; el identificador es falsificable por diseño, así que el contador es una
-métrica de popularidad, no una votación. Tras escribir, el servicio registra el evento
-por **SSH** en el nodo de telemetría (`apps/api/src/telemetry/ssh-telemetry.ts`) sin
+métrica de popularidad, no una votación. El control vive **en la miniatura de las tarjetas**
+del listado (`/blog` y `/proyectos`, `LikeButton` con `variant="pill"`), no dentro del artículo:
+los contadores se piden en bloque al pintar el listado. Tras escribir, el servicio registra
+el evento por **SSH** en el nodo de telemetría (`apps/api/src/telemetry/ssh-telemetry.ts`) sin
 bloquear la respuesta ni poder romperla; sin `SSH_TELEMETRY_*` configurado no abre sockets.
 
 > La validación usa `ValidationPipe` global con `whitelist + forbidNonWhitelisted + transform`:

@@ -10,8 +10,6 @@ import { MarkdownContent } from '@/components/blog/markdown-content';
 import { AuthorBadge } from '@/components/blog/author-badge';
 import { PostToc, PostTocFab } from '@/components/blog/post-toc';
 import { ImageGallery } from '@/components/ui/image-gallery';
-import { LikeButton } from '@/components/blog/like-button';
-import { getLikeCount } from '@/lib/api/likes';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -37,7 +35,6 @@ const statusLabels = {
 export default async function ProjectDetailPage({ params }: PageProps) {
   const { slug } = await params;
   const [project, site] = await Promise.all([getProjectBySlug(slug), getSiteContent()]);
-  const likeCount = project ? await getLikeCount('PROJECT', project.id) : 0;
   if (!project)
     return (
       <div className="section-container py-24">
@@ -141,10 +138,6 @@ export default async function ProjectDetailPage({ params }: PageProps) {
                 <ImageGallery images={project.gallery} title={project.title} />
               </section>
             )}
-
-            <div className="mt-10">
-              <LikeButton entity="PROJECT" entityId={project.id} initialCount={likeCount} />
-            </div>
 
             <PostTocFab headings={headings} />
           </div>

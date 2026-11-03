@@ -15,8 +15,6 @@ import { CategoryBadge } from '@/components/blog/category-badge';
 import { AuthorBadge } from '@/components/blog/author-badge';
 import { AuthorCard } from '@/components/blog/author-card';
 import { PostToc, PostTocFab } from '@/components/blog/post-toc';
-import { LikeButton } from '@/components/blog/like-button';
-import { getLikeCount } from '@/lib/api/likes';
 
 interface BlogPostPageProps {
   params: Promise<{ slug: string }>;
@@ -70,7 +68,6 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
 
   const headings = extractHeadings(post.content);
   const author = resolveAuthor(site?.author, post.author);
-  const likeCount = await getLikeCount('POST', post.id);
 
   return (
     <article className="py-16">
@@ -149,10 +146,6 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             <PostTocFab headings={headings} />
 
             <MarkdownContent content={post.content} title={post.title} headings={headings} />
-
-            <div className="mt-10">
-              <LikeButton entity="POST" entityId={post.id} initialCount={likeCount} />
-            </div>
 
             {post.tags.length > 0 && (
               <footer className="mt-12 border-t border-border pt-8">
