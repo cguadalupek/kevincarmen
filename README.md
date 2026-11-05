@@ -54,6 +54,7 @@ Comandos raíz: `pnpm dev`, `pnpm build`, `pnpm lint`, `pnpm format` (prettier).
 Visitantes ──HTTPS──▶ Cloudflare Edge (túnel) ──▶ nginx:80
                                                    ├── /              → Web :3000 (Next SSR)
                                                    ├── /api/v1        → API :4001 (NestJS)
+                                                   ├── /analytics/    → Umami :3000 (LXC 119)
                                                    └── /uploads/posts → volumen de subidas
 Web ──API_INTERNAL_URL──▶ API ──▶ PostgreSQL :5432
 ```
@@ -74,6 +75,9 @@ Web ──API_INTERNAL_URL──▶ API ──▶ PostgreSQL :5432
 - **LXC 108** `kevincarmen` sobre **Proxmox VE** (Debian 12, 4 GB RAM + 512 MB swap, 20 GB disco).
 - **Docker Compose** con 5 servicios desde el worktree **`/var/www/kevincarmen`**.
 - **Cloudflare Tunnel** (`cloudflared`, servicio systemd del host) expone el sitio sin IP pública.
+- **Analítica propia**: **Umami 3** en el **LXC 119** (`192.168.1.119`, Docker Compose con PostgreSQL 16,
+  discos sobre el HDD `storage1`). El tracker se sirve por `/analytics/script.js` a través de nginx; el
+  panel se abre en `http://192.168.1.119:3000` (usuario `admin`).
 - **Git bare** en **`/srv/git/kevincarmen.git`** + hook `post-receive` (ver §4).
 - **Subidas** en `/mnt/media/uploads` (dispositivo loop de 98 GB, ~38 MB en uso).
 - **Backup**: `kevincarmen-backup.timer` (03:30, dump de la BD al SSD + tar de subidas a `/mnt/media/backups`).
