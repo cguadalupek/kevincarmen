@@ -1,7 +1,14 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { config as loadEnv } from 'dotenv';
+import { join } from 'path';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+
+// Variables de entorno desde `apps/api/.env` (dev: `dist/..`). En Docker el fichero
+// no existe: los valores llegan del `.env` del servidor vía `docker-compose.yml`.
+// `override: false` deja ganar siempre al entorno real del proceso.
+loadEnv({ path: join(__dirname, '..', '.env'), override: false });
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

@@ -306,6 +306,12 @@ y `ValidationPipe` global.
   `POST /newsletter/unsubscribe` (baja pública por email), `GET /newsletter/admin/all`,
   `GET /newsletter/admin/:id`, `PUT /newsletter/:id`, `DELETE /newsletter/:id` (JWT).
   La tabla nace con la migración `20261017030000_add_newsletter_subscribers`.
+- **Contact**: `POST /contact` (público, sin JWT) → `{ success: true }`. Valida
+  `name`, `email` y `message` y reenvía el mensaje al chat de Telegram configurado
+  (`TELEGRAM_BOT_TOKEN` / `TELEGRAM_CHAT_ID`) con `parse_mode: 'HTML'` y el texto del
+  visitante escapado. No persiste nada en Postgres: es un puente al bot. Limitado con
+  `ThrottlerGuard` a **5 mensajes por minuto e IP**; sin credenciales responde **503**
+  (nunca acepta y pierde el mensaje) y si Telegram falla, **502**.
 - **Health**: `GET /health`.
 
 ### Likes (público)
@@ -423,6 +429,8 @@ El código vive en **`apps/web/src/`** (`src/app` para rutas, `src/components`, 
 | `SSH_TELEMETRY_ENABLED` | api | `false` desactiva la telemetría aunque haya credenciales |
 | `SSH_TELEMETRY_LOG` | api | Fichero remoto donde se añade una línea JSON por like (`/var/log/kevin-telemetry/likes.log`) |
 | `SSH_TELEMETRY_CONNECT_TIMEOUT_MS` / `_COMMAND_TIMEOUT_MS` / `_THROTTLE_MS` | api | Límites de la sesión (4000 / 3000 / 15000 por defecto) |
+| `TELEGRAM_BOT_TOKEN` | api | Token del bot que recibe los mensajes de `/contacto`. En el servidor va en el `.env` de `/var/www/kevincarmen`; en local, en `apps/api/.env` |
+| `TELEGRAM_CHAT_ID` | api | Chat o grupo destino de esos avisos. **Sin token o sin chat id, `POST /contact` responde 503** |
 
 ---
 

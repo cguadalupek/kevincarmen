@@ -54,6 +54,10 @@ services:
       SSH_TELEMETRY_PASSWORD: ${SSH_TELEMETRY_PASSWORD:-}
       SSH_TELEMETRY_ENABLED: ${SSH_TELEMETRY_ENABLED:-true}
       SSH_TELEMETRY_LOG: ${SSH_TELEMETRY_LOG:-/var/log/kevin-telemetry/likes.log}
+      # Formulario de contacto → bot de Telegram (público, sin JWT).
+      # Sin TOKEN/CHAT_ID el endpoint responde 503 en vez de perder el mensaje.
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
     volumes:
       - /mnt/media/uploads:/uploads
     ports:
