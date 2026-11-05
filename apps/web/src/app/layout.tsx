@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter, JetBrains_Mono } from 'next/font/google';
-import Script from 'next/script';
 import { siteConfig } from '@kevincarmen/config';
 import { RootShell } from '@/components/layout/root-shell';
 import './globals.css';
@@ -67,14 +66,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="es" className="dark" data-scroll-behavior="smooth">
       <body className={`${inter.variable} ${jetbrains.variable} min-h-screen`}>
         <RootShell>{children}</RootShell>
-        {/* Analitica propia sin cookies (Umami en el LXC 119). Asincrona: no bloquea el render.
-            El script trae meta-ajustes propios; data-website-id identifica este sitio. */}
-        <Script
+        {/* Analitica propia sin cookies (Umami, LXC 119). `async` no bloquea el render;
+            nginx sirve /analytics/script.js desde el mismo origen del sitio. */}
+        <script
           async
-          defer
           src="/analytics/script.js"
           data-website-id="a5943e1c-ce7d-4ad3-9b14-4bc00ed6435f"
-          strategy="afterInteractive"
         />
       </body>
     </html>
