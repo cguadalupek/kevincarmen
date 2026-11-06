@@ -360,118 +360,6 @@
     @apply my-0;
   }
 
-  /* Syntax highlighting — tema oscuro alineado al sitio */
-  .hljs {
-    @apply text-slate-200;
-  }
-
-  .hljs-comment,
-  .hljs-quote {
-    @apply text-slate-500;
-  }
-
-  .hljs-keyword,
-  .hljs-selector-tag,
-  .hljs-built_in {
-    @apply text-cyan-400;
-  }
-
-  .hljs-string,
-  .hljs-attr,
-  .hljs-attribute {
-    @apply text-emerald-400;
-  }
-
-  .hljs-number,
-  .hljs-literal {
-    @apply text-amber-300;
-  }
-
-  .hljs-title,
-  .hljs-section,
-  .hljs-name {
-    @apply text-sky-300;
-  }
-
-  .hljs-variable,
-  .hljs-template-variable {
-    @apply text-yellow-300;
-  }
-
-  .hljs-type,
-  .hljs-class .hljs-title {
-    @apply text-violet-300;
-  }
-
-  /* ── Consola de Windows: cmd / dos / batch ───────────────────────────────
-     highlight.js resuelve los alias `cmd`, `dos` y `batch` a UNA sola
-     gramática («Batch file (DOS)»). El bloque se pinta como CUALQUIER otra
-     tarjeta de código: mismas clases de contenedor (.code-block/.code-block-*:
-     fondo, borde, radio, relleno), misma etiqueta cian del header (text-accent)
-     y mismo texto claro del cuerpo (el `text-slate-200` de `.hljs`).
-
-     Lo único propio son los TONOS de los tokens, con la paleta ANSI «Campbell»
-     de cmd.exe: comandos en cian, %VARIABLES% en amarillo, etiquetas en verde.
-
-     El selector va sobre el <code class="language-…"> porque en el sitio
-     público y en el preview del editor los <span class="hljs-…"> cuelgan del
-     mismo elemento: una sola regla cubre ambos contextos. */
-  code:is(
-      [class*='language-dos'],
-      [class*='language-cmd'],
-      [class*='language-batch'],
-      [class*='language-bat']
-    ) {
-    --wc-comment: #767676;
-    --wc-keyword: #3b78ff;
-    --wc-builtin: #61d6d6;
-    --wc-variable: #f9f1a5;
-    --wc-number: #c19c00;
-    --wc-label: #16c60c;
-    --wc-quote: #f2f2f2;
-  }
-
-  /* `rem` / `::` — la salida apagada de la consola */
-  :is(code[class*='language-dos'], code[class*='language-cmd'], code[class*='language-batch'], code[class*='language-bat'])
-    :is(.hljs-comment, .hljs-quote) {
-    color: var(--wc-comment);
-    font-style: italic;
-  }
-
-  /* if / goto / for / call — flujo de control */
-  :is(code[class*='language-dos'], code[class*='language-cmd'], code[class*='language-batch'], code[class*='language-bat'])
-    :is(.hljs-keyword, .hljs-selector-tag, .hljs-selector-id, .hljs-literal) {
-    color: var(--wc-keyword);
-  }
-
-  /* echo / dir / copy / set — los comandos del intérprete */
-  :is(code[class*='language-dos'], code[class*='language-cmd'], code[class*='language-batch'], code[class*='language-bat'])
-    :is(.hljs-built_in, .hljs-meta, .hljs-doctag, .hljs-title) {
-    color: var(--wc-builtin);
-  }
-
-  /* %VARIABLE% / !VARIABLE! / %1 */
-  :is(code[class*='language-dos'], code[class*='language-cmd'], code[class*='language-batch'], code[class*='language-bat'])
-    :is(.hljs-variable, .hljs-template-variable) {
-    color: var(--wc-variable);
-  }
-
-  /* Etiquetas: :inicio, goto inicio */
-  :is(code[class*='language-dos'], code[class*='language-cmd'], code[class*='language-batch'], code[class*='language-bat'])
-    :is(.hljs-function, .hljs-section, .hljs-symbol) {
-    color: var(--wc-label);
-  }
-
-  :is(code[class*='language-dos'], code[class*='language-cmd'], code[class*='language-batch'], code[class*='language-bat'])
-    .hljs-number {
-    color: var(--wc-number);
-  }
-
-  :is(code[class*='language-dos'], code[class*='language-cmd'], code[class*='language-batch'], code[class*='language-bat'])
-    :is(.hljs-string, .hljs-attr, .hljs-attribute, .hljs-name) {
-    color: var(--wc-quote);
-  }
-
   /* Universe animated background */
   .universe-bg {
     @apply pointer-events-none fixed inset-0 z-0 overflow-hidden;
@@ -772,4 +660,124 @@
   .gallery-viewer-image {
     animation: none !important;
   }
+}
+
+/* ── Resaltado de sintaxis (highlight.js) ─────────────────────────────────
+   Este bloque va FUERA de `@layer`: Tailwind descarta el CSS de una capa
+   cuando su selector no aparece literalmente en los archivos de `content`, y
+   las clases `hljs-*` las genera highlight.js en tiempo de ejecución (nunca
+   están escritas en el código fuente). Dentro de `@layer components` se caían
+   del bundle y TODOS los bloques se pintaban con un único gris, sin colores.
+   Sin capa se emiten siempre y ganan a las utilidades de `@layer utilities`. */
+
+/* Syntax highlighting — tema oscuro alineado al sitio */
+.hljs {
+  @apply text-slate-200;
+}
+
+.hljs-comment,
+.hljs-quote {
+  @apply text-slate-500;
+}
+
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-built_in {
+  @apply text-cyan-400;
+}
+
+.hljs-string,
+.hljs-attr,
+.hljs-attribute {
+  @apply text-emerald-400;
+}
+
+.hljs-number,
+.hljs-literal {
+  @apply text-amber-300;
+}
+
+.hljs-title,
+.hljs-section,
+.hljs-name {
+  @apply text-sky-300;
+}
+
+.hljs-variable,
+.hljs-template-variable {
+  @apply text-yellow-300;
+}
+
+.hljs-type,
+.hljs-class .hljs-title {
+  @apply text-violet-300;
+}
+
+/* ── Consola de Windows: cmd / dos / batch ───────────────────────────────
+   highlight.js resuelve los alias `cmd`, `dos` y `batch` a UNA sola
+   gramática («Batch file (DOS)»). El bloque se pinta como CUALQUIER otra
+   tarjeta de código: mismas clases de contenedor (.code-block/.code-block-*:
+   fondo, borde, radio, relleno), misma etiqueta cian del header (text-accent)
+   y mismo texto claro del cuerpo (el `text-slate-200` de `.hljs`).
+
+   Lo único propio son los TONOS de los tokens, con la paleta ANSI «Campbell»
+   de cmd.exe: comandos en cian, %VARIABLES% en amarillo, etiquetas en verde.
+
+   El selector va sobre el <code class="language-…"> porque en el sitio
+   público y en el preview del editor los <span class="hljs-…"> cuelgan del
+   mismo elemento: una sola regla cubre ambos contextos. */
+code:is(
+    [class*='language-dos'],
+    [class*='language-cmd'],
+    [class*='language-batch'],
+    [class*='language-bat']
+  ) {
+  --wc-comment: #767676;
+  --wc-keyword: #3b78ff;
+  --wc-builtin: #61d6d6;
+  --wc-variable: #f9f1a5;
+  --wc-number: #c19c00;
+  --wc-label: #16c60c;
+  --wc-quote: #f2f2f2;
+}
+
+/* `rem` / `::` — la salida apagada de la consola */
+:is(code[class*='language-dos'], code[class*='language-cmd'], code[class*='language-batch'], code[class*='language-bat'])
+  :is(.hljs-comment, .hljs-quote) {
+  color: var(--wc-comment);
+  font-style: italic;
+}
+
+/* if / goto / for / call — flujo de control */
+:is(code[class*='language-dos'], code[class*='language-cmd'], code[class*='language-batch'], code[class*='language-bat'])
+  :is(.hljs-keyword, .hljs-selector-tag, .hljs-selector-id, .hljs-literal) {
+  color: var(--wc-keyword);
+}
+
+/* echo / dir / copy / set — los comandos del intérprete */
+:is(code[class*='language-dos'], code[class*='language-cmd'], code[class*='language-batch'], code[class*='language-bat'])
+  :is(.hljs-built_in, .hljs-meta, .hljs-doctag, .hljs-title) {
+  color: var(--wc-builtin);
+}
+
+/* %VARIABLE% / !VARIABLE! / %1 */
+:is(code[class*='language-dos'], code[class*='language-cmd'], code[class*='language-batch'], code[class*='language-bat'])
+  :is(.hljs-variable, .hljs-template-variable) {
+  color: var(--wc-variable);
+}
+
+/* Etiquetas: :inicio, goto inicio */
+:is(code[class*='language-dos'], code[class*='language-cmd'], code[class*='language-batch'], code[class*='language-bat'])
+  :is(.hljs-function, .hljs-section, .hljs-symbol) {
+  color: var(--wc-label);
+}
+
+:is(code[class*='language-dos'], code[class*='language-cmd'], code[class*='language-batch'], code[class*='language-bat'])
+  .hljs-number {
+  color: var(--wc-number);
+}
+
+:is(code[class*='language-dos'], code[class*='language-cmd'], code[class*='language-batch'], code[class*='language-bat'])
+  :is(.hljs-string, .hljs-attr, .hljs-attribute, .hljs-name) {
+  color: var(--wc-quote);
 }
