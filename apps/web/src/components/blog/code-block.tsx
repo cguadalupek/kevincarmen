@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Check, Copy } from 'lucide-react';
-import { getLanguageLabel, isWindowsConsoleLanguage, resolveLanguageId } from '@/lib/editor/languages';
+import { getLanguageLabel, resolveLanguageId } from '@/lib/editor/languages';
 import { highlightCode } from '@/lib/editor/highlight';
 
 interface CodeBlockProps {
@@ -13,9 +13,8 @@ interface CodeBlockProps {
 export function CodeBlock({ code, language = 'plaintext' }: CodeBlockProps) {
   const [copied, setCopied] = useState(false);
   // `cmd`/`dos`/`batch` son la misma gramática: el bloque se marca con el id
-  // canónico (`language-dos`) y recibe la paleta de consola de Windows por CSS.
+  // canónico (`language-dos`) y el CSS aplica los tonos de consola de Windows.
   const canonicalLanguage = resolveLanguageId(language);
-  const isWindowsConsole = isWindowsConsoleLanguage(language);
   const highlighted = highlightCode(code, canonicalLanguage);
   const label = getLanguageLabel(language);
 
@@ -26,7 +25,7 @@ export function CodeBlock({ code, language = 'plaintext' }: CodeBlockProps) {
   }
 
   return (
-    <div className={isWindowsConsole ? 'code-block code-block--winconsole' : 'code-block'}>
+    <div className="code-block">
       <div className="code-block-header">
         <span className="code-block-lang">{label}</span>
         <button

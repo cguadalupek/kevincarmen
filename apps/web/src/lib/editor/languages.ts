@@ -32,11 +32,6 @@ export function resolveLanguageId(id: string): string {
   return LANGUAGE_ALIASES[normalized] ?? normalized;
 }
 
-/** ¿El lenguaje es un script de consola de Windows (`cmd`/`dos`/`batch`)? */
-export function isWindowsConsoleLanguage(id: string): boolean {
-  return resolveLanguageId(id) === 'dos';
-}
-
 export const CODE_LANGUAGES: CodeLanguage[] = [
   { id: 'plaintext', label: 'Texto plano' },
   { id: 'powershell', label: 'PowerShell' },

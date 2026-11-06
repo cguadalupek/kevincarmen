@@ -404,27 +404,24 @@
   }
 
   /* ── Consola de Windows: cmd / dos / batch ───────────────────────────────
-     highlight.js resuelve los alias `cmd`, `dos` y `bat`/`batch` a UNA sola
-     gramática («Batch file (DOS)»), así que los tres bloques comparten este
-     esquema. Colores: paleta ANSI «Campbell» —la de cmd.exe y Windows Terminal
-     por defecto— sobre el negro de consola (#0C0C0C) y el gris de texto
-     (#CCCCCC) de cmd.exe.
+     highlight.js resuelve los alias `cmd`, `dos` y `batch` a UNA sola
+     gramática («Batch file (DOS)»). El bloque se pinta como CUALQUIER otra
+     tarjeta de código: mismas clases de contenedor (.code-block/.code-block-*:
+     fondo, borde, radio, relleno), misma etiqueta cian del header (text-accent)
+     y mismo texto claro del cuerpo (el `text-slate-200` de `.hljs`).
 
-     Los tonos se declaran como variables en el <code class="language-…">, que
-     en el sitio público y en el preview del editor es el mismo elemento: los
-     <span class="hljs-…"> cuelgan de él, así que un único selector cubre los
-     dos contextos. */
-  .code-block--winconsole,
+     Lo único propio son los TONOS de los tokens, con la paleta ANSI «Campbell»
+     de cmd.exe: comandos en cian, %VARIABLES% en amarillo, etiquetas en verde.
+
+     El selector va sobre el <code class="language-…"> porque en el sitio
+     público y en el preview del editor los <span class="hljs-…"> cuelgan del
+     mismo elemento: una sola regla cubre ambos contextos. */
   code:is(
       [class*='language-dos'],
       [class*='language-cmd'],
       [class*='language-batch'],
       [class*='language-bat']
     ) {
-    --wc-bg: #0c0c0c;
-    --wc-surface: #1e1e1e;
-    --wc-border: #3a3a3a;
-    --wc-text: #cccccc;
     --wc-comment: #767676;
     --wc-keyword: #3b78ff;
     --wc-builtin: #61d6d6;
@@ -432,57 +429,6 @@
     --wc-number: #c19c00;
     --wc-label: #16c60c;
     --wc-quote: #f2f2f2;
-  }
-
-  .code-block--winconsole {
-    border-color: var(--wc-border);
-  }
-
-  .code-block--winconsole .code-block-header {
-    background: var(--wc-bg);
-    border-bottom-color: var(--wc-border);
-  }
-
-  .code-block--winconsole .code-block-lang {
-    background: var(--wc-surface);
-    color: var(--wc-builtin);
-  }
-
-  .code-block--winconsole .code-block-copy,
-  .code-block--winconsole .code-block-copy:hover {
-    background: var(--wc-surface);
-  }
-
-  .code-block--winconsole .code-block-pre {
-    background: var(--wc-bg);
-    scrollbar-color: rgb(118 118 118 / 0.8) transparent;
-  }
-
-  .code-block--winconsole .code-block-pre::-webkit-scrollbar-thumb {
-    background: rgb(118 118 118 / 0.8);
-  }
-
-  .code-block--winconsole .code-block-pre::-webkit-scrollbar-thumb:hover {
-    background: rgb(204 204 204 / 0.9);
-  }
-
-  /* Preview del CMS: TipTap pinta el fondo en el <pre> que envuelve al code. */
-  .post-editor-content
-    pre:has(
-      > code:is(
-        [class*='language-dos'],
-        [class*='language-cmd'],
-        [class*='language-batch'],
-        [class*='language-bat']
-      )
-    ) {
-    background: var(--wc-bg);
-    border-color: var(--wc-border);
-  }
-
-  /* Tonos por token. Base: gris de texto de la consola. */
-  :is(code[class*='language-dos'], code[class*='language-cmd'], code[class*='language-batch'], code[class*='language-bat']) {
-    color: var(--wc-text);
   }
 
   /* `rem` / `::` — la salida apagada de la consola */
