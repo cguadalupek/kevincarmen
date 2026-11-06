@@ -11,6 +11,7 @@ import { Markdown } from 'tiptap-markdown';
 import { createLowlight } from 'lowlight';
 import bash from 'highlight.js/lib/languages/bash';
 import css from 'highlight.js/lib/languages/css';
+import dos from 'highlight.js/lib/languages/dos';
 import javascript from 'highlight.js/lib/languages/javascript';
 import json from 'highlight.js/lib/languages/json';
 import plaintext from 'highlight.js/lib/languages/plaintext';
@@ -45,6 +46,7 @@ export const editorLowlight = createLowlight();
 editorLowlight.register({
   bash,
   css,
+  dos,
   javascript,
   json,
   plaintext,
@@ -53,6 +55,10 @@ editorLowlight.register({
   typescript,
   xml,
 });
+
+// `batch` no es alias nativo de la gramática `dos` en highlight.js 11: sin esto,
+// un bloque escrito a mano como ```batch se quedaba sin resaltar en el editor.
+editorLowlight.registerAlias({ dos: ['batch', 'dosbatch', 'batfile'] });
 
 export interface CMSEditorExtensionsOptions {
   section: CMSSection;

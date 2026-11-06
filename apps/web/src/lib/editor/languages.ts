@@ -3,9 +3,44 @@ export interface CodeLanguage {
   label: string;
 }
 
+/**
+ * Alias aceptados en la valla Markdown → id canónico de highlight.js.
+ *
+ * El autor escribe el idioma en el fence (```` ```cmd ````) y ese texto no
+ * siempre coincide con el nombre con el que highlight.js registra la gramática.
+ * Se normaliza aquí, en un único punto, para que el mismo alias funcione en el
+ * render público (`lib/editor/highlight.ts`) y en la etiqueta del bloque.
+ *
+ * Los scripts de consola de Windows comparten UNA sola gramática en
+ * highlight.js (`dos`, «Batch file (DOS)»), que ya trae `bat` y `cmd` como
+ * alias propios. `batch` —y las variantes `dosbatch`/`batfile`— NO existen en
+ * highlight.js 11 y hay que resolverlas a mano; sin este mapa caían en
+ * `plaintext` y el bloque se mostraba sin resaltado.
+ */
+export const LANGUAGE_ALIASES: Record<string, string> = {
+  dos: 'dos',
+  cmd: 'dos',
+  bat: 'dos',
+  batch: 'dos',
+  dosbatch: 'dos',
+  batfile: 'dos',
+};
+
+/** id canónico (minúsculas, sin alias) de un lenguaje escrito a mano. */
+export function resolveLanguageId(id: string): string {
+  const normalized = id.trim().toLowerCase();
+  return LANGUAGE_ALIASES[normalized] ?? normalized;
+}
+
+/** ¿El lenguaje es un script de consola de Windows (`cmd`/`dos`/`batch`)? */
+export function isWindowsConsoleLanguage(id: string): boolean {
+  return resolveLanguageId(id) === 'dos';
+}
+
 export const CODE_LANGUAGES: CodeLanguage[] = [
   { id: 'plaintext', label: 'Texto plano' },
   { id: 'powershell', label: 'PowerShell' },
+  { id: 'dos', label: 'CMD / Batch (Windows)' },
   { id: 'bash', label: 'Bash' },
   { id: 'javascript', label: 'JavaScript' },
   { id: 'typescript', label: 'TypeScript' },
@@ -39,5 +74,6 @@ export const CODE_LANGUAGES: CodeLanguage[] = [
 ];
 
 export function getLanguageLabel(id: string): string {
-  return CODE_LANGUAGES.find((l) => l.id === id)?.label ?? id;
+  const canonical = resolveLanguageId(id);
+  return CODE_LANGUAGES.find((l) => l.id === canonical)?.label ?? id;
 }

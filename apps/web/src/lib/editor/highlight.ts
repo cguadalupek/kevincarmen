@@ -1,3 +1,4 @@
+import { resolveLanguageId } from '@/lib/editor/languages';
 import hljs from 'highlight.js/lib/core';
 import type { LanguageFn } from 'highlight.js';
 import bash from 'highlight.js/lib/languages/bash';
@@ -7,6 +8,7 @@ import csharp from 'highlight.js/lib/languages/csharp';
 import css from 'highlight.js/lib/languages/css';
 import dart from 'highlight.js/lib/languages/dart';
 import dockerfile from 'highlight.js/lib/languages/dockerfile';
+import dos from 'highlight.js/lib/languages/dos';
 import go from 'highlight.js/lib/languages/go';
 import html from 'highlight.js/lib/languages/xml';
 import ini from 'highlight.js/lib/languages/ini';
@@ -37,6 +39,10 @@ const registry: Array<[string, LanguageFn]> = [
   ['css', css],
   ['dart', dart],
   ['dockerfile', dockerfile],
+  // «Batch file (DOS)»: una sola gramática cubre cmd, dos y batch (ver
+  // LANGUAGE_ALIASES en `languages.ts`). Registra además sus propios alias
+  // `bat` y `cmd` en highlight.js.
+  ['dos', dos],
   ['go', go],
   ['html', html],
   ['xml', html],
@@ -77,12 +83,15 @@ export function registerHighlightLanguages() {
 
 export function highlightCode(code: string, language: string): string {
   const lib = registerHighlightLanguages();
-  if (!language || language === 'plaintext' || !lib.getLanguage(language)) {
+  // `cmd`/`dos`/`batch` (y `bat`) llegan escritos por el autor y son la misma
+  // gramática: se resuelven al id canónico antes de preguntar a highlight.js.
+  const canonical = resolveLanguageId(language);
+  if (!canonical || canonical === 'plaintext' || !lib.getLanguage(canonical)) {
     return escapeHtml(code);
   }
 
   try {
-    return lib.highlight(code, { language }).value;
+    return lib.highlight(code, { language: canonical }).value;
   } catch {
     return escapeHtml(code);
   }

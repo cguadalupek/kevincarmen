@@ -57,6 +57,9 @@ export const EDITOR_CODE_LANGUAGES: CodeLanguage[] = [
   { id: 'python', label: 'Python' },
   { id: 'json', label: 'JSON' },
   { id: 'bash', label: 'Bash' },
+  // `cmd`, `dos` y `batch` comparten gramática: se elige una vez y el sitio
+  // público aplica la paleta de consola de Windows (ver `globals.css`).
+  { id: 'dos', label: 'CMD / Batch (Windows)' },
   { id: 'sql', label: 'SQL' },
 ];
 
