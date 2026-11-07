@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Loader2, LogIn, UserPlus } from 'lucide-react';
@@ -37,6 +37,11 @@ export function StudentAuthForm({
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
+  // El botón no se habilita hasta que React está montado: un submit nativo antes
+  // de la hidratación navegaría a la misma URL y el navegador pondría los campos
+  // en la query string (la contraseña acabaría en el historial y en los logs).
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const otherHref = `${isRegister ? '/cuenta/ingresar' : '/cuenta/registro'}?next=${encodeURIComponent(next)}`;
 
@@ -98,7 +103,6 @@ export function StudentAuthForm({
             </label>
             <input
               id="student-name"
-              name="name"
               type="text"
               autoComplete="name"
               required
@@ -117,7 +121,6 @@ export function StudentAuthForm({
           </label>
           <input
             id="student-email"
-            name="email"
             type="email"
             autoComplete="email"
             required
@@ -133,7 +136,6 @@ export function StudentAuthForm({
           </label>
           <input
             id="student-password"
-            name="password"
             type="password"
             autoComplete={isRegister ? 'new-password' : 'current-password'}
             required
@@ -159,7 +161,7 @@ export function StudentAuthForm({
 
       <button
         type="submit"
-        disabled={pending}
+        disabled={pending || !mounted}
         className="mt-6 inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-lg bg-accent px-4 text-sm font-semibold text-accent-foreground transition-opacity hover:opacity-90 disabled:opacity-60"
       >
         {pending && <Loader2 className="h-4 w-4 animate-spin" />}
