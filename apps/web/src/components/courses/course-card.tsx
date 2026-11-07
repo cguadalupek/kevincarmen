@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { BookOpen, Clock, GraduationCap, Layers, Signal } from 'lucide-react';
 import type { PublicCourse } from '@/lib/api/courses';
+import { CourseCardProgress } from '@/components/courses/course-card-progress';
 import { cn } from '@/lib/utils';
 
 const levelLabels = {
@@ -19,8 +20,11 @@ const statusLabels = {
 } as const;
 
 /**
- * Tarjeta de curso del catálogo. Sin barra de progreso: los cursos son abiertos,
- * no hay seguimiento del alumno (se retiró junto con la lógica de progreso).
+ * Tarjeta de curso del catálogo.
+ *
+ * La barra de progreso solo aparece si ESTE navegador tiene clases completadas
+ * (invitado) o si la cuenta ya sincronizó (`CourseProgressHydrator` deja el espejo
+ * local al día). El catálogo no pide progreso por tarjeta.
  */
 export function CourseCard({ course }: { course: PublicCourse }) {
   return (
@@ -76,6 +80,8 @@ export function CourseCard({ course }: { course: PublicCourse }) {
               {course.modulesCount} módulos · {course.lessonsCount} clases
             </span>
           </div>
+
+          <CourseCardProgress courseId={course.id} lessonIds={course.lessonIds ?? []} />
 
           <span className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-accent">
             Ver curso

@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ListVideo, Pencil, Plus, Save, Trash2, X } from 'lucide-react';
+import { BarChart3, ListVideo, Pencil, Plus, Save, Trash2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { AdminListCard } from '@/components/admin/admin-list-card';
 import { AdminPageHeader } from '@/components/admin/admin-page-header';
@@ -122,9 +123,16 @@ export default function AdminCoursesPage() {
         title="Cursos"
         subtitle="Agrega los cursos que se mostrarán en la sección Cursos del sitio."
         action={
-          <Button variant="accent" onClick={() => setEditing(emptyCourse())} disabled={!!editing}>
-            <Plus className="h-4 w-4" /> Nuevo curso
-          </Button>
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button variant="outline" asChild className="min-h-[44px]">
+              <Link href="/admin/courses/analytics">
+                <BarChart3 className="h-4 w-4" /> Analíticas
+              </Link>
+            </Button>
+            <Button variant="accent" onClick={() => setEditing(emptyCourse())} disabled={!!editing}>
+              <Plus className="h-4 w-4" /> Nuevo curso
+            </Button>
+          </div>
         }
       />
 

@@ -397,6 +397,57 @@ export interface ApiLikeAnalyticsItem {
   count: number;
 }
 
+/** Fila del ranking «capítulos más completados» (`GET /courses/admin/analytics`). */
+export interface ApiChapterCompletion {
+  courseId: string;
+  courseTitle: string;
+  courseSlug: string;
+  chapterId: string;
+  chapterTitle: string;
+  chapterSlug: string;
+  chapterPosition: number;
+  completions: number;
+}
+
+/** Avance agregado de un curso. */
+export interface ApiCourseProgressRow {
+  courseId: string;
+  title: string;
+  slug: string;
+  chapters: number;
+  students: number;
+  completions: number;
+  /** 0..1 */
+  avgCompletion: number;
+}
+
+/** Métricas de la sección Cursos del panel. */
+export interface ApiCourseAnalytics {
+  students: {
+    total: number;
+    last7Days: number;
+    last30Days: number;
+    activeLast7Days: number;
+  };
+  totals: {
+    completions: number;
+    chaptersWithProgress: number;
+    courses: number;
+    /** 0..1 */
+    avgCompletion: number;
+  };
+  topChapters: ApiChapterCompletion[];
+  courses: ApiCourseProgressRow[];
+  distribution: { label: string; students: number }[];
+  recent: {
+    userName: string;
+    userEmail: string;
+    courseTitle: string;
+    chapterTitle: string;
+    updatedAt: string;
+  }[];
+}
+
 export const api = {
   login: (email: string, password: string) =>
     apiFetch<{ accessToken: string; user: AuthUser }>('/auth/login', {
@@ -525,6 +576,8 @@ export const api = {
     apiFetch<{ success: boolean }>(`/videos/${id}`, { method: 'DELETE' }),
 
   getCourses: () => apiFetch<ApiCourse[]>('/courses/admin/all'),
+  /** Métricas de Cursos: alumnos, capítulos más completados y avance por curso. */
+  getCourseAnalytics: () => apiFetch<ApiCourseAnalytics>('/courses/admin/analytics'),
   getCourseAdmin: (id: string) => apiFetch<ApiCourse>(`/courses/admin/${id}`),
   createCourse: (data: Partial<ApiCourse>) =>
     apiFetch<ApiCourse>('/courses', { method: 'POST', body: JSON.stringify(data) }),

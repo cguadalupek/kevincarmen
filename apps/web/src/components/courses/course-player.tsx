@@ -3,19 +3,28 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
+  CheckCircle2,
   ChevronDown,
+  Circle,
+  Cloud,
   FileText,
   HelpCircle,
   ListOrdered,
+  LogIn,
   PanelRightOpen,
   Play,
+  RotateCcw,
   Wrench,
   X,
 } from 'lucide-react';
 import type { PublicCourseDetail, FlattenedLesson } from '@/lib/api/courses';
 import { flattenCurriculum } from '@/lib/api/courses';
 import { extractHeadings } from '@/lib/blog/headings';
+import { FREE_CHAPTER_COUNT, isFreeChapter } from '@/lib/course-progress';
 import { LessonVideo } from '@/components/courses/lesson-video';
+import { CourseProgressBar } from '@/components/courses/course-progress-bar';
+import { CourseSyncBar } from '@/components/courses/course-sync-bar';
+import { useCourseProgress } from '@/components/courses/use-course-progress';
 import { MarkdownContent } from '@/components/blog/markdown-content';
 import { AuthorBadge } from '@/components/blog/author-badge';
 import { PostToc, PostTocFab } from '@/components/blog/post-toc';
@@ -31,8 +40,10 @@ const TYPE_META = {
 /**
  * Reproductor de clase.
  *
- * Sin lógica de progreso (no hay cursos de pago ni seguimiento del alumno): la
- * navegación entre clases es el propio temario + anterior/siguiente.
+ * Modelo freemium NO intrusivo: los tres primeros capítulos son de acceso libre y
+ * público, y del cuarto en adelante el contenido también se lee (no hay muro). Lo
+ * que cambia es el progreso: el invitado lo guarda en su navegador y la cuenta lo
+ * sincroniza en la nube entre dispositivos.
  */
 export function CoursePlayer({
   course,
@@ -58,6 +69,11 @@ export function CoursePlayer({
   const next = currentIndex < lessons.length - 1 ? lessons[currentIndex + 1] : null;
   // Índice de la clase: los h2/h3 del markdown de ESTA clase.
   const headings = useMemo(() => extractHeadings(current?.content ?? ''), [current?.content]);
+
+  // Progreso del curso (local para invitados, nube con cuenta).
+  const lessonIds = useMemo(() => lessons.map((lesson) => lesson.id), [lessons]);
+  const progress = useCourseProgress(course.id, lessonIds);
+  const isDone = current ? progress.completed.has(current.id) : false;
 
   // Al cambiar de clase: sube al inicio y cierra el temario móvil.
   useEffect(() => {
@@ -102,6 +118,8 @@ export function CoursePlayer({
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_360px_14rem]">
         {/* ── columna principal ── */}
         <main className="min-w-0">
+          {progress.isAnonymous && <CourseSyncBar done={progress.done} />}
+
           <div className="mb-4 flex flex-wrap items-center gap-2 text-xs text-accent">
             <span className="rounded-full bg-accent/10 px-2.5 py-1 font-medium">
               Módulo {current.moduleIndex + 1} · {current.moduleTitle}
@@ -109,6 +127,17 @@ export function CoursePlayer({
             <span className="rounded-full bg-muted px-2.5 py-1 text-muted-foreground">
               Clase {current.lessonIndex + 1} de {lessons.length}
             </span>
+            {isFreeChapter(currentIndex) ? (
+              <span className="rounded-full border border-emerald-500/30 px-2.5 py-1 font-medium text-emerald-400">
+                Gratis
+              </span>
+            ) : (
+              !progress.isAnonymous && (
+                <span className="flex items-center gap-1 rounded-full bg-muted px-2.5 py-1 text-muted-foreground">
+                  <Cloud className="h-3 w-3" /> Sincronizado
+                </span>
+              )
+            )}
           </div>
 
           {/* Móvil: autor en una fila y fecha • duración en otra. */}
@@ -166,6 +195,44 @@ export function CoursePlayer({
             </div>
           )}
 
+          {/* marcar clase como completada */}
+          <div className="mt-8 flex flex-col gap-3 rounded-xl border border-border bg-card/50 p-4 sm:flex-row sm:items-center sm:justify-between">
+            <button
+              type="button"
+              onClick={() => progress.toggle(current.id, !isDone)}
+              aria-pressed={isDone}
+              className={cn(
+                'inline-flex min-h-[44px] items-center justify-center gap-2 rounded-lg border px-4 text-sm font-medium transition-colors',
+                isDone
+                  ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400'
+                  : 'border-border text-foreground hover:border-accent/50 hover:text-accent',
+              )}
+            >
+              {isDone ? <CheckCircle2 className="h-4 w-4" /> : <Circle className="h-4 w-4" />}
+              {isDone ? 'Clase completada' : 'Marcar como completada'}
+            </button>
+
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-muted-foreground">
+                {progress.isAnonymous ? 'Se guarda en este navegador' : 'Guardado en tu cuenta'}
+              </span>
+              {next && !isDone && (
+                <Link
+                  href={lessonHref(next)}
+                  onClick={() => progress.toggle(current.id, true)}
+                  className="inline-flex min-h-[44px] items-center gap-1 rounded-lg bg-accent px-3 text-xs font-semibold text-accent-foreground transition-opacity hover:opacity-90"
+                >
+                  Completar y seguir →
+                </Link>
+              )}
+            </div>
+          </div>
+          {progress.error && (
+            <p role="alert" className="mt-2 text-xs text-red-400">
+              {progress.error}
+            </p>
+          )}
+
           {/* prev / next */}
           <div className="mt-10 grid gap-3 sm:grid-cols-2">
             {prev ? (
@@ -220,6 +287,7 @@ export function CoursePlayer({
             currentSlug={current.slug}
             collapsedModules={collapsedModules}
             onToggleModule={toggleModule}
+            progress={progress}
           />
         </aside>
 
@@ -255,6 +323,7 @@ export function CoursePlayer({
                 currentSlug={current.slug}
                 collapsedModules={collapsedModules}
                 onToggleModule={toggleModule}
+                progress={progress}
               />
             </div>
           </div>
@@ -281,17 +350,26 @@ function SidebarContent({
   currentSlug,
   collapsedModules,
   onToggleModule,
+  progress,
 }: {
   course: PublicCourseDetail;
   lessons: FlattenedLesson[];
   currentSlug: string;
   collapsedModules: Set<number>;
   onToggleModule: (moduleIndex: number) => void;
+  progress: ReturnType<typeof useCourseProgress>;
 }) {
+  const { done, total, completed, isAnonymous, user, reset } = progress;
+
   return (
     <div className="thin-scrollbar rounded-2xl border border-border bg-card/60 p-5 backdrop-blur-sm lg:sticky lg:top-24 lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto">
+      <CourseProgressBar done={done} total={total} className="mb-4" />
+
       <p className="mb-3 font-mono text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
         Temario · {lessons.length} clases
+      </p>
+      <p className="mb-3 text-[11px] leading-snug text-muted-foreground/80">
+        Los {FREE_CHAPTER_COUNT} primeros capítulos son gratis.
       </p>
       <div className="space-y-1">
         {course.modules.map((module, moduleIndex) => {
@@ -326,6 +404,7 @@ function SidebarContent({
                       <Link
                         key={lesson.id}
                         href={`/cursos/${course.slug}/${lesson.slug}`}
+                        aria-current={isCurrent ? 'page' : undefined}
                         className={cn(
                           'flex items-center gap-2.5 px-3 py-2 text-[13px] transition-colors',
                           isCurrent
@@ -339,6 +418,12 @@ function SidebarContent({
                           <meta.icon className="h-4 w-4 shrink-0 text-border" />
                         )}
                         <span className="min-w-0 flex-1 truncate">{lesson.title}</span>
+                        {completed.has(lesson.id) && (
+                          <CheckCircle2
+                            className="h-3.5 w-3.5 shrink-0 text-emerald-400"
+                            aria-label="Clase completada"
+                          />
+                        )}
                         {lesson.duration > 0 && (
                           <span className="shrink-0 font-mono text-[10px] text-muted-foreground/70">
                             {lesson.duration}m
@@ -352,6 +437,36 @@ function SidebarContent({
             </div>
           );
         })}
+      </div>
+
+      {/* sesión del alumno: sin cuenta el progreso no sale del navegador */}
+      <div className="mt-4 border-t border-border pt-3 text-[11px] text-muted-foreground">
+        {isAnonymous ? (
+          <Link
+            href="/cuenta/ingresar"
+            className="inline-flex min-h-[36px] items-center gap-1.5 text-accent hover:underline"
+          >
+            <LogIn className="h-3.5 w-3.5" /> Inicia sesión para sincronizar
+          </Link>
+        ) : (
+          <div className="flex items-center justify-between gap-2">
+            <span className="flex min-w-0 items-center gap-1.5">
+              <Cloud className="h-3.5 w-3.5 shrink-0 text-accent" />
+              <span className="truncate">{user?.name}</span>
+            </span>
+            {done > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.confirm('¿Reiniciar el progreso de este curso?')) void reset();
+                }}
+                className="inline-flex min-h-[36px] shrink-0 items-center gap-1 transition-colors hover:text-foreground"
+              >
+                <RotateCcw className="h-3 w-3" /> Reiniciar
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

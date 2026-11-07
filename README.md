@@ -135,6 +135,8 @@ Las migraciones viven en `apps/api/prisma/migrations/` y se aplican en orden lex
 | `20261016000000_add_resource_types` | `resource_types` + vínculo en `resources` |
 | `20261017000000_add_lab_milestones` | `milestones` (JSONB) del lab |
 | `20261017010000_add_reading_time_to_projects` | `reading_time` (minutos, opcional) en proyectos |
+| `20261103090000_add_likes` | `likes` (voto anónimo polimórfico) |
+| `20261107000000_add_course_progress` | `course_progress` (progreso del alumno registrado) |
 
 **Usuarios y seguridad**: `User`, `Role`, `Permission`.
 
@@ -185,8 +187,17 @@ Las migraciones viven en `apps/api/prisma/migrations/` y se aplican en orden lex
   `resources` (JSON: [{label, url}]), `isFree`, `published`, `position`.
   Slug único por módulo; el backend deduplica slugs a nivel de curso (las URLs de
   clase son `slug` legibles).
-- El **progreso del alumno** vive en `localStorage` del navegador (no hay cuentas
-  públicas): clave `kc:course-progress:v1`, por curso: clases completadas + última vista.
+- El **progreso del alumno** tiene dos orígenes: el invitado lo guarda en
+  `localStorage` (`kc_course_progress_v1`) y, con cuenta, en `CourseProgress`
+  (`course_progress`: `userId`, `courseId`, `chapterId`, `completed`, `updatedAt`,
+  `@@unique([userId, courseId, chapterId])`). `chapterId` apunta a `lessons`: en este
+  modelo una clase ES el capítulo, no hay tabla `Chapter` aparte. Al registrarse, el
+  progreso local se fusiona con el de la nube (`POST /progress/sync`, unión) y el
+  espejo local se mantiene al día para que el catálogo pinte la barra sin llamar al API.
+- **Freemium no intrusivo**: los **3 primeros capítulos** de cualquier curso son de
+  acceso libre y público (`FREE_CHAPTER_COUNT` en `apps/web/src/lib/course-progress.ts`),
+  y del cuarto en adelante el contenido **también se lee** — no hay muro. La cuenta
+  solo añade la sincronización del progreso entre dispositivos.
 - El curso de ejemplo "Linux para novatos" (7 módulos, 33 clases) se siembra por
   migración (`20261012010000_seed_linux_course`), con ids fijos y `ON CONFLICT DO
   NOTHING`; la fuente editable es `tools/seed-course/linux-course.py`.
@@ -225,7 +236,12 @@ y `ValidationPipe` global.
 ### Auth
 | Método | Ruta | Auth | Descripción |
 |---|---|---|---|
-| POST | `/auth/login` | — | `{email,password}` → `{accessToken, user}` (JWT) |
+| POST | `/auth/login` | — | `{email,password}` → `{accessToken, user}` (JWT). Sirve al panel y a los estudiantes |
+| POST | `/auth/register` | — | `{name,email,password}` → `{accessToken, user}` con rol `student` (alta pública de alumno) |
+
+El JWT lleva `role`. `JwtAuthGuard` (todo el panel) **rechaza** el rol `student` con 403;
+`SessionAuthGuard` acepta cualquier token y es el que usan los endpoints de progreso.
+`/auth/login` (10/min) y `/auth/register` (5/min) están limitados por IP con `ThrottlerGuard`.
 
 ### Categorías (blog)
 | Método | Ruta | Auth | Descripción |
@@ -284,11 +300,24 @@ y `ValidationPipe` global.
 ### Cursos
 | Método | Ruta | Auth | Descripción |
 |---|---|---|---|
-| GET | `/courses` | — | Cursos con conteos reales de clases |
+| GET | `/courses` | — | Cursos con conteos reales de clases (+ `lessonIds` para el progreso) |
 | GET | `/courses/:slug` | — | Árbol módulos → clases publicadas |
 | GET | `/courses/admin/all`, `/courses/admin/:id` | JWT | Panel (árbol completo) |
+| GET | `/courses/admin/analytics` | JWT | Métricas: alumnos registrados, capítulos más completados, avance por curso y distribución |
 | PUT | `/courses/:id/curriculum` | JWT | Guarda el árbol entero en una transacción: actualiza nodos con id, crea los nuevos, borra los ausentes y recalcula `lessonsCount` |
 | POST/PUT/DELETE | `/courses[/:id]` | JWT | CRUD del curso |
+
+### Progreso de cursos (alumnos)
+| Método | Ruta | Auth | Descripción |
+|---|---|---|---|
+| GET | `/progress/me` | sesión | Clases completadas del usuario del token |
+| PUT | `/progress` | sesión | `{courseId, chapterId, completed?}` — marca/desmarca (upsert idempotente por `@@unique`) |
+| POST | `/progress/sync` | sesión | `{items: [...]}` — fusiona el progreso del navegador con la nube (unión) y devuelve la lista definitiva |
+| DELETE | `/progress/:courseId` | sesión | Reinicia el curso para ese usuario |
+
+`sesión` = cualquier JWT válido (estudiante o dueño); el `userId` sale siempre del token,
+nunca del cuerpo. Los **invitados** no usan estos endpoints: su progreso vive en el
+`localStorage` del navegador (`kc_course_progress_v1`) y se sube al crear cuenta o entrar.
 
 ### Sitio (contenido editable del home y "Sobre mí")
 | Método | Ruta | Auth | Descripción |
@@ -370,7 +399,8 @@ El código vive en **`apps/web/src/`** (`src/app` para rutas, `src/components`, 
   **Cursos** (+ botón "Contenido": editor estilo Platzi en `/admin/courses/[id]` para
   crear módulos y clases, subir video por clase, marcar clases publicadas/ocultas,
   reordenar con arrastre o flechas, vista previa de Markdown, recursos y borrador
-  automático en el navegador).
+  automático en el navegador; + botón **Analíticas** en `/admin/courses/analytics`:
+  estudiantes registrados, capítulos más completados, avance por curso y distribución).
 - **Lab** (`/admin/lab`, `/admin/lab/new`, `/admin/lab/[id]`) — con **editor de hitos**
   (timeline interactiva) sobre la ficha del experimento.
 - **Recursos** (`/admin/recursos` + **Tipos** en `/admin/recursos/tipos`): editor con

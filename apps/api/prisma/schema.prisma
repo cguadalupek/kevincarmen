@@ -92,6 +92,8 @@ model User {
   role         Role      @relation(fields: [roleId], references: [id])
   posts        Post[]
   comments     Comment[]
+  /** Progreso de cursos sincronizado (los invitados lo guardan solo en su navegador). */
+  courseProgress CourseProgress[]
   createdAt    DateTime  @default(now()) @map("created_at")
   updatedAt    DateTime  @updatedAt @map("updated_at")
 
@@ -333,6 +335,8 @@ model Course {
   updatedAt    DateTime         @updatedAt @map("updated_at")
 
   modules      CourseModule[]
+  /** Progreso de los estudiantes registrados en ESTE curso. */
+  progress     CourseProgress[]
 
   @@index([status, position])
   @@map("courses")
@@ -385,6 +389,8 @@ model Lesson {
   updatedAt   DateTime   @updatedAt @map("updated_at")
 
   module      CourseModule @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  /** Filas de progreso de esta clase (se borran con ella). */
+  progress    CourseProgress[]
 
   @@unique([moduleId, slug])
   @@index([moduleId, position])
@@ -608,5 +614,36 @@ model Like {
   @@unique([entity, entityId, visitorId])
   @@index([entity, entityId])
   @@map("likes")
+}
+
+/// Progreso de un estudiante registrado en una clase concreta.
+///
+/// `chapterId` apunta a `lessons`: en este modelo una «clase» ES el capítulo (no
+/// existe una tabla `Chapter` aparte), así que el nombre se mantiene por claridad
+/// de dominio y el `@@map` de la columna es `chapter_id`.
+///
+/// `@@unique([userId, courseId, chapterId])` hace la operación idempotente: marcar
+/// la misma clase dos veces actualiza la fila en vez de duplicarla (el servicio usa
+/// `upsert` sobre esa clave). Los invitados NO tienen filas aquí: su progreso vive
+/// en el `localStorage` del navegador y se sube al registrarse (`POST /progress/sync`).
+model CourseProgress {
+  id        String   @id @default(cuid())
+  userId    String   @map("user_id")
+  courseId  String   @map("course_id")
+  chapterId String   @map("chapter_id")
+  completed Boolean  @default(true)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  course  Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  chapter Lesson @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseId, chapterId])
+  /// Agregados del panel: «capítulos más completados» agrupa por estas dos columnas.
+  @@index([courseId, chapterId])
+  /// Lectura del progreso propio y «actividad reciente» del panel.
+  @@index([userId, updatedAt])
+  @@map("course_progress")
 }
 

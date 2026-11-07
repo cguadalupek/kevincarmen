@@ -9,6 +9,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { CoursesService } from './courses.service';
+import { CoursesAnalyticsService } from './courses-analytics.service';
 import { CreateCourseDto } from './dto/create-course.dto';
 import { UpdateCourseDto } from './dto/update-course.dto';
 import { SaveCurriculumDto } from './dto/curriculum.dto';
@@ -16,7 +17,10 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Controller('courses')
 export class CoursesController {
-  constructor(private readonly coursesService: CoursesService) {}
+  constructor(
+    private readonly coursesService: CoursesService,
+    private readonly analyticsService: CoursesAnalyticsService,
+  ) {}
 
   @Get()
   findPublished() {
@@ -27,6 +31,17 @@ export class CoursesController {
   @UseGuards(JwtAuthGuard)
   findAllAdmin() {
     return this.coursesService.findAllAdmin();
+  }
+
+  /**
+   * `GET /courses/admin/analytics` — métricas de la sección Cursos del panel:
+   * alumnos registrados, capítulos más completados y avance por curso.
+   * Declarada junto al resto de rutas `admin/*` para que ningún `:slug` la tape.
+   */
+  @Get('admin/analytics')
+  @UseGuards(JwtAuthGuard)
+  analytics() {
+    return this.analyticsService.getAnalytics();
   }
 
   @Get('admin/:id')

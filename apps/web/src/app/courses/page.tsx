@@ -3,6 +3,7 @@ import { GraduationCap } from 'lucide-react';
 import { getPublishedCourses } from '@/lib/api/courses';
 import { FadeIn, StaggerContainer, StaggerItem } from '@/components/motion/fade-in';
 import { CourseCard } from '@/components/courses/course-card';
+import { CourseProgressHydrator } from '@/components/courses/progress-hydrator';
 
 export const metadata: Metadata = {
   title: 'Cursos',
@@ -17,6 +18,8 @@ export default async function CoursesPage() {
   return (
     <div className="py-16">
       <div className="section-container">
+        {/* Con sesión de alumno: trae el progreso de la nube una vez por visita. */}
+        <CourseProgressHydrator />
         <FadeIn>
           <div className="flex items-center gap-3 text-accent">
             <GraduationCap className="h-6 w-6" />

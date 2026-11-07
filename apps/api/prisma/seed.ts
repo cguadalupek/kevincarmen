@@ -170,6 +170,15 @@ async function main() {
 
   const passwordHash = await bcrypt.hash(process.env.ADMIN_PASSWORD ?? 'Admin123!', 10);
 
+  // Rol de los alumnos (cuentas públicas que sincronizan el progreso de los cursos).
+  // `AuthService.register` lo crea si falta; sembrarlo deja la BD coherente desde el
+  // primer arranque y permite contar estudiantes en las métricas del panel.
+  await prisma.role.upsert({
+    where: { name: 'student' },
+    update: {},
+    create: { name: 'student', description: 'Estudiante (progreso de cursos)' },
+  });
+
   await prisma.user.upsert({
     where: { email: 'admin@kevincarmen.xyz' },
     update: {},
