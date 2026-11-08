@@ -44,7 +44,7 @@ export function RootShell({ children }: { children: React.ReactNode }) {
                 name: siteConfig.name,
                 url: siteConfig.url,
                 email: siteConfig.email,
-                jobTitle: 'Desarrollador y Profesor de Computación',
+                jobTitle: 'Desarrollador de Software e Infraestructura',
                 sameAs: Object.values(siteConfig.social),
               },
             ],

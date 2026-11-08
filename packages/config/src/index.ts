@@ -1,8 +1,7 @@
 export const siteConfig = {
   name: 'Kevin Carmen',
-  title: 'Kevin Carmen — Desarrollador, Profesor & Creador de Contenido',
-  description:
-    'Plataforma personal de Kevin Carmen. Desarrollo web, infraestructura, homelab, contenido educativo y open source.',
+  title: 'Kevin Carmen — Desarrollador, Infraestructura & Creador de Contenido',
+  description: 'Desarrollo software, administro infraestructura y creo contenido.',
   url: 'https://kevincarmen.xyz',
   author: 'Kevin Carmen',
   email: 'contacto@kevincarmen.xyz',

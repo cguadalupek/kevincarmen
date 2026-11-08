@@ -121,34 +121,42 @@ export function ResourceExplorer({
           No hay recursos que coincidan con tu búsqueda.
         </div>
       ) : (
-        <div className="mt-8 grid gap-6 sm:grid-cols-2">
+        <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2">
           {filtered.map((resource) => {
             const label = typeLabel(resource);
             const Icon = typeIcon(resource);
             const downloadUrl = `/api/v1/resources/${resource.slug}/download`;
             return (
-              <article key={resource.id} className="glass-card group p-6 hover-lift">
-                <div className="flex items-start gap-4">
-                  <div className="rounded-lg bg-muted p-3">
+              <article
+                key={resource.id}
+                className="glass-card group min-w-0 overflow-hidden p-6 hover-lift"
+              >
+                <div className="flex min-w-0 items-start gap-4">
+                  <div className="shrink-0 rounded-lg bg-muted p-3">
                     <Icon className="h-5 w-5 text-accent" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <h2 className="font-semibold">{resource.title}</h2>
-                      <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                    <div className="flex min-w-0 flex-wrap items-center gap-2">
+                      <h2 className="min-w-0 break-words font-semibold">{resource.title}</h2>
+                      <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
                         {label}
                       </span>
                       {resource.version && (
-                        <span className="rounded-full bg-accent/10 px-2 py-0.5 font-mono text-xs text-accent">
+                        <span className="shrink-0 rounded-full bg-accent/10 px-2 py-0.5 font-mono text-xs text-accent">
                           v{resource.version}
                         </span>
                       )}
                     </div>
-                    <p className="mt-2 text-sm text-muted-foreground">{resource.description}</p>
+                    <p className="mt-2 break-words text-sm text-muted-foreground">
+                      {resource.description}
+                    </p>
                     {(resource.tags.length > 0 || resource.fileSize) && (
-                      <div className="mt-3 flex flex-wrap items-center gap-2">
+                      <div className="mt-3 flex min-w-0 flex-wrap items-center gap-2">
                         {resource.tags.map((tag) => (
-                          <span key={tag} className="font-mono text-xs text-muted-foreground">
+                          <span
+                            key={tag}
+                            className="max-w-full break-words font-mono text-xs text-muted-foreground"
+                          >
                             #{tag}
                           </span>
                         ))}
@@ -164,23 +172,23 @@ export function ResourceExplorer({
                     )}
                   </div>
                 </div>
-                <div className="mt-5 flex items-center gap-3">
+                <div className="mt-5 flex min-w-0 items-center gap-3">
                   {resource.fileUrl ? (
                     <a
                       href={downloadUrl}
-                      className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent/90"
+                      className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-medium text-accent-foreground transition-colors hover:bg-accent/90"
                     >
                       <Download className="h-4 w-4" />
                       Descargar
                     </a>
                   ) : (
-                    <span className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground">
+                    <span className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm text-muted-foreground">
                       <Download className="h-4 w-4" />
                       Próximamente
                     </span>
                   )}
                   {resource.fileName && (
-                    <span className="truncate font-mono text-xs text-muted-foreground">
+                    <span className="min-w-0 flex-1 truncate font-mono text-xs text-muted-foreground">
                       {resource.fileName}
                     </span>
                   )}

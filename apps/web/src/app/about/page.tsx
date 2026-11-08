@@ -8,7 +8,7 @@ import type { SiteAbout, SiteHero } from '@/lib/api/site';
 
 export const metadata: Metadata = {
   title: 'Sobre mí',
-  description: 'Conoce más sobre Kevin Carmen: desarrollador, profesor y creador de contenido.',
+  description: 'Desarrollo software, administro infraestructura y creo contenido.',
   alternates: { canonical: '/sobre-mi' },
 };
 
