@@ -457,13 +457,29 @@ export default function AdminCourseAnalyticsPage() {
                       {DAY_FMT.format(new Date(student.createdAt))}
                     </td>
                     <td className="whitespace-nowrap px-4 py-3">
-                      <span className="font-mono text-xs font-semibold tabular-nums">
-                        {student.chaptersCompleted}
-                      </span>{' '}
-                      <span className="text-xs text-muted-foreground">
-                        {student.chaptersCompleted === 1 ? 'clase' : 'clases'} ·{' '}
-                        {student.coursesStarted} {student.coursesStarted === 1 ? 'curso' : 'cursos'}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="h-1.5 w-16 overflow-hidden rounded-full bg-muted"
+                          role="progressbar"
+                          aria-valuenow={student.percent}
+                          aria-valuemin={0}
+                          aria-valuemax={100}
+                          aria-label={`Avance de ${student.name}: ${student.percent} %`}
+                        >
+                          <div
+                            className="h-full rounded-full bg-accent"
+                            style={{ width: `${student.percent}%` }}
+                          />
+                        </div>
+                        <span className="font-mono text-xs font-semibold tabular-nums">
+                          {student.percent} %
+                        </span>
+                      </div>
+                      <p className="mt-1 text-[11px] text-muted-foreground">
+                        {student.chaptersCompleted} de {student.chaptersTotal}{' '}
+                        {student.chaptersTotal === 1 ? 'clase' : 'clases'}
+                        {student.coursesStarted > 1 && ` · ${student.coursesStarted} cursos`}
+                      </p>
                     </td>
                     <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
                       {student.lastActivityAt

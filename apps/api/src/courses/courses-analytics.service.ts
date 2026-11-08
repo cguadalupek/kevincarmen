@@ -73,6 +73,10 @@ export interface StudentRow {
   createdAt: Date;
   /** Clases marcadas como completadas (todos sus cursos). */
   chaptersCompleted: number;
+  /** Clases publicadas de los cursos que el alumno ha empezado (denominador del %). */
+  chaptersTotal: number;
+  /** `chaptersCompleted / chaptersTotal` en porcentaje entero (0–100). */
+  percent: number;
   /** Cursos distintos en los que tiene al menos una clase. */
   coursesStarted: number;
   /** Última clase completada; `null` si nunca marcó nada. */
@@ -280,7 +284,7 @@ export class CoursesAnalyticsService {
    * Nunca se selecciona `passwordHash`.
    */
   async listStudents(): Promise<StudentList> {
-    const [total, students] = await Promise.all([
+    const [total, students, lessons] = await Promise.all([
       this.prisma.user.count({ where: { role: { name: STUDENT_ROLE } } }),
       this.prisma.user.findMany({
         where: { role: { name: STUDENT_ROLE } },
@@ -297,7 +301,19 @@ export class CoursesAnalyticsService {
           },
         },
       }),
+      // Total de capítulos PUBLICADOS por curso: el denominador del porcentaje. Son
+      // decenas de filas, así que se cuentan en memoria (sin SQL crudo).
+      this.prisma.lesson.findMany({
+        where: { published: true },
+        select: { module: { select: { courseId: true } } },
+      }),
     ]);
+
+    const chaptersByCourse = new Map<string, number>();
+    for (const lesson of lessons) {
+      const courseId = lesson.module.courseId;
+      chaptersByCourse.set(courseId, (chaptersByCourse.get(courseId) ?? 0) + 1);
+    }
 
     return {
       total,
@@ -307,12 +323,24 @@ export class CoursesAnalyticsService {
           (latest, row) => (!latest || row.updatedAt > latest ? row.updatedAt : latest),
           null,
         );
+        // Porcentaje sobre los cursos que el alumno empezó: si tiene clases de dos
+        // cursos, el denominador es la suma de capítulos de ambos.
+        const chaptersTotal = [...courses].reduce(
+          (sum, courseId) => sum + (chaptersByCourse.get(courseId) ?? 0),
+          0,
+        );
+        const chaptersCompleted = student.courseProgress.length;
         return {
           id: student.id,
           name: student.name,
           email: student.email,
           createdAt: student.createdAt,
-          chaptersCompleted: student.courseProgress.length,
+          chaptersCompleted,
+          chaptersTotal,
+          percent:
+            chaptersTotal > 0
+              ? Math.min(100, Math.round((chaptersCompleted / chaptersTotal) * 100))
+              : 0,
           coursesStarted: courses.size,
           lastActivityAt,
         };

@@ -455,6 +455,10 @@ export interface ApiStudentRow {
   email: string;
   createdAt: string;
   chaptersCompleted: number;
+  /** Clases publicadas de los cursos que empezó (denominador del %). */
+  chaptersTotal: number;
+  /** 0–100. */
+  percent: number;
   coursesStarted: number;
   lastActivityAt: string | null;
 }
