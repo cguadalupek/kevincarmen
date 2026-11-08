@@ -304,6 +304,7 @@ El JWT lleva `role`. `JwtAuthGuard` (todo el panel) **rechaza** el rol `student`
 | GET | `/courses/:slug` | — | Árbol módulos → clases publicadas |
 | GET | `/courses/admin/all`, `/courses/admin/:id` | JWT | Panel (árbol completo) |
 | GET | `/courses/admin/analytics` | JWT | Métricas: alumnos registrados, capítulos más completados, avance por curso y distribución |
+| GET | `/courses/admin/students` | JWT | Listado de alumnos (`{total, items[]}`): nombre, correo, fecha de alta, clases completadas, cursos empezados y última actividad |
 | PUT | `/courses/:id/curriculum` | JWT | Guarda el árbol entero en una transacción: actualiza nodos con id, crea los nuevos, borra los ausentes y recalcula `lessonsCount` |
 | POST/PUT/DELETE | `/courses[/:id]` | JWT | CRUD del curso |
 
@@ -382,7 +383,14 @@ El código vive en **`apps/web/src/`** (`src/app` para rutas, `src/components`, 
 - `/` (home: hero, artículos, videos, tecnologías, contacto), `/blog`, `/blog/[slug]`,
   `/contenido`, `/videos`, `/lab`, `/lab/[slug]`, `/proyectos`, `/proyectos/[slug]`,
   `/cursos`, `/cursos/[slug]`, `/cursos/[slug]/[lesson]`, `/recursos`, `/sobre-mi`,
-  `/contacto`, `/feed.xml`, `/sitemap.xml`, `/robots.txt`, `/api/health`.
+  `/contacto`, `/cuenta/ingresar`, `/cuenta/registro`, `/feed.xml`, `/sitemap.xml`,
+  `/robots.txt`, `/api/health`.
+- **Sesión de alumno en la cabecera** (`components/account/student-session-menu.tsx`): sin
+  sesión muestra «Iniciar sesión» + «Registrarse»; con sesión, avatar con iniciales, nombre y un
+  menú con el correo, «Mis cursos» y «Cerrar sesión» (que borra el token y también el espejo
+  local del progreso, para no dejar el avance de una cuenta visible al siguiente visitante del
+  navegador). El primer render asume invitado —el caso mayoritario— para no desajustar la
+  hidratación; un evento (`kc-student-session`) actualiza la cabecera sin recargar.
 - **Redirects permanentes** (`next.config.js`): `/projects → /proyectos`,
   `/resources → /recursos`, `/courses → /cursos`, `/about → /sobre-mi`,
   `/contact → /contacto`, `/now → /sobre-mi#ahora`. Las páginas inglesas existen en el
