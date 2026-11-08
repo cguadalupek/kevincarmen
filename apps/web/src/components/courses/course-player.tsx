@@ -17,7 +17,6 @@ import {
   Play,
   RotateCcw,
   Wrench,
-  X,
 } from 'lucide-react';
 import type { PublicCourseDetail, FlattenedLesson } from '@/lib/api/courses';
 import { flattenCurriculum } from '@/lib/api/courses';
@@ -29,7 +28,7 @@ import { CourseSyncBar } from '@/components/courses/course-sync-bar';
 import { useCourseProgress } from '@/components/courses/use-course-progress';
 import { MarkdownContent } from '@/components/blog/markdown-content';
 import { AuthorBadge } from '@/components/blog/author-badge';
-import { PostToc, PostTocFab } from '@/components/blog/post-toc';
+import { PostToc } from '@/components/blog/post-toc';
 import { cn } from '@/lib/utils';
 
 const TYPE_META = {
@@ -59,10 +58,9 @@ export function CoursePlayer({
 }) {
   const lessons = useMemo(() => flattenCurriculum(course), [course]);
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  // Panel abierto bajo la botonera de herramientas: resumen, temario o recursos.
+  const [panel, setPanel] = useState<'resumen' | 'clases' | 'recursos' | null>('resumen');
   const [collapsedModules, setCollapsedModules] = useState<Set<number>>(new Set());
-  // Panel abierto bajo la botonera de herramientas (móvil): resumen o recursos.
-  const [panel, setPanel] = useState<'resumen' | 'recursos' | null>('resumen');
 
   const currentIndex = Math.max(
     0,
@@ -79,9 +77,8 @@ export function CoursePlayer({
   const progress = useCourseProgress(course.id, lessonIds);
   const isDone = current ? progress.completed.has(current.id) : false;
 
-  // Al cambiar de clase: sube al inicio, cierra el temario móvil y vuelve al resumen.
+  // Al cambiar de clase: sube al inicio y vuelve al resumen.
   useEffect(() => {
-    setSidebarOpen(false);
     setPanel('resumen');
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [current?.slug]);
@@ -108,18 +105,20 @@ export function CoursePlayer({
   const resources = current.resources ?? [];
   const hasResources = resources.length > 0;
 
-  const togglePanel = (target: 'resumen' | 'recursos') =>
+  const togglePanel = (target: 'resumen' | 'clases' | 'recursos') =>
     setPanel((value) => (value === target ? null : target));
 
-  // En móvil y tablet abre el temario deslizante; en escritorio lleva a la columna fija.
+  // El temario se despliega inline; en escritorio ya está en la columna fija, así
+  // que ahí el botón solo lleva hasta ella.
   const openCurriculum = () => {
+    const wasOpen = panel === 'clases';
+    setPanel(wasOpen ? null : 'clases');
+    if (wasOpen) return;
     if (typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches) {
       document
         .getElementById('temario-curso')
         ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      return;
     }
-    setSidebarOpen(true);
   };
 
   return (
@@ -254,11 +253,11 @@ export function CoursePlayer({
             <button
               type="button"
               onClick={openCurriculum}
-              aria-haspopup="dialog"
-              aria-expanded={sidebarOpen}
+              aria-expanded={panel === 'clases'}
+              aria-controls="clase-temario"
               className={cn(
                 'inline-flex min-h-[44px] flex-col items-center justify-center gap-1 rounded-xl border px-2 py-2 text-[11px] font-semibold transition-colors',
-                sidebarOpen
+                panel === 'clases'
                   ? 'border-accent/50 bg-accent/10 text-accent'
                   : 'border-border bg-card/60 text-muted-foreground hover:border-accent/40 hover:text-foreground',
               )}
@@ -294,6 +293,20 @@ export function CoursePlayer({
           {panel === 'resumen' && current.content && (
             <div id="clase-resumen" className="mt-5 scroll-mt-24">
               <MarkdownContent content={current.content} headings={headings} />
+            </div>
+          )}
+
+          {/* Temario inline bajo la botonera (en `lg` ya vive en la columna fija). */}
+          {panel === 'clases' && (
+            <div id="clase-temario" className="mt-5 scroll-mt-24 lg:hidden">
+              <SidebarContent
+                course={course}
+                lessons={lessons}
+                currentSlug={current.slug}
+                collapsedModules={collapsedModules}
+                onToggleModule={toggleModule}
+                progress={progress}
+              />
             </div>
           )}
 
@@ -359,10 +372,6 @@ export function CoursePlayer({
               {progress.error}
             </p>
           )}
-
-          {/* Índice de la clase: hoja deslizante en móvil y tablet (el temario
-              ya ocupa la columna derecha hasta `xl`). */}
-          <PostTocFab headings={headings} breakpoint="xl" />
         </main>
 
         {/* ── barra lateral: temario ── */}
@@ -380,41 +389,6 @@ export function CoursePlayer({
         {/* ── índice de la clase (tercera columna, solo en pantallas anchas) ── */}
         <PostToc headings={headings} breakpoint="xl" label="En esta clase" />
       </div>
-
-      {/* drawer móvil */}
-      {sidebarOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <button
-            type="button"
-            aria-label="Cerrar temario"
-            className="absolute inset-0 bg-black/60"
-            onClick={() => setSidebarOpen(false)}
-          />
-          <div className="absolute right-0 top-0 flex h-full w-[min(320px,88vw)] flex-col bg-card shadow-2xl">
-            <div className="flex items-center justify-between border-b border-border p-4">
-              <span className="font-semibold">Temario del curso</span>
-              <button
-                type="button"
-                onClick={() => setSidebarOpen(false)}
-                className="text-muted-foreground hover:text-foreground"
-                aria-label="Cerrar"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto p-4">
-              <SidebarContent
-                course={course}
-                lessons={lessons}
-                currentSlug={current.slug}
-                collapsedModules={collapsedModules}
-                onToggleModule={toggleModule}
-                progress={progress}
-              />
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
