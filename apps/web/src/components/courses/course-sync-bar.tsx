@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { X } from 'lucide-react';
+import { CloudUpload, X } from 'lucide-react';
 
 const DISMISS_KEY = 'kc_progress_prompt_dismissed';
 
@@ -29,10 +29,8 @@ export function CourseSyncBar() {
   const next = encodeURIComponent(pathname || '/cursos');
 
   return (
-    <div className="sticky top-16 z-20 mb-5 flex items-start gap-3 rounded-xl border border-accent/30 bg-accent/5 px-3 py-2.5 shadow-sm backdrop-blur">
-      <span aria-hidden="true" className="mt-0.5 shrink-0 text-base leading-none">
-        💾
-      </span>
+    <div className="sticky top-16 z-20 mb-5 flex items-center gap-3 rounded-xl border border-accent/30 bg-accent/5 px-3 py-2.5 shadow-sm backdrop-blur">
+      <CloudUpload aria-hidden="true" className="h-4 w-4 shrink-0 text-accent" strokeWidth={2} />
       <p className="min-w-0 flex-1 text-[13px] leading-snug text-muted-foreground">
         Tu progreso se guarda solo en este navegador.{' '}
         <span className="font-medium text-foreground">Crea una cuenta gratis</span> y consérvalo en

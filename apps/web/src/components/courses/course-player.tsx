@@ -5,13 +5,15 @@ import Link from 'next/link';
 import {
   CheckCircle2,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Circle,
   Cloud,
   FileText,
   HelpCircle,
   ListOrdered,
   LogIn,
-  PanelRightOpen,
+  Paperclip,
   Play,
   RotateCcw,
   Wrench,
@@ -59,6 +61,8 @@ export function CoursePlayer({
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsedModules, setCollapsedModules] = useState<Set<number>>(new Set());
+  // Panel abierto bajo la botonera de herramientas (móvil): resumen o recursos.
+  const [panel, setPanel] = useState<'resumen' | 'recursos' | null>('resumen');
 
   const currentIndex = Math.max(
     0,
@@ -75,9 +79,10 @@ export function CoursePlayer({
   const progress = useCourseProgress(course.id, lessonIds);
   const isDone = current ? progress.completed.has(current.id) : false;
 
-  // Al cambiar de clase: sube al inicio y cierra el temario móvil.
+  // Al cambiar de clase: sube al inicio, cierra el temario móvil y vuelve al resumen.
   useEffect(() => {
     setSidebarOpen(false);
+    setPanel('resumen');
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [current?.slug]);
 
@@ -99,6 +104,23 @@ export function CoursePlayer({
   };
 
   const lessonHref = (lesson: FlattenedLesson) => `/cursos/${course.slug}/${lesson.slug}`;
+
+  const resources = current.resources ?? [];
+  const hasResources = resources.length > 0;
+
+  const togglePanel = (target: 'resumen' | 'recursos') =>
+    setPanel((value) => (value === target ? null : target));
+
+  // En móvil y tablet abre el temario deslizante; en escritorio lleva a la columna fija.
+  const openCurriculum = () => {
+    if (typeof window !== 'undefined' && window.matchMedia('(min-width: 1024px)').matches) {
+      document
+        .getElementById('temario-curso')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
+    setSidebarOpen(true);
+  };
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
@@ -167,19 +189,124 @@ export function CoursePlayer({
             </div>
           )}
 
-          {current.content && (
-            <div className="mt-6">
+          {/* Navegación entre clases: dos botones simétricos al 50% pegados al reproductor. */}
+          <nav
+            aria-label="Navegación entre clases"
+            className={cn('mt-3 grid gap-2', prev ? 'grid-cols-2' : 'grid-cols-1')}
+          >
+            {prev ? (
+              <Link
+                href={lessonHref(prev)}
+                className="group flex min-h-[56px] min-w-0 flex-col justify-center rounded-xl border border-border bg-card/60 px-3 py-2 transition-colors hover:border-accent/50 hover:bg-card"
+              >
+                <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  <ChevronLeft className="h-3 w-3 shrink-0" aria-hidden="true" /> Clase anterior
+                </span>
+                <span className="mt-0.5 block truncate text-[13px] font-medium transition-colors group-hover:text-accent">
+                  {prev.title}
+                </span>
+              </Link>
+            ) : null}
+            {next ? (
+              <Link
+                href={lessonHref(next)}
+                className="group flex min-h-[56px] min-w-0 flex-col items-end justify-center rounded-xl border border-border bg-card/60 px-3 py-2 text-right transition-colors hover:border-accent/50 hover:bg-card"
+              >
+                <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                  Siguiente clase <ChevronRight className="h-3 w-3 shrink-0" aria-hidden="true" />
+                </span>
+                <span className="mt-0.5 block w-full truncate text-[13px] font-medium transition-colors group-hover:text-accent">
+                  {next.title}
+                </span>
+              </Link>
+            ) : (
+              <Link
+                href={`/cursos/${course.slug}`}
+                className="group flex min-h-[56px] min-w-0 flex-col items-end justify-center rounded-xl border border-accent/40 bg-accent/10 px-3 py-2 text-right transition-colors hover:bg-accent/15"
+              >
+                <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide text-accent">
+                  Fin del curso <ChevronRight className="h-3 w-3 shrink-0" aria-hidden="true" />
+                </span>
+                <span className="mt-0.5 block w-full truncate text-[13px] font-medium text-accent">
+                  Ver clases
+                </span>
+              </Link>
+            )}
+          </nav>
+
+          {/* Herramientas de la clase: grid simétrico de tres columnas. */}
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            <button
+              type="button"
+              onClick={() => togglePanel('resumen')}
+              aria-expanded={panel === 'resumen'}
+              aria-controls="clase-resumen"
+              className={cn(
+                'inline-flex min-h-[44px] flex-col items-center justify-center gap-1 rounded-xl border px-2 py-2 text-[11px] font-semibold transition-colors',
+                panel === 'resumen'
+                  ? 'border-accent/50 bg-accent/10 text-accent'
+                  : 'border-border bg-card/60 text-muted-foreground hover:border-accent/40 hover:text-foreground',
+              )}
+            >
+              <FileText className="h-4 w-4 shrink-0" aria-hidden="true" />
+              Resumen
+            </button>
+            <button
+              type="button"
+              onClick={openCurriculum}
+              aria-haspopup="dialog"
+              aria-expanded={sidebarOpen}
+              className={cn(
+                'inline-flex min-h-[44px] flex-col items-center justify-center gap-1 rounded-xl border px-2 py-2 text-[11px] font-semibold transition-colors',
+                sidebarOpen
+                  ? 'border-accent/50 bg-accent/10 text-accent'
+                  : 'border-border bg-card/60 text-muted-foreground hover:border-accent/40 hover:text-foreground',
+              )}
+            >
+              <ListOrdered className="h-4 w-4 shrink-0" aria-hidden="true" />
+              Clases
+            </button>
+            <button
+              type="button"
+              onClick={() => togglePanel('recursos')}
+              aria-expanded={panel === 'recursos'}
+              aria-controls="clase-recursos"
+              disabled={!hasResources}
+              title={hasResources ? undefined : 'Esta clase no tiene recursos'}
+              className={cn(
+                'inline-flex min-h-[44px] flex-col items-center justify-center gap-1 rounded-xl border px-2 py-2 text-[11px] font-semibold transition-colors',
+                panel === 'recursos'
+                  ? 'border-accent/50 bg-accent/10 text-accent'
+                  : 'border-border bg-card/60 text-muted-foreground hover:border-accent/40 hover:text-foreground',
+                !hasResources && 'cursor-not-allowed opacity-40 hover:border-border hover:text-muted-foreground',
+              )}
+            >
+              <Paperclip className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span className="flex items-center gap-1">
+                Recursos
+                {hasResources && (
+                  <span className="font-mono text-[10px] opacity-70">{resources.length}</span>
+                )}
+              </span>
+            </button>
+          </div>
+
+          {panel === 'resumen' && current.content && (
+            <div id="clase-resumen" className="mt-5 scroll-mt-24">
               <MarkdownContent content={current.content} headings={headings} />
             </div>
           )}
 
-          {current.resources && current.resources.length > 0 && (
-            <div className="mt-8 rounded-xl border border-border bg-card/50 p-5">
+          {panel === 'recursos' && hasResources && (
+            <div
+              id="clase-recursos"
+              className="mt-5 scroll-mt-24 rounded-xl border border-border bg-card/50 p-5"
+            >
               <h3 className="flex items-center gap-2 text-sm font-semibold text-accent">
-                <ListOrdered className="h-4 w-4" /> Recursos de la clase
+                <Paperclip className="h-4 w-4" aria-hidden="true" /> Recursos de la clase
               </h3>
               <ul className="mt-3 space-y-2">
-                {current.resources.map((resource, i) => (
+                {resources.map((resource, i) => (
                   <li key={`${resource.url}-${i}`}>
                     <a
                       href={resource.url}
@@ -233,54 +360,13 @@ export function CoursePlayer({
             </p>
           )}
 
-          {/* prev / next */}
-          <div className="mt-10 grid gap-3 sm:grid-cols-2">
-            {prev ? (
-              <Link
-                href={lessonHref(prev)}
-                className="glass-card group p-4 transition-all hover:border-accent/50"
-              >
-                <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                  ← Anterior
-                </span>
-                <span className="mt-1 block truncate text-sm font-medium group-hover:text-accent">
-                  {prev.title}
-                </span>
-              </Link>
-            ) : (
-              <span />
-            )}
-            {next ? (
-              <Link
-                href={lessonHref(next)}
-                className="glass-card group p-4 text-right transition-all hover:border-accent/50"
-              >
-                <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
-                  Siguiente →
-                </span>
-                <span className="mt-1 block truncate text-sm font-medium group-hover:text-accent">
-                  {next.title}
-                </span>
-              </Link>
-            ) : (
-              <div className="glass-card p-4 text-right">
-                <span className="text-[11px] uppercase tracking-wide text-accent">
-                  Fin del curso 🎓
-                </span>
-                <span className="mt-1 block text-sm text-muted-foreground">
-                  Última clase del temario. ¡Nos vemos en el siguiente curso!
-                </span>
-              </div>
-            )}
-          </div>
-
           {/* Índice de la clase: hoja deslizante en móvil y tablet (el temario
               ya ocupa la columna derecha hasta `xl`). */}
-          <PostTocFab headings={headings} breakpoint="xl" bottomClass="bottom-20" />
+          <PostTocFab headings={headings} breakpoint="xl" />
         </main>
 
         {/* ── barra lateral: temario ── */}
-        <aside className="hidden lg:block">
+        <aside id="temario-curso" className="hidden scroll-mt-24 lg:block">
           <SidebarContent
             course={course}
             lessons={lessons}
@@ -329,15 +415,6 @@ export function CoursePlayer({
           </div>
         </div>
       )}
-
-      <button
-        type="button"
-        onClick={() => setSidebarOpen(true)}
-        className="fixed bottom-5 right-5 z-40 flex items-center gap-2 rounded-full bg-accent px-4 py-3 text-sm font-semibold text-accent-foreground shadow-lg shadow-accent/30 lg:hidden"
-      >
-        <PanelRightOpen className="h-4 w-4" />
-        Clases
-      </button>
     </div>
   );
 }
