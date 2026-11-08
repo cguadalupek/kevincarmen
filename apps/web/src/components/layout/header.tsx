@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -28,6 +28,13 @@ export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [contentExpanded, setContentExpanded] = useState(false);
   const pathname = usePathname();
+
+  // Cualquier cambio de ruta cierra el panel móvil: los enlaces del menú ya lo
+  // cierran con `onNavigate`, esto cubre navegaciones que no pasan por ese clic
+  // (botón atrás, enlaces del propio panel de sesión, redirecciones).
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
   const contentIcons = {
     '/blog': BookOpen,
     '/proyectos': FolderKanban,
@@ -204,9 +211,10 @@ export function Header() {
               })}
             </nav>
 
-            {/* Sesión del alumno también en el menú móvil. */}
+            {/* Sesión del alumno también en el menú móvil. Los enlaces cierran el
+                panel (`onNavigate`) para no dejarlo abierto encima del formulario. */}
             <div className="mx-auto w-full max-w-7xl px-4 pb-4 sm:px-6 lg:px-8">
-              <StudentSessionMenu variant="mobile" />
+              <StudentSessionMenu variant="mobile" onNavigate={() => setMobileOpen(false)} />
             </div>
           </motion.div>
         )}

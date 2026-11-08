@@ -118,7 +118,7 @@ export function CoursePlayer({
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_360px_14rem]">
         {/* ── columna principal ── */}
         <main className="min-w-0">
-          {progress.isAnonymous && <CourseSyncBar done={progress.done} />}
+          {progress.isAnonymous && <CourseSyncBar />}
 
           <div className="mb-4 flex flex-wrap items-center gap-2 text-xs text-accent">
             <span className="rounded-full bg-accent/10 px-2.5 py-1 font-medium">

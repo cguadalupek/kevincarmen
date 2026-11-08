@@ -34,7 +34,19 @@ function initials(name: string) {
  * siguiente visitante del mismo navegador vería las barras de otra persona. El
  * avance real sigue en la nube y vuelve al entrar de nuevo.
  */
-export function StudentSessionMenu({ variant = 'desktop' }: { variant?: 'desktop' | 'mobile' }) {
+export function StudentSessionMenu({
+  variant = 'desktop',
+  onNavigate,
+}: {
+  variant?: 'desktop' | 'mobile';
+  /**
+   * Se llama al pulsar cualquier enlace o «Cerrar sesión». La cabecera lo usa para
+   * cerrar el menú de hamburguesa: sin esto, al entrar a `/cuenta/ingresar` el
+   * Header (que persiste entre rutas) mantiene `mobileOpen` en `true` y el panel
+   * sigue abierto encima del formulario.
+   */
+  onNavigate?: () => void;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const [user, setUser] = useState<StudentUser | null>(null);
@@ -76,6 +88,7 @@ export function StudentSessionMenu({ variant = 'desktop' }: { variant?: 'desktop
     replaceLocalProgress([]);
     setUser(null);
     setOpen(false);
+    onNavigate?.();
     router.refresh();
   }
 
@@ -87,12 +100,14 @@ export function StudentSessionMenu({ variant = 'desktop' }: { variant?: 'desktop
         <div className="mt-2 flex flex-col gap-2 border-t border-border pt-4">
           <Link
             href={`/cuenta/ingresar?next=${next}`}
+            onClick={onNavigate}
             className="flex min-h-11 items-center justify-center gap-2 rounded-xl border border-border px-3 text-sm font-medium text-foreground"
           >
             <LogIn className="h-4 w-4" /> Iniciar sesión
           </Link>
           <Link
             href={`/cuenta/registro?next=${next}`}
+            onClick={onNavigate}
             className="flex min-h-11 items-center justify-center gap-2 rounded-xl bg-accent px-3 text-sm font-semibold text-accent-foreground"
           >
             <UserPlus className="h-4 w-4" /> Registrarse
@@ -133,7 +148,10 @@ export function StudentSessionMenu({ variant = 'desktop' }: { variant?: 'desktop
         </div>
         <Link
           href="/cursos"
-          onClick={() => setOpen(false)}
+          onClick={() => {
+            setOpen(false);
+            onNavigate?.();
+          }}
           className="flex min-h-11 items-center gap-2 rounded-xl px-3 text-sm text-muted-foreground hover:bg-muted/50 hover:text-accent"
         >
           <GraduationCap className="h-4 w-4" /> Mis cursos

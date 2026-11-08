@@ -3,20 +3,20 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Cloud, X } from 'lucide-react';
+import { X } from 'lucide-react';
 
 const DISMISS_KEY = 'kc_progress_prompt_dismissed';
 
 /**
- * Aviso de sincronización para invitados: barra pegajosa bajo la cabecera, no un
- * modal ni un bloqueo. El modelo es freemium NO intrusivo — el capítulo se lee
- * igual; lo único que cambia con una cuenta es que el progreso viaja entre
- * dispositivos.
+ * Aviso de sincronización para invitados: barra pegajosa bajo la cabecera, con el
+ * acento cian del sitio. No es un modal ni un bloqueo: el capítulo se lee igual y
+ * el progreso local funciona sin cuenta. Lo único que cambia al registrarse es que
+ * el avance viaja entre dispositivos.
  *
  * Se puede ocultar y la decisión se recuerda (`kc_progress_prompt_dismissed`), así
- * que no vuelve a aparecer en cada clase.
+ * que no reaparece en cada clase.
  */
-export function CourseSyncBar({ done }: { done: number }) {
+export function CourseSyncBar() {
   const pathname = usePathname();
   const [dismissed, setDismissed] = useState(true);
 
@@ -29,19 +29,14 @@ export function CourseSyncBar({ done }: { done: number }) {
   const next = encodeURIComponent(pathname || '/cursos');
 
   return (
-    <div className="sticky top-16 z-20 mb-5 flex items-start gap-3 rounded-xl border border-accent/25 bg-card/95 px-3 py-2.5 shadow-sm backdrop-blur">
-      <Cloud className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
+    <div className="sticky top-16 z-20 mb-5 flex items-start gap-3 rounded-xl border border-accent/30 bg-accent/5 px-3 py-2.5 shadow-sm backdrop-blur">
+      <span aria-hidden="true" className="mt-0.5 shrink-0 text-base leading-none">
+        💾
+      </span>
       <p className="min-w-0 flex-1 text-[13px] leading-snug text-muted-foreground">
-        {done > 0 ? (
-          <>
-            Llevas <span className="font-semibold text-foreground">{done}</span>{' '}
-            {done === 1 ? 'clase guardada' : 'clases guardadas'} solo en este navegador.
-          </>
-        ) : (
-          <>Tu progreso se guarda solo en este navegador.</>
-        )}{' '}
-        <span className="text-foreground">Crea una cuenta gratis</span> y consérvalo entre
-        dispositivos.
+        Tu progreso se guarda solo en este navegador.{' '}
+        <span className="font-medium text-foreground">Crea una cuenta gratis</span> y consérvalo en
+        otros dispositivos.
       </p>
       <div className="flex shrink-0 items-center gap-2">
         <Link
