@@ -10,6 +10,9 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? '/api/v1';
 export const STUDENT_TOKEN_KEY = 'kc_student_token';
 export const STUDENT_USER_KEY = 'kc_student_user';
 
+/** Evento al iniciar/cerrar sesión: la cabecera se actualiza sin recargar. */
+export const STUDENT_SESSION_EVENT = 'kc-student-session';
+
 export interface StudentUser {
   id: string;
   name: string;
@@ -51,12 +54,14 @@ export function getStudentUser(): StudentUser | null {
 export function saveStudentSession(session: AuthSession) {
   window.localStorage.setItem(STUDENT_TOKEN_KEY, session.accessToken);
   window.localStorage.setItem(STUDENT_USER_KEY, JSON.stringify(session.user));
+  window.dispatchEvent(new Event(STUDENT_SESSION_EVENT));
 }
 
 export function clearStudentSession() {
   if (!isBrowser()) return;
   window.localStorage.removeItem(STUDENT_TOKEN_KEY);
   window.localStorage.removeItem(STUDENT_USER_KEY);
+  window.dispatchEvent(new Event(STUDENT_SESSION_EVENT));
 }
 
 async function studentFetch<T>(path: string, options: RequestInit = {}): Promise<T> {

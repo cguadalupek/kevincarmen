@@ -65,6 +65,26 @@ export interface CourseAnalytics {
 
 const DAY = 24 * 60 * 60 * 1000;
 
+/** Alumno registrado tal como lo pinta la tabla del panel. */
+export interface StudentRow {
+  id: string;
+  name: string;
+  email: string;
+  createdAt: Date;
+  /** Clases marcadas como completadas (todos sus cursos). */
+  chaptersCompleted: number;
+  /** Cursos distintos en los que tiene al menos una clase. */
+  coursesStarted: number;
+  /** Última clase completada; `null` si nunca marcó nada. */
+  lastActivityAt: Date | null;
+}
+
+export interface StudentList {
+  /** Total de alumnos registrados (puede ser mayor que `items` por el tope). */
+  total: number;
+  items: StudentRow[];
+}
+
 /**
  * Métricas del panel para la sección Cursos.
  *
@@ -247,6 +267,56 @@ export class CoursesAnalyticsService {
         chapterTitle: row.chapter.title,
         updatedAt: row.updatedAt,
       })),
+    };
+  }
+
+  /**
+   * `GET /courses/admin/students` — listado de alumnos registrados con correo y
+   * fecha de alta, más su actividad (clases completadas, cursos empezados y última
+   * marca). Es la vista de «quién está aprendiendo», no un agregado.
+   *
+   * El tope de 500 evita una respuesta gigante si algún día crece el catálogo de
+   * cuentas; `total` va aparte para que el panel pueda avisar de que hay más.
+   * Nunca se selecciona `passwordHash`.
+   */
+  async listStudents(): Promise<StudentList> {
+    const [total, students] = await Promise.all([
+      this.prisma.user.count({ where: { role: { name: STUDENT_ROLE } } }),
+      this.prisma.user.findMany({
+        where: { role: { name: STUDENT_ROLE } },
+        orderBy: { createdAt: 'desc' },
+        take: 500,
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          createdAt: true,
+          courseProgress: {
+            where: { completed: true },
+            select: { courseId: true, updatedAt: true },
+          },
+        },
+      }),
+    ]);
+
+    return {
+      total,
+      items: students.map((student) => {
+        const courses = new Set(student.courseProgress.map((row) => row.courseId));
+        const lastActivityAt = student.courseProgress.reduce<Date | null>(
+          (latest, row) => (!latest || row.updatedAt > latest ? row.updatedAt : latest),
+          null,
+        );
+        return {
+          id: student.id,
+          name: student.name,
+          email: student.email,
+          createdAt: student.createdAt,
+          chaptersCompleted: student.courseProgress.length,
+          coursesStarted: courses.size,
+          lastActivityAt,
+        };
+      }),
     };
   }
 }

@@ -8,6 +8,7 @@ import {
   BookOpenCheck,
   CheckCircle2,
   ExternalLink,
+  Mail,
   RefreshCw,
   TrendingUp,
   UserPlus,
@@ -15,15 +16,35 @@ import {
 } from 'lucide-react';
 import { AdminPageHeader } from '@/components/admin/admin-page-header';
 import { Button } from '@/components/ui/button';
-import { api, type ApiCourseAnalytics } from '@/lib/api/client';
+import { api, type ApiCourseAnalytics, type ApiStudentList } from '@/lib/api/client';
 import { cn } from '@/lib/utils';
+
+const DAY_FMT = new Intl.DateTimeFormat('es-CL', {
+  day: '2-digit',
+  month: 'short',
+  year: 'numeric',
+});
+
+const DATE_TIME_FMT = new Intl.DateTimeFormat('es-CL', {
+  day: '2-digit',
+  month: 'short',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+
+/** Iniciales del alumno para el avatar (el CMS no gestiona fotos de estudiante). */
+function initials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '?';
+  return `${parts[0][0] ?? ''}${parts[1]?.[0] ?? ''}`.toUpperCase();
+}
 
 /**
  * Métricas de la sección Cursos.
  *
  * Hereda `AdminAuthGuard` + `AdminShell` del layout del route group; los datos los
- * sirve `GET /courses/admin/analytics`, protegido con JWT en el API (la protección
- * real está ahí, no en el cliente).
+ * sirven `GET /courses/admin/analytics` y `GET /courses/admin/students`, protegidos
+ * con JWT en el API (la protección real está ahí, no en el cliente).
  *
  * Solo cuenta ALUMNOS REGISTRADOS: el progreso de los invitados vive en su
  * navegador y no se puede medir desde el servidor. Es el número que importa, porque
@@ -31,6 +52,7 @@ import { cn } from '@/lib/utils';
  */
 export default function AdminCourseAnalyticsPage() {
   const [data, setData] = useState<ApiCourseAnalytics | null>(null);
+  const [studentList, setStudentList] = useState<ApiStudentList | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -38,7 +60,14 @@ export default function AdminCourseAnalyticsPage() {
     setLoading(true);
     setError('');
     try {
-      setData(await api.getCourseAnalytics());
+      // Las métricas y el listado son endpoints distintos: si el listado falla, las
+      // tarjetas de arriba se pintan igual (y viceversa).
+      const [analytics, list] = await Promise.all([
+        api.getCourseAnalytics(),
+        api.getCourseStudents().catch(() => null),
+      ]);
+      setData(analytics);
+      setStudentList(list);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'No se pudieron cargar las métricas.');
     } finally {
@@ -131,7 +160,10 @@ export default function AdminCourseAnalyticsPage() {
         {metrics.map(({ key, label, value, hint, Icon, featured }) => (
           <div
             key={key}
-            className={cn('glass-card p-5', featured && 'border-accent/40 sm:col-span-2 lg:col-span-1')}
+            className={cn(
+              'glass-card p-5',
+              featured && 'border-accent/40 sm:col-span-2 lg:col-span-1',
+            )}
           >
             <div className="flex items-center gap-2 text-accent">
               <Icon className="h-4 w-4" aria-hidden="true" />
@@ -173,10 +205,18 @@ export default function AdminCourseAnalyticsPage() {
             <table className="w-full min-w-[36rem] text-sm">
               <thead className="bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
                 <tr>
-                  <th scope="col" className="px-4 py-3 font-medium">#</th>
-                  <th scope="col" className="px-4 py-3 font-medium">Curso</th>
-                  <th scope="col" className="px-4 py-3 font-medium">Capítulo</th>
-                  <th scope="col" className="px-4 py-3 text-right font-medium">Completados</th>
+                  <th scope="col" className="px-4 py-3 font-medium">
+                    #
+                  </th>
+                  <th scope="col" className="px-4 py-3 font-medium">
+                    Curso
+                  </th>
+                  <th scope="col" className="px-4 py-3 font-medium">
+                    Capítulo
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-right font-medium">
+                    Completados
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -345,6 +385,98 @@ export default function AdminCourseAnalyticsPage() {
           )}
         </section>
       </div>
+
+      <section className="mt-10" aria-labelledby="alumnos-registrados">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 id="alumnos-registrados" className="flex items-center gap-2 text-lg font-semibold">
+              <Users className="h-4 w-4 text-accent" /> Alumnos registrados
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {studentList
+                ? `${studentList.total} ${studentList.total === 1 ? 'cuenta' : 'cuentas'} con rol de estudiante${
+                    studentList.total > studentList.items.length
+                      ? ` · mostrando las ${studentList.items.length} más recientes`
+                      : ''
+                  }`
+                : loading
+                  ? 'Cargando alumnos…'
+                  : 'No se pudo cargar el listado de alumnos.'}
+            </p>
+          </div>
+        </div>
+
+        {studentList && studentList.items.length === 0 ? (
+          <div className="mt-4 rounded-xl border border-border bg-card/40 p-8 text-center text-sm text-muted-foreground">
+            Todavía no hay alumnos registrados. Las cuentas aparecen aquí en cuanto alguien se
+            registre desde <span className="font-mono">/cuenta/registro</span>.
+          </div>
+        ) : studentList && studentList.items.length > 0 ? (
+          <div className="mt-4 min-w-0 overflow-x-auto rounded-xl border border-border">
+            <table className="w-full min-w-[44rem] text-sm">
+              <thead className="bg-muted/40 text-left text-xs uppercase tracking-wider text-muted-foreground">
+                <tr>
+                  <th scope="col" className="px-4 py-3 font-medium">
+                    Alumno
+                  </th>
+                  <th scope="col" className="px-4 py-3 font-medium">
+                    Correo
+                  </th>
+                  <th scope="col" className="px-4 py-3 font-medium">
+                    Registro
+                  </th>
+                  <th scope="col" className="px-4 py-3 font-medium">
+                    Avance
+                  </th>
+                  <th scope="col" className="px-4 py-3 font-medium">
+                    Última actividad
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {studentList.items.map((student) => (
+                  <tr key={student.id} className="align-middle">
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2.5">
+                        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent/10 font-mono text-[11px] font-semibold text-accent">
+                          {initials(student.name)}
+                        </span>
+                        <span className="min-w-0 truncate font-medium">{student.name}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <a
+                        href={`mailto:${student.email}`}
+                        className="inline-flex items-center gap-1.5 text-muted-foreground transition-colors hover:text-accent"
+                      >
+                        <Mail className="h-3.5 w-3.5 shrink-0" />
+                        <span className="truncate">{student.email}</span>
+                      </a>
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
+                      {DAY_FMT.format(new Date(student.createdAt))}
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3">
+                      <span className="font-mono text-xs font-semibold tabular-nums">
+                        {student.chaptersCompleted}
+                      </span>{' '}
+                      <span className="text-xs text-muted-foreground">
+                        {student.chaptersCompleted === 1 ? 'clase' : 'clases'} ·{' '}
+                        {student.coursesStarted} {student.coursesStarted === 1 ? 'curso' : 'cursos'}
+                      </span>
+                    </td>
+                    <td className="whitespace-nowrap px-4 py-3 text-muted-foreground">
+                      {student.lastActivityAt
+                        ? DATE_TIME_FMT.format(new Date(student.lastActivityAt))
+                        : 'Sin actividad'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
+      </section>
 
       <p className="mt-10 flex items-center gap-2 text-xs text-muted-foreground">
         <BookOpenCheck className="h-3.5 w-3.5" />

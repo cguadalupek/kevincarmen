@@ -21,6 +21,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { contentNav, siteConfig } from '@kevincarmen/config';
 import { Logo } from '@/components/brand/logo';
+import { StudentSessionMenu } from '@/components/account/student-session-menu';
 import { cn } from '@/lib/utils';
 
 export function Header() {
@@ -86,7 +87,8 @@ export function Header() {
             ))}
         </nav>
 
-        <div className="hidden items-center gap-3 lg:flex">
+        <div className="hidden items-center gap-2 lg:flex">
+          <StudentSessionMenu />
           <Button asChild variant="accent">
             <Link
               href="/contacto"
@@ -201,6 +203,11 @@ export function Header() {
                 );
               })}
             </nav>
+
+            {/* Sesión del alumno también en el menú móvil. */}
+            <div className="mx-auto w-full max-w-7xl px-4 pb-4 sm:px-6 lg:px-8">
+              <StudentSessionMenu variant="mobile" />
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

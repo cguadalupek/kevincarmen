@@ -448,6 +448,23 @@ export interface ApiCourseAnalytics {
   }[];
 }
 
+/** Alumno registrado (`GET /courses/admin/students`). */
+export interface ApiStudentRow {
+  id: string;
+  name: string;
+  email: string;
+  createdAt: string;
+  chaptersCompleted: number;
+  coursesStarted: number;
+  lastActivityAt: string | null;
+}
+
+export interface ApiStudentList {
+  /** Total de alumnos; puede ser mayor que `items` (tope de 500). */
+  total: number;
+  items: ApiStudentRow[];
+}
+
 export const api = {
   login: (email: string, password: string) =>
     apiFetch<{ accessToken: string; user: AuthUser }>('/auth/login', {
@@ -578,6 +595,8 @@ export const api = {
   getCourses: () => apiFetch<ApiCourse[]>('/courses/admin/all'),
   /** Métricas de Cursos: alumnos, capítulos más completados y avance por curso. */
   getCourseAnalytics: () => apiFetch<ApiCourseAnalytics>('/courses/admin/analytics'),
+  /** Listado de alumnos registrados (correo, alta y actividad). */
+  getCourseStudents: () => apiFetch<ApiStudentList>('/courses/admin/students'),
   getCourseAdmin: (id: string) => apiFetch<ApiCourse>(`/courses/admin/${id}`),
   createCourse: (data: Partial<ApiCourse>) =>
     apiFetch<ApiCourse>('/courses', { method: 'POST', body: JSON.stringify(data) }),

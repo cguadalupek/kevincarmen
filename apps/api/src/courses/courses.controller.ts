@@ -44,6 +44,16 @@ export class CoursesController {
     return this.analyticsService.getAnalytics();
   }
 
+  /**
+   * `GET /courses/admin/students` — alumnos registrados con correo, fecha de alta y
+   * actividad. Declarada ANTES de `admin/:id` para que «students» no se lea como id.
+   */
+  @Get('admin/students')
+  @UseGuards(JwtAuthGuard)
+  students() {
+    return this.analyticsService.listStudents();
+  }
+
   @Get('admin/:id')
   @UseGuards(JwtAuthGuard)
   findById(@Param('id') id: string) {
