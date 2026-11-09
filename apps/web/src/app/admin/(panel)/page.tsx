@@ -30,6 +30,11 @@ interface DashboardSection {
   hint?: (summary: ApiDashboardSummary) => string;
 }
 
+/** `3 publicados` / `1 publicado`: evita el plural con una sola unidad. */
+function qty(value: number, one: string, many: string): string {
+  return `${value.toLocaleString('es-CL')} ${value === 1 ? one : many}`;
+}
+
 const sections: DashboardSection[] = [
   {
     href: '/admin/posts',
@@ -37,7 +42,12 @@ const sections: DashboardSection[] = [
     title: 'Artículos',
     description: 'Crear, editar y publicar entradas del blog',
     count: (s) => s.content.posts.total,
-    hint: (s) => `${s.content.posts.published} publicados · ${s.content.posts.drafts} borradores`,
+    hint: (s) =>
+      `${qty(s.content.posts.published, 'publicado', 'publicados')} · ${qty(
+        s.content.posts.drafts,
+        'borrador',
+        'borradores',
+      )}`,
   },
   {
     href: '/admin/videos',
@@ -45,7 +55,12 @@ const sections: DashboardSection[] = [
     title: 'Videos del inicio',
     description: 'Enlaces de video que aparecen en la sección "Últimos videos"',
     count: (s) => s.content.videos.total,
-    hint: (s) => `${s.content.videos.featured} destacados · ${s.content.videos.shorts} shorts`,
+    hint: (s) =>
+      `${qty(s.content.videos.featured, 'destacado', 'destacados')} · ${qty(
+        s.content.videos.shorts,
+        'short',
+        'shorts',
+      )}`,
   },
   {
     href: '/admin/projects',
@@ -53,7 +68,12 @@ const sections: DashboardSection[] = [
     title: 'Proyectos',
     description: 'Gestionar proyectos del portfolio',
     count: (s) => s.content.projects.total,
-    hint: (s) => `${s.content.projects.active} activos · ${s.content.projects.archived} archivados`,
+    hint: (s) =>
+      `${qty(s.content.projects.active, 'activo', 'activos')} · ${qty(
+        s.content.projects.archived,
+        'archivado',
+        'archivados',
+      )}`,
   },
   {
     href: '/admin/courses',
@@ -61,7 +81,12 @@ const sections: DashboardSection[] = [
     title: 'Cursos',
     description: 'Cursos publicados en la sección Cursos',
     count: (s) => s.content.courses.total,
-    hint: (s) => `${s.content.courses.active} activos · ${s.content.courses.lessons} clases`,
+    hint: (s) =>
+      `${qty(s.content.courses.active, 'activo', 'activos')} · ${qty(
+        s.content.courses.lessons,
+        'clase',
+        'clases',
+      )}`,
   },
   {
     href: '/admin/lab',
@@ -69,7 +94,7 @@ const sections: DashboardSection[] = [
     title: 'Lab',
     description: 'Experimentos documentados que alimentan los videos largos de YouTube',
     count: (s) => s.content.lab.total,
-    hint: (s) => `${s.content.lab.published} publicados`,
+    hint: (s) => qty(s.content.lab.published, 'publicado', 'publicados'),
   },
   {
     href: '/admin/recursos',
@@ -78,7 +103,11 @@ const sections: DashboardSection[] = [
     description: 'Scripts, plantillas y descargas de la sección /recursos',
     count: (s) => s.content.resources.total,
     hint: (s) =>
-      `${s.content.resources.published} publicados · ${s.engagement.downloads} descargas`,
+      `${qty(s.content.resources.published, 'publicado', 'publicados')} · ${qty(
+        s.engagement.downloads,
+        'descarga',
+        'descargas',
+      )}`,
   },
   {
     href: '/admin/timeline',

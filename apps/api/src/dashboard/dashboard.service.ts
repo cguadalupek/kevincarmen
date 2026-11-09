@@ -50,7 +50,6 @@ export interface DashboardSummary {
   recent: DashboardRecent[];
 }
 
-const ACTIVITY_DAYS = 14;
 const RECENT_LIMIT = 8;
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -327,6 +326,17 @@ export class DashboardService {
   }
 
   private mergeRecent(items: DashboardRecent[]): DashboardRecent[] {
-    return items.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, RECENT_LIMIT);
+    // Máximo 2 cambios por sección: así la lista mezcla secciones en vez de
+    // llenarse con la última tanda de ediciones de una sola.
+    const perType = new Map<DashboardRecent['type'], number>();
+    return items
+      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+      .filter((item) => {
+        const seen = perType.get(item.type) ?? 0;
+        if (seen >= 2) return false;
+        perType.set(item.type, seen + 1);
+        return true;
+      })
+      .slice(0, RECENT_LIMIT);
   }
 }

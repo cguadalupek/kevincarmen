@@ -70,14 +70,18 @@ export function DashboardStats({ summary, loading }: DashboardStatsProps) {
       key: 'completions',
       label: 'Clases completadas',
       value: engagement?.completions ?? 0,
-      hint: `${engagement?.students.activeLast7Days ?? 0} alumnos activos (7 días)`,
+      hint: plural(
+        engagement?.students.activeLast7Days ?? 0,
+        'alumno activo (7 días)',
+        'alumnos activos (7 días)',
+      ),
       Icon: BookOpenCheck,
     },
     {
       key: 'downloads',
       label: 'Descargas',
       value: engagement?.downloads ?? 0,
-      hint: `${summary?.content.resources.total ?? 0} recursos en total`,
+      hint: `${plural(summary?.content.resources.total ?? 0, 'recurso', 'recursos')} en total`,
       Icon: Download,
     },
     {
@@ -119,7 +123,7 @@ export function DashboardStats({ summary, loading }: DashboardStatsProps) {
         Interacciones de los últimos 14 días: likes, clases completadas y suscripciones.
       </p>
 
-      <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {metrics.map(({ key, label, value, hint, Icon }) => (
           <div key={key} className="glass-card p-4">
             <div className="flex items-center gap-2 text-accent">
@@ -134,7 +138,7 @@ export function DashboardStats({ summary, loading }: DashboardStatsProps) {
         ))}
       </div>
 
-      <div className="mt-5 grid gap-5 lg:grid-cols-3">
+      <div className="mt-5 grid grid-cols-1 gap-5 lg:grid-cols-3">
         {/* Serie diaria */}
         <div className="glass-card p-5 lg:col-span-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
