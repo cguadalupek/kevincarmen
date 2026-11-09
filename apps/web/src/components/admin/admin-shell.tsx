@@ -10,14 +10,23 @@ import { AdminSidebarPanel } from '@/components/admin/sidebar';
 import { cn } from '@/lib/utils';
 
 /**
+ * Rutas que ocupan la ventana completa en escritorio (layout tipo IDE de tres
+ * zonas con scroll independiente): alta y edición de artículos.
+ */
+const EDITOR_ROUTES = [/^\/admin\/posts\/new$/, /^\/admin\/posts\/[^/]+$/];
+
+/**
  * Estructura del panel de administración:
  * - Escritorio (`md:` en adelante): sidebar fijo a la izquierda + contenido centrado.
  * - Móvil (`< md`): header con botón hamburguesa y sidebar como drawer deslizante.
+ * - Editor de artículos en escritorio: el contenedor pasa a `h-screen overflow-hidden`
+ *   y `main` deja de scrollear; la página gestiona sus propias zonas con scroll.
  */
 export function AdminShell({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
   const drawerRef = useRef<HTMLDivElement>(null);
+  const isEditor = EDITOR_ROUTES.some((pattern) => pattern.test(pathname));
 
   const close = useCallback(() => setOpen(false), []);
 
@@ -46,12 +55,17 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
   }, [open]);
 
   return (
-    <div className="flex min-h-screen w-full flex-col overflow-x-clip md:flex-row">
+    <div
+      className={cn(
+        'flex min-h-screen w-full flex-col overflow-x-clip md:flex-row',
+        isEditor && 'lg:h-screen lg:min-h-0 lg:overflow-hidden',
+      )}
+    >
       {/* overflow-x-clip (no hidden): recorta el desborde horizontal sin crear un
           contenedor de scroll, para que los elementos `sticky` (toolbar del editor)
           sigan anclándose respecto de la ventana. */}
       {/* Sidebar fijo (escritorio) */}
-      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-border bg-card/50 md:flex">
+      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col overflow-y-auto border-r border-border bg-card/50 md:flex">
         <AdminSidebarPanel />
       </aside>
 
@@ -106,8 +120,13 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Contenido */}
-      <main className="w-full min-w-0 max-w-full flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
-        <div className="mx-auto w-full max-w-7xl">{children}</div>
+      <main
+        className={cn(
+          'w-full min-w-0 max-w-full flex-1',
+          isEditor ? 'lg:flex lg:min-h-0 lg:overflow-hidden' : 'px-4 py-6 sm:px-6 lg:px-8 lg:py-8',
+        )}
+      >
+        <div className={isEditor ? 'w-full lg:h-full' : 'mx-auto w-full max-w-7xl'}>{children}</div>
       </main>
     </div>
   );

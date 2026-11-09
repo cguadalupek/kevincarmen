@@ -20,12 +20,19 @@ export default function EditPostPage() {
 
   return (
     <>
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold">Editar artículo</h1>
-        <p className="text-muted-foreground">Modifica el contenido y estado de publicación</p>
-      </div>
-      {loading && <p className="text-muted-foreground">Cargando...</p>}
-      {post && <PostForm post={post} />}
+      {loading && (
+        <div className="p-4 sm:p-6">
+          <h1 className="text-2xl font-bold">Editar artículo</h1>
+          <p className="mt-1 text-muted-foreground">Cargando...</p>
+        </div>
+      )}
+      {post && (
+        <PostForm
+          post={post}
+          heading="Editar artículo"
+          subtitle="Modifica el contenido y estado de publicación"
+        />
+      )}
     </>
   );
 }

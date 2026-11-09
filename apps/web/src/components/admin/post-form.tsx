@@ -12,6 +12,9 @@ import { getCategoryTree, subcategoriesOf, type CategoryTreeNode } from '@/lib/a
 
 interface PostFormProps {
   post?: ApiPost;
+  /** Título de la cabecera, dentro de la zona central con scroll propio. */
+  heading: string;
+  subtitle: string;
 }
 
 const VIDEO_TYPE_OPTIONS: { value: VideoTypeValue; label: string }[] = [
@@ -42,7 +45,7 @@ function detectVideoType(url: string): VideoTypeValue | null {
   return null;
 }
 
-export function PostForm({ post }: PostFormProps) {
+export function PostForm({ post, heading, subtitle }: PostFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -182,96 +185,84 @@ export function PostForm({ post }: PostFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {savedSlug && (
-        <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
-          Artículo publicado.{' '}
-          <a
-            href={`/blog/${savedSlug}`}
-            className="font-medium text-accent underline underline-offset-2"
-          >
-            Ver en el blog
-          </a>
-          {' · '}
-          <button
-            type="button"
-            className="font-medium text-accent underline underline-offset-2"
-            onClick={() => router.push('/admin/posts')}
-          >
-            Volver al listado
-          </button>
-        </div>
-      )}
+    <form onSubmit={handleSubmit} className="flex flex-col lg:h-full lg:min-h-0 lg:flex-row">
+      {/* Zona central: cabecera + campos. En escritorio scrollea sola. */}
+      <div className="min-w-0 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
+        <div className="space-y-6 p-4 sm:p-6">
+          <header>
+            <h1 className="text-2xl font-bold">{heading}</h1>
+            <p className="mt-1 text-muted-foreground">{subtitle}</p>
+          </header>
 
-      {error && (
-        <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-          {error}
-        </div>
-      )}
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="title" className="mb-2 block text-sm font-medium">
+                Título
+              </label>
+              <input
+                id="title"
+                value={title}
+                onChange={(e) => handleTitleChange(e.target.value)}
+                required
+                className="w-full rounded-lg border border-border bg-muted/50 px-4 py-2.5 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+              />
+            </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        <div className="min-w-0 space-y-4 lg:col-span-2">
-          <div>
-            <label htmlFor="title" className="mb-2 block text-sm font-medium">
-              Título
-            </label>
-            <input
-              id="title"
-              value={title}
-              onChange={(e) => handleTitleChange(e.target.value)}
-              required
-              className="w-full rounded-lg border border-border bg-muted/50 px-4 py-2.5 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-            />
-          </div>
+            <div>
+              <label htmlFor="slug" className="mb-2 block text-sm font-medium">
+                Slug
+              </label>
+              <input
+                id="slug"
+                value={slug}
+                onChange={(e) => {
+                  setAutoSlug(false);
+                  setSlug(e.target.value);
+                }}
+                required
+                className="w-full rounded-lg border border-border bg-muted/50 px-4 py-2.5 font-mono text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+              />
+            </div>
 
-          <div>
-            <label htmlFor="slug" className="mb-2 block text-sm font-medium">
-              Slug
-            </label>
-            <input
-              id="slug"
-              value={slug}
-              onChange={(e) => {
-                setAutoSlug(false);
-                setSlug(e.target.value);
-              }}
-              required
-              className="w-full rounded-lg border border-border bg-muted/50 px-4 py-2.5 font-mono text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-            />
-          </div>
+            <div>
+              <label htmlFor="excerpt" className="mb-2 block text-sm font-medium">
+                Extracto
+              </label>
+              <textarea
+                id="excerpt"
+                value={excerpt}
+                onChange={(e) => setExcerpt(e.target.value)}
+                rows={3}
+                className="w-full resize-none rounded-lg border border-border bg-muted/50 px-4 py-2.5 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+              />
+            </div>
 
-          <div>
-            <label htmlFor="excerpt" className="mb-2 block text-sm font-medium">
-              Extracto
-            </label>
-            <textarea
-              id="excerpt"
-              value={excerpt}
-              onChange={(e) => setExcerpt(e.target.value)}
-              rows={3}
-              className="w-full resize-none rounded-lg border border-border bg-muted/50 px-4 py-2.5 text-sm focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="content" className="mb-2 block text-sm font-medium">
-              Contenido
-            </label>
-            <CMSEditor
-              section="blog"
-              value={content}
-              onChange={setContent}
-              onVideoPaste={handleVideoUrlChange}
-            />
-            <p className="mt-2 text-xs text-muted-foreground">
-              Escribe <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono">/</kbd> para
-              insertar código o imágenes. Arrastra, pega capturas (Ctrl+V) o redimensiona imágenes
-              como en Notion.
-            </p>
+            <div>
+              <label htmlFor="content" className="mb-2 block text-sm font-medium">
+                Contenido
+              </label>
+              <CMSEditor
+                section="blog"
+                value={content}
+                onChange={setContent}
+                onVideoPaste={handleVideoUrlChange}
+              />
+              <p className="mt-2 text-xs text-muted-foreground">
+                Escribe <kbd className="rounded bg-muted px-1.5 py-0.5 font-mono">/</kbd> para
+                insertar código o imágenes. Arrastra, pega capturas (Ctrl+V) o redimensiona imágenes
+                como en Notion.
+              </p>
+            </div>
           </div>
         </div>
+      </div>
 
-        <div className="min-w-0 space-y-4">
+      {/* Zona derecha: metadatos con scroll propio y acciones fijas al pie. */}
+      <aside
+        aria-label="Metadatos del artículo"
+        className="flex w-full shrink-0 flex-col border-t border-border lg:h-full lg:w-80 lg:border-l lg:border-t-0"
+      >
+        <div className="space-y-6 p-4 sm:p-6 lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
           <div className="glass-card p-5">
             <h3 className="mb-4 font-semibold">Publicación</h3>
             <label htmlFor="status" className="mb-2 block text-sm font-medium">
@@ -549,23 +540,53 @@ export function PostForm({ post }: PostFormProps) {
               . Redimensiona arrastrando las esquinas.
             </p>
           </div>
-
-          <div className="glass-card p-5">
-            <Button type="submit" variant="accent" className="w-full" disabled={loading}>
-              <Save className="h-4 w-4" />
-              {loading ? 'Guardando...' : post ? 'Actualizar artículo' : 'Crear artículo'}
-            </Button>
-            <Button
-              type="button"
-              variant="outline"
-              className="mt-2 w-full"
-              onClick={() => router.back()}
-            >
-              Cancelar
-            </Button>
-          </div>
         </div>
-      </div>
+
+        {/* Acciones fijas al pie del panel: visibles aunque scrolleen los metadatos. */}
+        <div className="shrink-0 space-y-3 border-t border-border bg-card/60 p-4">
+          {savedSlug && (
+            <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">
+              Artículo publicado.{' '}
+              <a
+                href={`/blog/${savedSlug}`}
+                className="font-medium text-accent underline underline-offset-2"
+              >
+                Ver en el blog
+              </a>
+              {' · '}
+              <button
+                type="button"
+                className="font-medium text-accent underline underline-offset-2"
+                onClick={() => router.push('/admin/posts')}
+              >
+                Volver al listado
+              </button>
+            </div>
+          )}
+
+          {error && (
+            <div
+              role="alert"
+              className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400"
+            >
+              {error}
+            </div>
+          )}
+
+          <Button type="submit" variant="accent" className="w-full" disabled={loading}>
+            <Save className="h-4 w-4" />
+            {loading ? 'Guardando...' : post ? 'Actualizar artículo' : 'Crear artículo'}
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-2 w-full"
+            onClick={() => router.back()}
+          >
+            Cancelar
+          </Button>
+        </div>
+      </aside>
     </form>
   );
 }
