@@ -46,8 +46,14 @@ const HIDE_FROM_BREAKPOINT: Record<TocBreakpoint, string> = {
  * `IntersectionObserver` sobre los h2/h3 reales del artículo (los ids los pone
  * el plugin de rehype en el HTML servido, así que los anchors funcionan sin JS).
  * Cuando ninguno está en la banda visible, gana el último que quedó por encima.
+ *
+ * `refreshKey` vuelve a enganchar el observer cuando los encabezados se
+ * DESMONTAN y se vuelven a pintar con los mismos ids (p. ej. el panel «Resumen»
+ * de una clase de curso, que alterna con el temario y los recursos): con la
+ * lista de ids igual, el efecto no se repetiría y el observer se quedaría
+ * apuntando a nodos que ya no están en el DOM.
  */
-export function useActiveHeading(ids: string[]): string | null {
+export function useActiveHeading(ids: string[], refreshKey?: string | number): string | null {
   const key = ids.join('|');
   const [active, setActive] = useState<string | null>(ids[0] ?? null);
 
@@ -86,7 +92,7 @@ export function useActiveHeading(ids: string[]): string | null {
 
     elements.forEach((element) => observer.observe(element));
     return () => observer.disconnect();
-  }, [key]);
+  }, [key, refreshKey]);
 
   return active;
 }
@@ -99,6 +105,11 @@ interface PostTocProps {
   label?: string;
   /** Clase de anclaje inferior del FAB (para apilarlo sobre otro botón flotante). */
   bottomClass?: string;
+  /**
+   * Clave que reengancha el scrollspy cuando los encabezados se desmontan y se
+   * vuelven a pintar con los mismos ids (clave: el slug de la clase).
+   */
+  activeKey?: string;
 }
 
 /** Clases compartidas por los enlaces de índice (escritorio y hoja móvil). */
@@ -116,8 +127,16 @@ function linkClass(heading: TocHeading, active: string | null) {
  * Tabla de contenidos flotante (escritorio): sidebar `sticky top-24` en el
  * espacio sobrante al lado de la columna de lectura.
  */
-export function PostToc({ headings, breakpoint = 'lg', label = 'En este artículo' }: PostTocProps) {
-  const active = useActiveHeading(headings.map((heading) => heading.id));
+export function PostToc({
+  headings,
+  breakpoint = 'lg',
+  label = 'En este artículo',
+  activeKey,
+}: PostTocProps) {
+  const active = useActiveHeading(
+    headings.map((heading) => heading.id),
+    activeKey,
+  );
   if (headings.length === 0) return null;
 
   return (
@@ -164,9 +183,13 @@ export function PostTocFab({
   headings,
   breakpoint = 'lg',
   bottomClass = 'bottom-6',
+  activeKey,
 }: PostTocProps) {
   const pathname = usePathname();
-  const active = useActiveHeading(headings.map((heading) => heading.id));
+  const active = useActiveHeading(
+    headings.map((heading) => heading.id),
+    activeKey,
+  );
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   // La hoja solo vive en el DOM mientras se abre o se cierra. Antes quedaba

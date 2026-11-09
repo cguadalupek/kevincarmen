@@ -28,7 +28,7 @@ import { CourseSyncBar } from '@/components/courses/course-sync-bar';
 import { useCourseProgress } from '@/components/courses/use-course-progress';
 import { MarkdownContent } from '@/components/blog/markdown-content';
 import { AuthorBadge } from '@/components/blog/author-badge';
-import { PostToc } from '@/components/blog/post-toc';
+import { PostToc, PostTocFab } from '@/components/blog/post-toc';
 import { cn } from '@/lib/utils';
 
 const TYPE_META = {
@@ -277,7 +277,8 @@ export function CoursePlayer({
                 panel === 'recursos'
                   ? 'border-accent/50 bg-accent/10 text-accent'
                   : 'border-border bg-card/60 text-muted-foreground hover:border-accent/40 hover:text-foreground',
-                !hasResources && 'cursor-not-allowed opacity-40 hover:border-border hover:text-muted-foreground',
+                !hasResources &&
+                  'cursor-not-allowed opacity-40 hover:border-border hover:text-muted-foreground',
               )}
             >
               <Paperclip className="h-4 w-4 shrink-0" aria-hidden="true" />
@@ -386,9 +387,30 @@ export function CoursePlayer({
           />
         </aside>
 
-        {/* ── índice de la clase (tercera columna, solo en pantallas anchas) ── */}
-        <PostToc headings={headings} breakpoint="xl" label="En esta clase" />
+        {/*
+          ── índice de la clase ──
+          Solo existe mientras el panel abierto es el RESUMEN: es el único panel
+          que pinta los h2/h3 del markdown, así que en «Clases» o «Recursos» el
+          índice apuntaría a anclas que no están en el DOM.
+        */}
+        {panel === 'resumen' && (
+          <PostToc
+            headings={headings}
+            breakpoint="xl"
+            label="En esta clase"
+            activeKey={current.slug}
+          />
+        )}
       </div>
+
+      {/*
+        FAB del índice por debajo de `xl` (ahí no hay tercera columna). Se
+        desmonta al salir de «Resumen» — y con él su hoja — para que no quede
+        flotando sobre el temario o los recursos.
+      */}
+      {panel === 'resumen' && (
+        <PostTocFab headings={headings} breakpoint="xl" activeKey={current.slug} />
+      )}
     </div>
   );
 }
