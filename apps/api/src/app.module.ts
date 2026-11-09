@@ -19,6 +19,7 @@ import { ResourcesModule } from './resources/resources.module';
 import { NewsletterModule } from './newsletter/newsletter.module';
 import { LikesModule } from './likes/likes.module';
 import { ContactModule } from './contact/contact.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { ContactModule } from './contact/contact.module';
     NewsletterModule,
     LikesModule,
     ContactModule,
+    DashboardModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -397,6 +397,49 @@ export interface ApiLikeAnalyticsItem {
   count: number;
 }
 
+/** Totales por sección del dashboard (`GET /dashboard/admin/summary`). */
+export interface ApiDashboardContent {
+  posts: { total: number; published: number; drafts: number; scheduled: number };
+  projects: { total: number; active: number; archived: number };
+  videos: { total: number; shorts: number; featured: number };
+  courses: { total: number; active: number; lessons: number };
+  lab: { total: number; published: number };
+  resources: { total: number; published: number };
+  timeline: { total: number };
+}
+
+/** Señales de uso del sitio que el panel mide en su propia base de datos. */
+export interface ApiDashboardEngagement {
+  likes: { total: number; today: number; last7Days: number; last30Days: number };
+  downloads: number;
+  subscribers: { active: number; total: number };
+  students: { total: number; activeLast7Days: number };
+  completions: number;
+}
+
+/** Un día del gráfico de actividad (últimos 14, hora de Chile). */
+export interface ApiDashboardActivityDay {
+  /** `YYYY-MM-DD` en hora de Chile. */
+  date: string;
+  likes: number;
+  completions: number;
+  subscribers: number;
+}
+
+export interface ApiDashboardRecent {
+  type: 'Artículo' | 'Proyecto' | 'Experimento' | 'Curso' | 'Video' | 'Recurso';
+  title: string;
+  updatedAt: string;
+  href: string;
+}
+
+export interface ApiDashboardSummary {
+  content: ApiDashboardContent;
+  engagement: ApiDashboardEngagement;
+  activity: ApiDashboardActivityDay[];
+  recent: ApiDashboardRecent[];
+}
+
 /** Fila del ranking «capítulos más completados» (`GET /courses/admin/analytics`). */
 export interface ApiChapterCompletion {
   courseId: string;
@@ -480,6 +523,9 @@ export const api = {
 
   /** Totales de likes del panel de analítica (requiere el token del CMS). */
   getLikeAnalytics: () => apiFetch<ApiLikeAnalytics>('/likes/admin/analytics'),
+
+  /** Resumen del dashboard: totales por sección + estadísticas del sitio. */
+  getDashboardSummary: () => apiFetch<ApiDashboardSummary>('/dashboard/admin/summary'),
 
   getPost: (id: string) => apiFetch<ApiPost>(`/posts/admin/${id}`),
 

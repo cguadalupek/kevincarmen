@@ -358,7 +358,8 @@ nunca del cuerpo. Los **invitados** no usan estos endpoints: su progreso vive en
 | GET | `/likes?entity=POST\|PROJECT&entityId=…&visitorId=…` | — | `{entity, entityId, count, liked}`; sin `visitorId` solo el contador |
 | GET | `/likes/counts?entity=POST\|PROJECT&ids=a,b,c` | — | `{entity, counts: {id: n}}`; contadores de un listado en **una** llamada (ids sin votos no aparecen) |
 | POST | `/likes/toggle` | — | `{entity, entityId, visitorId}` → `{count, liked}` ya persistidos (alterna el voto) |
-| GET | `/likes/admin/analytics` | **JWT** | Totales `{posts, projects, today, last7Days, last30Days}` + `items[]` con título, sección, subcategoría y votos por contenido |
+- GET | `/likes/admin/analytics` | **JWT** | Totales `{posts, projects, today, last7Days, last30Days}` + `items[]` con título, sección, subcategoría y votos por contenido |
+| GET | `/dashboard/admin/summary` | **JWT** | Resumen del dashboard: `content` (totales y desglose por sección), `engagement` (likes, descargas, suscriptores, alumnos, clases completadas), `activity[]` (14 días en hora de Chile) y `recent[]` (últimos cambios de contenido) |
 
 El voto se identifica con un UUID que la web guarda en la cookie `kc_vid` (no hay cuentas
 públicas). `POST /likes/toggle` está limitado con `ThrottlerGuard` a **30 peticiones por
@@ -415,6 +416,11 @@ El código vive en **`apps/web/src/`** (`src/app` para rutas, `src/components`, 
   subida de archivo (25 MB) o enlace externo, tipo editable, versión, etiquetas,
   destacado y orden.
 - **Timeline** y **Configuración** (`/admin/settings`, KV del sitio).
+- **Dashboard** (`/admin`): cada tarjeta de sección muestra su total (con desglose de
+  publicados/borradores, activos/archivados, etc.) y debajo hay un cuadro de **actividad del
+  sitio**: métricas de likes, clases completadas, descargas, suscriptores y alumnos, un gráfico
+  de 14 días (likes / clases / suscripciones) y la lista de últimos cambios del CMS. Consume
+  `GET /dashboard/admin/summary`; las **visitas** no salen aquí porque el tráfico lo mide Umami.
 - **Analítica** (`/admin/analytics`): totales de «me gusta» (artículos, proyectos, hoy en
   hora de Chile, últimos 7 y 30 días) y **tabla por contenido** con título, sección,
   subcategoría y votos, filtrable por tipo (artículos/proyectos) y por sección. La sección
